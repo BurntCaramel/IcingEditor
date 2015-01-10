@@ -1,0 +1,166 @@
+{
+    "blocks": [
+        {
+            "textItems": [
+                {
+                    "text": "{BLIK HEADER}",
+                    "type": "text"
+                }
+            ],
+            "type": "placeholder",
+			"placeholderID": "blik.header"
+        },
+        {
+            "textItems": [
+                {
+                    "text": "{MAC APP STORE LINK}",
+                    "type": "text"
+                }
+            ],
+            "type": "placeholder",
+			"placeholderID": "blik.macAppStoreLink"
+        },
+        {
+            "textItems": [
+                {
+                    "attributes": {
+                        "bold": true
+					},
+                    "text": "Your projects, at a glance.",
+                    "type": "text"
+                }
+            ],
+            "type": "subhead2"
+        },
+        {
+            "textItems": [
+                {
+                    "text": "Got those projects you\u2019re working on? ",
+                    "type": "text"
+                },
+                {
+                    "text": "And that client from last year who wants some changes? ",
+                    "type": "text"
+                },
+                {
+                    "text": "Plus that upcoming pitch? ",
+                    "type": "text"
+                },
+                {
+                    "text": "Do you collaborate with other people, sharing many files via a service like Dropbox? Are there files from these different projects you need quick access to all the time?",
+                    "type": "text"
+                }
+            ],
+            "type": "body"
+        },
+        {
+            "textItems": [
+                {
+                    "text": "Blik lets you select the key files and folders from projects, organising them as you like. Highlight the essentials so that they are never more than a click away, no matter what folder they live in. And set preferred apps to open files, specific for the project.",
+                    "type": "text"
+                }
+            ],
+            "type": "body"
+        },
+        {
+            "textItems": [
+                {
+                    "text": "Blik is simple \u2014 purposefully so \u2014 to let you focus on just the files you need.",
+                    "type": "text"
+                }
+            ],
+            "type": "body"
+        },
+        {
+            "textItems": [
+                {
+                    "attributes": {
+                        "italic": true
+					},
+                    "text": "Briefs. PSDs. Dev folders. ",
+                    "type": "text"
+                },
+                {
+                    "attributes": {
+                        "bold": true
+					},
+                    "text": "Organization for Web Designers & Developers.",
+                    "type": "text"
+                }
+            ],
+            "type": "subhead2"
+        }
+    ],
+	"traits": {
+		"namespace": "burntCaramel",
+		"blocks": {
+			"placeholder": [
+				{
+					"group": "blik",
+					"id": "header",
+					"title": "Blik Header",
+					"description": "The Blik logo"
+				},
+				{
+					"group": "blik",
+					"id": "mac-app-store-link",
+					"title": "Blik Mac App Store Link",
+					"description": "The official-style black button linking to the Mac App Store."
+				}
+			],
+			"heading": [
+				{"id": "subheading", "title": "Subheading"},
+				{"id": "subheadingB", "title": "Subheading B"},
+				{"id": "subheadingC", "title": "Subheading C"},
+				{
+					"id": "featureHeading",
+					"title": "Feature Heading",
+					"itemFieldsAreRequired": true,
+					"itemFields": [
+						{"id": "secondary", "title": "Secondary"},
+						{"id": "primary", "title": "Primary"}
+					]
+				}
+			],
+			"particular": [
+				{
+					"id": "contactRichSnippet",
+					"title": "Contact Details (Rich Snippet)",
+					"itemFieldsAreRequired": true,
+					"itemFields": [
+						{"id": "businessName", "title": "Business Name"},
+						{"id": "streetAddress", "title": "Street Address"}
+					]
+				}
+			]
+		},
+		"customBlocks": {
+			"featureHeading": {
+				"title": "Feature Heading",
+				"type": "fields",
+				"fieldsAreRequired": true,
+				"fields": [
+					{"id": "secondary", "title": "Secondary"},
+					{"id": "primary", "title": "Primary"}
+				]
+			}
+		},
+		"itemsByBlock": {
+			"*": {
+				"text": [
+					{"id": "secondary", "title": "Secondary"},
+					{"id": "primary", "title": "Primary"}
+				]
+			},
+			"heading": {
+				"text": [
+					
+				],
+				"image": [
+					{"id": "resolution-1x", "title": "1x Resolution"},
+					{"id": "resolution-2x", "title": "2x Resolution"},
+				]
+			}
+		}
+	}
+}

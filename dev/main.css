@@ -1,0 +1,142 @@
+/* line 12, ../../src/styles/main.scss */
+body {
+  background-color: #eeeeee;
+}
+
+/* line 20, ../../src/styles/main.scss */
+#editor {
+  position: relative;
+  font-family: 'Helvetica Neue', sans-serif;
+  max-width: 400px;
+  margin: auto;
+  margin-top: 40px;
+  left: -20%;
+}
+/* line 30, ../../src/styles/main.scss */
+#editor .block {
+  position: relative;
+  margin-bottom: 20px;
+  font-size: 15px;
+  line-height: 1.3;
+}
+/* line 41, ../../src/styles/main.scss */
+#editor .block-heading {
+  font-size: 36px;
+}
+/* line 45, ../../src/styles/main.scss */
+#editor .block-subhead1 {
+  font-size: 24px;
+}
+/* line 49, ../../src/styles/main.scss */
+#editor .block-subhead2 {
+  font-size: 21px;
+}
+/* line 53, ../../src/styles/main.scss */
+#editor .block-subhead2 {
+  font-size: 15px;
+}
+/* line 57, ../../src/styles/main.scss */
+#editor .block-placeholder {
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+/* line 64, ../../src/styles/main.scss */
+#editor .textItem {
+  border: 1px dotted #eee;
+}
+/* line 72, ../../src/styles/main.scss */
+#editor .textItem-bold {
+  font-weight: bold;
+}
+/* line 76, ../../src/styles/main.scss */
+#editor .textItem-italic {
+  font-style: italic;
+}
+/* line 89, ../../src/styles/main.scss */
+#editor .block-active .textItem-active {
+  border: 1px dotted white;
+  background-color: white;
+}
+/* line 97, ../../src/styles/main.scss */
+#editor .toolbarButton,
+#editor .toolbarDivider {
+  font-size: 12px;
+}
+/* line 101, ../../src/styles/main.scss */
+#editor .toolbarButton {
+  margin: 0;
+  color: #111111;
+  background-color: white;
+  border: none;
+  white-space: nowrap;
+}
+/* line 110, ../../src/styles/main.scss */
+#editor .toolbarButton-selected {
+  color: white;
+  background-color: #404040;
+}
+/* line 117, ../../src/styles/main.scss */
+#editor .blockItemToolbar {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  opacity: 0.4;
+  margin-right: 40px;
+  text-align: right;
+  background-color: white;
+}
+/* line 127, ../../src/styles/main.scss */
+#editor .blockItemToolbar .toolbarButton {
+  display: block;
+  width: 100%;
+  text-align: right;
+  color: #111111;
+  background-color: transparent;
+}
+/* line 136, ../../src/styles/main.scss */
+#editor .block:hover .blockItemToolbar {
+  opacity: 0.6;
+}
+/* line 141, ../../src/styles/main.scss */
+#editor .block-active .blockItemToolbar,
+#editor .block-active:hover .blockItemToolbar {
+  opacity: 1.0;
+  z-index: 200;
+}
+/* line 146, ../../src/styles/main.scss */
+#editor .block-active .blockItemToolbar .toolbarButton-selected {
+  color: white;
+  background-color: #404040;
+}
+/* line 151, ../../src/styles/main.scss */
+#editor .block-active .blockItemToolbar .toolbarButton:not(.toolbarButton-selected):hover {
+  background-color: #f8f8f8;
+}
+/* line 157, ../../src/styles/main.scss */
+#editor .textItemEditor {
+  position: absolute;
+  left: 100%;
+  margin-top: -41px;
+  margin-left: 40px;
+}
+/* line 164, ../../src/styles/main.scss */
+#editor .textItemEditor textarea {
+  width: 500px;
+  height: 140px;
+  margin-top: 8px;
+  padding: 10px;
+  font-size: 17px;
+  line-height: 1.3;
+  background-color: white;
+  border: none;
+}
+/* line 179, ../../src/styles/main.scss */
+#editor .textItemEditor-toolbar .toolbarButton,
+#editor .itemEditor-traits-toolbar .toolbarButton {
+  margin-right: 4px;
+}
+/* line 184, ../../src/styles/main.scss */
+#editor .textItemEditor-toolbar-split {
+  float: right;
+  margin-right: 0;
+}

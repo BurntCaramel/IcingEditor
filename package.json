@@ -1,0 +1,47 @@
+{
+  "name": "burnt-icing",
+  "version": "0.1.0",
+  "main": "index.js",
+  "description": "Content editor",
+  "homepage": "http://www.burntcaramel.com/",
+  "keywords": [
+    "content",
+    "edit",
+    "editor",
+    "text",
+    "image",
+    "embed"
+  ],
+  "author": {
+    "name": "Patrick Smith",
+    "email": "patrick@burntcaramel.com",
+    "url": "http://www.burntcaramel.com/"
+  },
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@burntcaramel.beanstalkapp.com/burntcaramel/burnt-icing.git"
+  },
+  "licenses": [
+    {
+      "type": "Private"
+    }
+  ],
+  "engines": {
+    "node": "0.10.x",
+    "npm": "1.4.x"
+  },
+  "dependencies": {
+    "coffee-script": "^1.7.1",
+    "express": "3.x",
+    "flux": "^2.0.1",
+    "gulp": "^3.8.10",
+    "immutable": "^3.3.0",
+    "microevent": "^1.0.0",
+    "react": "^0.12.1",
+    "underscore": "^1.6.0"
+  },
+  "scripts": {
+	  "start": "gulp watch"
+  }
+}
