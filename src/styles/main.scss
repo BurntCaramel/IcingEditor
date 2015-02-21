@@ -1,29 +1,179 @@
 $backgroundColor: #f8f8f8;
 $backgroundColor: #eee;
 $toolbarButtonTextColor: #111;
-$toolbarButtonBackgroundColor: white;
+$toolbarButtonBackgroundColor: #f7f7f7;
 $toolbarButtonSelectedTextColor: white;
-$toolbarButtonSelectedBackgroundColor: #404040;
+//$toolbarButtonSelectedBackgroundColor: #404040;
+$toolbarButtonSelectedBackgroundColor: #6a6a6a;
 $inputBackgroundColor: white;
 
-$zIndexActiveMenu: 200;
+$editSliderTransitionDuration: 0.7s;
+$hoverTransitionDuration: 0.25s;
+
+%toolbarItem
+{
+	display: inline-block;
+	margin: 0;
+	padding: 3px 6px;
+	font-size: 12px;
+	white-space: nowrap;
+	border: none;
+	background: none;
+}
+%toolbarDivider
+{
+	@extend %toolbarItem;
+}
+%toolbarButton
+{
+	@extend %toolbarItem;
+	
+	border-radius: 2px;
+}
+%toolbarButton_light
+{
+	color: $toolbarButtonTextColor;
+	background-color: $toolbarButtonBackgroundColor;
+}
+%toolbarButton_light_hover
+{
+	background-color: lighten($toolbarButtonBackgroundColor, 5.5%);
+}
+%toolbarButton_dark
+{
+	color: $toolbarButtonSelectedTextColor;
+	background-color: $toolbarButtonSelectedBackgroundColor;
+}
+%toolbarButton_dark_hover
+{
+	background-color: darken($toolbarButtonSelectedBackgroundColor, 5.5%);
+}
+%toolbarButton_light_pressed
+{
+	@extend %toolbarButton_dark;
+	@extend %toolbarButton_dark_hover;
+}
+%toolbarButton_dark_pressed
+{
+	@extend %toolbarButton_light;
+	@extend %toolbarButton_light_hover;
+}
+
+@mixin toolbarButton_light() {
+	& {
+		@extend %toolbarButton;
+		@extend %toolbarButton_light;
+	}
+	&:hover {
+		@extend %toolbarButton_light_hover;
+	}
+	&:active {
+		@extend %toolbarButton_light_pressed;
+	}
+}
+@mixin toolbarButton_dark() {
+	& {
+		@extend %toolbarButton;
+		@extend %toolbarButton_dark;
+	}
+	&:hover {
+		@extend %toolbarButton_dark_hover;
+	}
+	&:active {
+		@extend %toolbarButton_dark_pressed;
+	}
+}
+
+%secondaryButton
+{
+	@extend %toolbarItem;
+	
+	font-size: 11px;
+	line-height: 1.2;
+	padding: 3px;
+	color: #888;
+	border-radius: 2px;
+}
+%secondaryButton-hover
+{
+	color: #444;
+	background-color: rgba(white, 0.3);
+}
+
+$zIndexMainToolbar: 1000;
+$zIndexActiveMenu: 2000;
 
 body
 {
 	background-color: $backgroundColor;
 }
 
+$editorMainToolbarHeight: 48px;
 $editorPreviewWidth: 400px;
 $editorInputWidth: 500px;
 
-#editor
+$editorMainToolbarFontSize: 14px;
+
+#burntIcingEditor
 {
 	position: relative;
 	font-family: 'Helvetica Neue', sans-serif;
 	max-width: $editorPreviewWidth;
 	margin: auto;
-	margin-top: 40px;
+	margin-top: $editorMainToolbarHeight;
 	left: -20%;
+	padding-bottom: 160px;
+	
+	
+	.mainToolbar
+	{
+		position: fixed;
+		z-index: $zIndexMainToolbar;
+		top: 0;
+		left: 0;
+		right: 0;
+		box-sizing: border-box;
+		height: $editorMainToolbarHeight;
+		padding-left: 20px;
+		padding-top: 11px;
+		text-align: center;
+		background-color: rgba($backgroundColor, 0.9);
+		
+		.toolbarButton
+		{
+			@include toolbarButton_light();
+			
+			font-size: $editorMainToolbarFontSize;
+		}
+		.toolbarButton-selected
+		{
+			@include toolbarButton_dark();
+		}
+	}
+	.mainToolbar_availableDocumentsSelect,
+	.mainToolbar_availableDocumentsSingle {
+		display: inline-block;
+		margin-left: 1em;
+		//min-width: 100px;
+		font-size: $editorMainToolbarFontSize;
+		font-style: italic;
+		
+		@if false {
+			border: 1px solid $toolbarButtonTextColor;
+			background-color: $backgroundColor;
+			-webkit-appearance: none;
+		}
+	}
+	
+	
+	.blocks
+	{
+		transition: left $editSliderTransitionDuration ease-out, background-color $hoverTransitionDuration ease;
+		
+		&:hover {
+			//background-color: rgba(black, 0.025);
+		}
+	}
 	
 	
 	.block
@@ -32,6 +182,13 @@ $editorInputWidth: 500px;
 		margin-bottom: 20px;
 		font-size: 15px;
 		line-height: 1.3;
+		min-height: 1.3 * 15px;
+		transition: background-color $hoverTransitionDuration ease;
+		
+		&.block-edited,
+		&:hover {
+			background-color: rgba(white, 0.25);
+		}
 	}
 	.block-body
 	{
@@ -49,30 +206,40 @@ $editorInputWidth: 500px;
 	{
 		font-size: 21px;
 	}
-	.block-subhead2
+	.block-subhead3
 	{
-		font-size: 15px;
+		font-size: 18px;
 	}
 	.block-placeholder
 	{
 		padding: 5px;
-		background-color: rgba(black, 0.2);
+		background-color: rgba(black, 0.1);
+		
+		&:hover {
+			background-color: rgba(black, 1/16);
+		}
+		
+		&.block-edited {
+			background-color: white;
+		}
 	}
 	
 	
 	.textItem
 	{
-		border: 1px dotted #eee;
+		border: 1px dotted transparent;
+		transition: background-color $hoverTransitionDuration ease;
 	}
-	.textItem-active
+	.textItem-edited
 	{
-		
+		border: 1px dotted white;
+		background-color: white;
 	}
-	.textItem-bold
+	.textItem-hasTrait-bold .text
 	{
 		font-weight: bold;
 	}
-	.textItem-italic
+	.textItem-hasTrait-italic .text
 	{
 		font-style: italic;
 	}
@@ -81,60 +248,49 @@ $editorInputWidth: 500px;
 	{
 		//background-color: #eee;
 	}
-	.block-active .textItem
-	{
-		//opacity: 0.4;
-	}
-	.block-active .textItem-active
-	{
-		border: 1px dotted white;
-		background-color: white;
-	}
-	
-	
-	.toolbarButton,
-	.toolbarDivider
-	{
-		font-size: 12px;
-	}
-	.toolbarButton
-	{
-		margin: 0;
-		color: $toolbarButtonTextColor;
-		background-color: $toolbarButtonBackgroundColor;
-		border: none;
-		white-space: nowrap;
-		
-	}
-	.toolbarButton-selected
-	{
-		color: $toolbarButtonSelectedTextColor;
-		background-color: $toolbarButtonSelectedBackgroundColor;
-	}
-	
 	
 	.blockItemToolbar
 	{
 		position: absolute;
 		top: 0;
+		bottom: 0;
 		right: 100%;
 		opacity: 0.4;
-		margin-right: 40px;
+		padding-right: 40px;
 		text-align: right;
-		background-color: white;
 		
 		.toolbarButton
 		{
+			@extend %toolbarButton;
+			@extend %toolbarButton_light;
+			
 			display: block;
 			width: 100%;
 			text-align: right;
-			color: $toolbarButtonTextColor;
 			background-color: transparent;
 		}
+		.secondaryButton
+		{
+			@extend %secondaryButton;
+			
+			display: none;
+			
+			&:hover {
+				@extend %secondaryButton-hover;
+			}
+		}
+	}
+	.blockItemToolbar_typeChooser
+	{
+		background-color: $toolbarButtonBackgroundColor;
 	}
 	.block:hover .blockItemToolbar
 	{
 		opacity: 0.6;
+	}
+	.block:hover .secondaryButton
+	{
+		display: inline-block;
 	}
 	.block-active .blockItemToolbar,
 	.block-active:hover .blockItemToolbar
@@ -142,14 +298,14 @@ $editorInputWidth: 500px;
 		opacity: 1.0;
 		z-index: $zIndexActiveMenu;
 	}
+	.block-edited .blockItemToolbar .toolbarButton-selected,
 	.block-active .blockItemToolbar .toolbarButton-selected
 	{
-		color: $toolbarButtonSelectedTextColor;
-		background-color: $toolbarButtonSelectedBackgroundColor;
+		@extend %toolbarButton_light_hover;
 	}
-	.block-active .blockItemToolbar .toolbarButton:not(.toolbarButton-selected):hover
+	.block-active .blockItemToolbar .toolbarButton:hover
 	{
-		background-color: #f8f8f8;
+		@extend %toolbarButton_dark;
 	}
 	
 	
@@ -157,7 +313,7 @@ $editorInputWidth: 500px;
 	{
 		position: absolute;
 		left: 100%;
-		margin-top: -33px - 8px;
+		margin-top: -33px;
 		margin-left: 40px;
 		
 		textarea
@@ -172,17 +328,91 @@ $editorInputWidth: 500px;
 			border: none;
 		}
 	}
+	
+	.textItemEditor_instructions {
+		font-size: 11px;
+		color: lighten($toolbarButtonTextColor, 40%);
+	}
+	.textItemEditor_instructions_split {
+		float: right;
+	}
+	
 	.textItemEditor-toolbar,
-	.itemEditor-traits-toolbar
+	.textItemEditor_traitsToolbar
 	{
-		.toolbarButton
+		clear: both;
+		
+		.toolbarDivider {
+			@extend %toolbarDivider;
+		}
+		.toolbarButton {
+			@extend %toolbarButton;
+			@extend %toolbarButton_light;
+			
+			
+		}
+		.toolbarButton,
+		.toolbarDivider
 		{
 			margin-right: 4px;
+		}
+		
+		.toolbarButton:hover {
+			@extend %toolbarButton_light_hover;
+		}
+		.toolbarButton:active {
+			@extend %toolbarButton_light_pressed;
+		}
+		.toolbarButton-selected {
+			@extend %toolbarButton_dark;
+		}
+		.toolbarButton-selected:hover {
+			@extend %toolbarButton_dark_hover;
+		}
+		.toolbarButton-selected:active {
+			@extend %toolbarButton_dark_pressed;
 		}
 	}
 	.textItemEditor-toolbar-split
 	{
 		float: right;
 		margin-right: 0;
+	}
+	
+	
+	.placeholderEditor
+	{
+		position: absolute;
+		left: 100%;
+		margin-top: -23px;
+		margin-left: 40px;
+	}
+	.placeholderEditor-IDField
+	{
+		width: $editorInputWidth;
+		padding: 4px 10px;
+		font-size: 17px;
+		line-height: 1.3;
+		background-color: $inputBackgroundColor;
+		border: none;
+	}
+	
+	
+	.previewHTMLHolder {
+		white-space: pre-wrap;
+	}
+	
+	
+	@media (max-width: 1100px) {
+		left: 0;
+		
+		.blocks {
+			
+		}
+		.blocks-hasEditedBlock {
+			position: relative;
+			//left: -100%;
+			left: -480px;
+		}
 	}
 }

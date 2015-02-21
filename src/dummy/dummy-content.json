@@ -1,4 +1,5 @@
 {
+	"type": "textItems",
     "blocks": [
         {
             "textItems": [
@@ -23,9 +24,6 @@
         {
             "textItems": [
                 {
-                    "attributes": {
-                        "bold": true
-					},
                     "text": "Your projects, at a glance.",
                     "type": "text"
                 }
@@ -75,7 +73,8 @@
             "textItems": [
                 {
                     "attributes": {
-                        "italic": true
+                        "italic": true,
+						"secondary": true
 					},
                     "text": "Briefs. PSDs. Dev folders. ",
                     "type": "text"
@@ -90,77 +89,5 @@
             ],
             "type": "subhead2"
         }
-    ],
-	"traits": {
-		"namespace": "burntCaramel",
-		"blocks": {
-			"placeholder": [
-				{
-					"group": "blik",
-					"id": "header",
-					"title": "Blik Header",
-					"description": "The Blik logo"
-				},
-				{
-					"group": "blik",
-					"id": "mac-app-store-link",
-					"title": "Blik Mac App Store Link",
-					"description": "The official-style black button linking to the Mac App Store."
-				}
-			],
-			"heading": [
-				{"id": "subheading", "title": "Subheading"},
-				{"id": "subheadingB", "title": "Subheading B"},
-				{"id": "subheadingC", "title": "Subheading C"},
-				{
-					"id": "featureHeading",
-					"title": "Feature Heading",
-					"itemFieldsAreRequired": true,
-					"itemFields": [
-						{"id": "secondary", "title": "Secondary"},
-						{"id": "primary", "title": "Primary"}
-					]
-				}
-			],
-			"particular": [
-				{
-					"id": "contactRichSnippet",
-					"title": "Contact Details (Rich Snippet)",
-					"itemFieldsAreRequired": true,
-					"itemFields": [
-						{"id": "businessName", "title": "Business Name"},
-						{"id": "streetAddress", "title": "Street Address"}
-					]
-				}
-			]
-		},
-		"customBlocks": {
-			"featureHeading": {
-				"title": "Feature Heading",
-				"type": "fields",
-				"fieldsAreRequired": true,
-				"fields": [
-					{"id": "secondary", "title": "Secondary"},
-					{"id": "primary", "title": "Primary"}
-				]
-			}
-		},
-		"itemsByBlock": {
-			"*": {
-				"text": [
-					{"id": "secondary", "title": "Secondary"},
-					{"id": "primary", "title": "Primary"}
-				]
-			},
-			"heading": {
-				"text": [
-					
-				],
-				"image": [
-					{"id": "resolution-1x", "title": "1x Resolution"},
-					{"id": "resolution-2x", "title": "2x Resolution"},
-				]
-			}
-		}
-	}
+    ]
 }

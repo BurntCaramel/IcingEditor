@@ -1,4 +1,12 @@
 var React = require('react');
+var AppDispatcher = require('../app-dispatcher');
+var SettingsStore = require('../stores/store-settings');
+var PreviewStore = require('../stores/store-preview');
+var eventIDs = require('../actions/actions-content-eventIDs');
+var documentSectionEventIDs = eventIDs.documentSection;
+
+var UIMixins = require('../ui/ui-mixins');
+var ButtonMixin = UIMixins.ButtonMixin;
 
 
 var TextItemTextArea = React.createClass({
@@ -6,6 +14,16 @@ var TextItemTextArea = React.createClass({
 		return {
 			spaceWasJustPressed: false
 		};
+	},
+	
+	componentWillMount: function() {
+		var actions = this.props.actions;
+		actions.registerSelectedTextRangeFunctionForEditedItem(this.getTextSelectionRange);
+	},
+	
+	componentWillUnmount: function() {
+		var actions = this.props.actions;
+		actions.unregisterSelectedTextRangeFunctionForEditedItem();
 	},
 	
 	onChange: function() {
@@ -17,6 +35,19 @@ var TextItemTextArea = React.createClass({
 	hasNoText: function() {
 		var text = this.refs.textarea.getDOMNode().value;
 		return (text.length === 0);
+	},
+	
+	getTextSelectionRange: function() {
+		var textarea = this.refs.textarea.getDOMNode();
+		return {
+			"start": textarea.selectionStart,
+			"end": textarea.selectionEnd
+		};
+	},
+	
+	selectionIsCaretAtBeginning: function() {
+		var textSelectionRange = this.getTextSelectionRange();
+		return (textSelectionRange.start === 0 && textSelectionRange.end === 0);
 	},
 	
 	onKeyDown: function(e) {
@@ -36,20 +67,26 @@ var TextItemTextArea = React.createClass({
 			this.setState({spaceWasJustPressed: false});
 		}
 		
-		if (false) {
+		if (true) {
 			if (e.which == 8) { // Delete/Backspace key
-				if (this.performAction('deleteInsideElement')) {
+				/*if (this.hasNoText()) {
+					actions.removeEditedTextItem();
+					e.preventDefault();
+				}
+				else*/
+				if (this.selectionIsCaretAtBeginning()) {
+					actions.joinEditedTextItemWithPreviousItem();
 					e.preventDefault();
 				}
 			}
 			else if (e.which == 9) { // Tab key
-				/*if (e.shiftKey)
-					this.performAction('editPreviousElement');
-				else
-					this.performAction('editNextElement');*/
-	
-				this.performAction('addNewElement');
-	
+				if (e.shiftKey) {
+					actions.editPreviousItemBeforeEditedTextItem();
+				}
+				else {
+					actions.editNextItemAfterEditedTextItem();
+				}
+		
 				e.preventDefault();
 			}
 		}
@@ -57,15 +94,28 @@ var TextItemTextArea = React.createClass({
 	
 	onKeyPress: function(e) {
 		var actions = this.props.actions;
-		console.log('key press', e.which);
+		console.log('key press', e);
 		if (true) {
 			if (e.which == 13) { // Return/enter key.
 				if (e.shiftKey) {
 					actions.addLineBreakAfterEditedTextItem();
 				}
+				// Command key
+				else if (e.metaKey) {
+					console.log('FINSIH EDITING');
+					actions.finishEditing();
+				}
+				// Option key
+				else if (e.altKey) {
+					actions.addNewTextItemAfterEditedTextItem();
+				}
 				else {
-					if (!this.hasNoText()) {
-						actions.addNewTextItemAfterEditedTextItem();
+					if (this.hasNoText()) {
+						actions.splitBlockBeforeEditedTextItem();
+					}
+					else {
+						var textSelectionRange = this.getTextSelectionRange();
+						actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
 					}
 				}
 				
@@ -92,41 +142,37 @@ var TextItemTextArea = React.createClass({
 			onChange: this.onChange,
 			onKeyDown: this.onKeyDown,
 			onKeyPress: this.onKeyPress
-		})
+		});
 	}
 });
 
 var ToolbarButton = React.createClass({
+	mixins: [ButtonMixin],
+	
 	getDefaultProps: function() {
 		return {
-			selected: false
+			baseClassNames: ['toolbarButton']
 		};
-	},
+	}
+});
+
+var SecondaryButton = React.createClass({
+	mixins: [ButtonMixin],
 	
-	render: function() {
-		var props = this.props;
-		var title = props.title;
-		
-		var classNames = ['toolbarButton'];
-		if (props.className) {
-			classNames.push(props.className)
-		}
-		if (props.selected) {
-			classNames.push('toolbarButton-selected')
-		}
-		
-		return React.createElement('button', {
-			className: classNames.join(' '),
-			onClick: props.onClick
-		}, title);
+	getDefaultProps: function() {
+		return {
+			baseClassNames: ['secondaryButton']
+		};
 	}
 });
 
 var ToolbarDivider = React.createClass({
 	render: function() {
+		//var text = ' · ';
+		var text = ' ';
 		return React.createElement('span', {
 			className: 'toolbarDivider'
-		}, ' · ');
+		}, text);
 	}
 });
 
@@ -162,7 +208,9 @@ var TextItemAttributesToolbar = React.createClass({
 	},
 	
 	onSplit: function() {
-		
+		console.log('onSplit');
+		//var actions = this.props.actions;
+		//actions.splitTextInRangeOfEditedTextItem(null);
 	},
 	
 	render: function() {
@@ -220,30 +268,46 @@ var ItemTraitsToolbar = React.createClass({
 		actions.toggleTraitForEditedTextItem(traitID);
 	},
 	
-	render: function() {
-		var props = this.props;
-		var availableTraits = props.availableTraits;
-		var attributes = props.attributes;
-		
-		var itemsByBlock = availableTraits.itemsByBlock;
-		var itemsByAnyBlock = itemsByBlock['*'];
-		
-		var textItemTraits = itemsByAnyBlock.text;
-		var textItemTraitButtons = textItemTraits.map(function(textItemTrait) {
-			var traitID = textItemTrait.id;
+	createButtonsForTextItemTraitSpecs: function(traitSpecs, chosenTraits) {
+		return traitSpecs.map(function(textItemTraitSpec) {
+			var traitID = textItemTraitSpec.id;
 			var onToggleTrait = this.onToggleTrait.bind(this, traitID);
 			return React.createElement(ToolbarButton, {
 				key: ('button-' + traitID),
-				title: textItemTrait.title,
-				selected: attributes[traitID] === true,
+				title: textItemTraitSpec.title,
+				selected: !!(chosenTraits[traitID]),
 				onClick: onToggleTrait
 			});
 		}, this);
+	},
+	
+	createButtonGroupForTextItemTraitSpecs: function(groupID, traitSpecs, chosenTraits) {
+		var buttons = this.createButtonsForTextItemTraitSpecs(traitSpecs, chosenTraits);
+		return React.createElement('div', {
+			key: groupID,
+			className: ('itemEditor-traits-toolbar-' + groupID)
+		}, buttons);
+	},
+	
+	render: function() {
+		var props = this.props;
+		var availableTraits = props.availableTraits;
+		var traits = props.traits;
+		
+		var buttonGroups = [];
+		
+		if (availableTraits) {
+			var itemsByBlock = availableTraits.itemsByBlock;
+			var itemsByAnyBlock = itemsByBlock['*'];
+		
+			var textItemTraits = itemsByAnyBlock.text;
+			buttonGroups.push(this.createButtonGroupForTextItemTraitSpecs('anyBlockType', textItemTraits, traits));
+		}
 		
 		return React.createElement('div', {
-			className: 'itemEditor-traits-toolbar',
+			className: props.className,
 			key: 'holder'
-		}, textItemTraitButtons);
+		}, buttonGroups);
 	}
 });
 
@@ -251,7 +315,7 @@ var TextItemEditor = React.createClass({
 	getDefaultProps: function() {
 		return {
 			text: '',
-			attributes: {},
+			traits: {},
 			availableTraits: {}
 		};
 	},
@@ -259,53 +323,134 @@ var TextItemEditor = React.createClass({
 	render: function() {
 		var props = this.props;
 		var text = props.text;
-		var attributes = props.attributes;
+		var traits = props.traits;
 		var actions = props.actions;
+		var blockType = props.blockType;
 		var availableTraits = props.availableTraits;
 		
 		return React.createElement('div', {
+			key: 'textItemEditor',
 			className: 'textItemEditor',
-			id: 'icing-textItemEditor',
-			key: 'textItemEditor'
+			id: 'icing-textItemEditor'
 		}, [
-			React.createElement(TextItemAttributesToolbar, {
-				actions: actions,
-				availableTraits: availableTraits,
-				bold: attributes.bold,
-				italic: attributes.italic,
-				key: 'attributesToolbar',
-			}),
 			React.createElement(TextItemTextArea, {
 				text: text,
 				actions: actions,
 				availableTraits: availableTraits,
 				key: 'textAreaHolder'
 			}),
+			/*React.createElement(TextItemAttributesToolbar, {
+				actions: actions,
+				availableTraits: availableTraits,
+				bold: traits.bold,
+				italic: traits.italic,
+				key: 'oldTraitsToolbar',
+			}),*/
+			React.createElement('div', {
+				key: 'instructions',
+				className: 'textItemEditor_instructions'
+			}, [
+				/*React.createElement('div', {
+					key: 'instructions-traits',
+					className: 'instructions_traits'
+				}, 'Use the buttons below'),*/
+				React.createElement('div', {
+					key: 'instructions-split',
+					className: 'textItemEditor_instructions_split'
+				}, 'Press return/enter to split text')
+			]),
 			React.createElement(ItemTraitsToolbar, {
 				actions: actions,
 				availableTraits: availableTraits,
-				attributes: attributes,
-				key: 'traitsToolbar'
+				traits: traits,
+				blockType: blockType,
+				key: 'traitsToolbar',
+				className: 'textItemEditor_traitsToolbar'
 			}),
 		]);
 	}
 });
 
-var BlockToolbar = React.createClass({
+var PlaceholderEditor = React.createClass({
+	getIDField: function() {
+		var IDField = this.refs.IDField;
+		return IDField.getDOMNode();
+	},
+	
+	componentDidMount: function() {
+		this.getIDField().focus();
+	},
+	
+	hasNoText: function() {
+		var text = this.refs.IDField.getDOMNode().value;
+		return (text.length === 0);
+	},
+	
+	onKeyDown: function(e) {
+		var actions = this.props.actions;
+		console.log('key down', e.which);
+		
+		if (true) {
+			if (e.which == 8) { // Delete/Backspace key
+				if (this.hasNoText()) {
+					console.log('REMOVE ME');
+					actions.removeEditedBlock();
+					e.preventDefault();
+				}
+			}
+			else if (e.which == 9) { // Tab key
+				if (e.shiftKey) {
+					actions.editPreviousItemBeforeEditedTextItem();
+				}
+				else {
+					actions.editNextItemAfterEditedTextItem();
+				}
+		
+				e.preventDefault();
+			}
+		}
+	},
+	
+	onKeyPress: function(e) {
+		var actions = this.props.actions;
+		if (true) {
+			if (e.which == 13) { // Return/enter key.
+				actions.insertRelatedBlockAfterEditedBlock();
+				
+				e.preventDefault();
+			}
+		}
+	},
+	
+	onChange: function() {
+		var placeholderID = this.getIDField().value;
+		var props = this.props;
+		var actions = props.actions;
+		var keyPath = props.keyPath;
+		actions.changePlaceholderIDOfBlockAtKeyPath(placeholderID, keyPath);
+	},
+	
+	render: function() {
+		var props = this.props;
+		var placeholderID = this.props.placeholderID;
+		return React.createElement('div', {
+			className: 'placeholderEditor',
+		}, React.createElement('input', {
+			ref: 'IDField',
+			type: 'text',
+			value: placeholderID,
+			className: 'placeholderEditor-IDField',
+			onChange: this.onChange,
+			onKeyDown: this.onKeyDown,
+			onKeyPress: this.onKeyPress
+		}));
+	}
+});
+
+var BlockTypeChooser = React.createClass({
 	getDefaultProps: function() {
 		return {
-			chosenBlockTypeID: 'body',
-			availableBlockTypes: [
-				{'id': 'body', 'title': 'Body'},
-				{'id': 'heading', 'title': 'Heading'},
-				{'id': 'subhead1', 'title': 'Subheading'},
-				{'id': 'subhead2', 'title': 'Subheading B'},
-				{'id': 'subhead3', 'title': 'Subheading C'},
-				{'id': 'figure', 'title': 'Figure'},
-				{'id': 'particular', 'title': 'Particular'},
-				{'id': 'quote', 'title': 'Quote'},
-				{'id': 'placeholder', 'title': 'Placeholder'}
-			]
+			chosenBlockTypeID: 'body'
 		};
 	},
 	
@@ -344,9 +489,15 @@ var BlockToolbar = React.createClass({
 			}, this);
 		}
 		else {
-			var chosenBlockTypeOptions = availableBlockTypes.find(function(blockTypeOptions) {
+			var chosenBlockTypeOptions = availableBlockTypes.filter(function(blockTypeOptions) {
 				return (blockTypeOptions.id === chosenBlockTypeID);
 			}, this);
+			if (chosenBlockTypeOptions) {
+				chosenBlockTypeOptions = chosenBlockTypeOptions[0];
+			}
+			else {
+				chosenBlockTypeOptions = null;
+			}
 			
 			var button = this.makeButtonForBlockTypeOptions(chosenBlockTypeOptions, chosenBlockTypeID, this.onToggleActive);
 			
@@ -354,6 +505,65 @@ var BlockToolbar = React.createClass({
 				button
 			];
 		}
+		
+		var classes = ['blockItemToolbar_typeChooser'];
+		if (active) {
+			classes.push('blockItemToolbar_typeChooser-active');
+		}
+		
+		return React.createElement('div', {
+			className: classes.join(' ')
+		}, children);
+	}
+});
+
+var BlockToolbar = React.createClass({
+	getDefaultProps: function() {
+		return {
+			chosenBlockTypeID: 'body',
+			availableBlockTypes: SettingsStore.getAvailableBlockTypesForDocumentSection()
+		};
+	},
+	
+	onToggleActive: function() {
+		var actions = this.props.actions;
+		actions.onToggleActive();
+	},
+	
+	onChangeChosenBlockType: function(blockTypeOptions, event) {
+		var actions = this.props.actions;
+		actions.onChangeChosenBlockType(blockTypeOptions, event);
+	},
+	
+	makeButtonForBlockTypeOptions: function(blockTypeOptions, chosenBlockTypeID, onClick) {
+		return React.createElement(ToolbarButton, {
+			key: ('button-type-' + blockTypeOptions.id),
+			ref: blockTypeOptions.id,
+			title: blockTypeOptions.title,
+			selected: chosenBlockTypeID === blockTypeOptions.id,
+			onClick: onClick
+		});
+	},
+	
+	render: function() {
+		var props = this.props;
+		var chosenBlockTypeID = props.chosenBlockTypeID;
+		var availableBlockTypes = props.availableBlockTypes;
+		var actions = props.actions;
+		var active = props.active;
+		
+		var children = [
+			React.createElement(BlockTypeChooser, {
+				chosenBlockTypeID: chosenBlockTypeID,
+				availableBlockTypes: availableBlockTypes,
+				actions: actions,
+				active: active
+			})/*,
+			React.createElement(SecondaryButton, {
+				title: 'Rearrange',
+				actions: actions
+			})*/
+		];
 		
 		var classes = ['blockItemToolbar'];
 		if (active) {
@@ -366,8 +576,97 @@ var BlockToolbar = React.createClass({
 	}
 });
 
+var MainToolbar = React.createClass({
+	getDefaultProps: function() {
+		return {
+		};
+	},
+	
+	onSave: function() {
+		var actions = this.props.actions;
+		actions.saveChanges();
+	},
+	
+	onTogglePreview: function() {
+		var actions = this.props.actions;
+		
+		var isPreviewing = PreviewStore.getIsPreviewing();
+		if (isPreviewing) {
+			actions.exitHTMLPreview();
+		}
+		else {
+			actions.enterHTMLPreview();
+		}
+	},
+	
+	createSelectForAvailableDocuments: function() {
+		var availableDocuments = SettingsStore.getAvailableDocuments();
+		var documentCount = availableDocuments.length;
+		
+		var options = null;
+		if (availableDocuments) {
+			if (availableDocuments.length > 1) {
+				var options = availableDocuments.map(function(documentInfo) {
+					return React.createElement('option', {
+						key: documentInfo.ID,
+						value: documentInfo.ID
+					}, documentInfo.title);
+				});
+				return React.createElement('select', {
+					key: 'availableDocumentsSelect',
+					className: 'mainToolbar_availableDocumentsSelect'
+				}, options);
+			}
+			else if (availableDocuments.length === 1) {
+				var documentInfo = availableDocuments[0];
+				return React.createElement('div', {
+					key: documentInfo.ID,
+					className: 'mainToolbar_availableDocumentsSingle',
+					value: documentInfo.ID
+				}, documentInfo.title);
+			}
+		}
+	},
+	
+	render: function() {
+		var props = this.props;
+		var actions = props.actions;
+		
+		var children = [];
+		
+		if (SettingsStore.getWantsSaveFunctionality()) {
+			children.push(
+				React.createElement(ToolbarButton, {
+					title: 'Save',
+					onClick: this.onSave
+				})
+			);
+		}
+		
+		if (SettingsStore.getWantsViewHTMLFunctionality()) {
+			children.push(
+				React.createElement(ToolbarButton, {
+					title: 'Preview',
+					onClick: this.onTogglePreview,
+					selected: PreviewStore.getIsPreviewing()
+				})
+			);
+		}
+		
+		children.push(
+			this.createSelectForAvailableDocuments()
+		);
+		
+		return React.createElement('div', {
+			className: 'mainToolbar'
+		}, children);
+	}
+});
+
 var ElementToolbars = {
+	MainToolbar: MainToolbar,
 	BlockToolbar: BlockToolbar,
-	TextItemEditor: TextItemEditor
+	TextItemEditor: TextItemEditor,
+	PlaceholderEditor: PlaceholderEditor
 };
 module.exports = ElementToolbars;

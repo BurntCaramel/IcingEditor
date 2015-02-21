@@ -1,0 +1,118 @@
+{
+	"namespace": "com.burntcaramel",
+	"blockTypes": {
+		"heading": [
+			{"id": "subheading", "title": "Subheading"},
+			{"id": "subheadingB", "title": "Subheading B"},
+			{"id": "subheadingC", "title": "Subheading C"},
+			{
+				"id": "featureHeading",
+				"title": "Feature Heading",
+				"itemFieldsAreRequired": true,
+				"itemFields": [
+					{"id": "primary", "title": "Primary", "type": "text"},
+					{"id": "secondary", "title": "Secondary", "type": "text"}
+				]
+			}
+		],
+		"section": [
+			{"id": "list", "title": "List", "allowedChildren": "*"},
+			{"id": "quote", "title": "Quote", "allowedChildren": "*"}
+		],
+		"particular": [
+			{
+				"group": "blik",
+				"id": "header",
+				"title": "Blik Header",
+				"description": "The Blik logo"
+			},
+			{
+				"group": "blik",
+				"id": "mac-app-store-link",
+				"title": "Blik Mac App Store Link",
+				"description": "The official-style black button linking to the Mac App Store."
+			},
+			{
+				"id": "contactRichSnippet",
+				"title": "Contact Details (Rich Snippet)",
+				"itemFieldsAreRequired": true,
+				"itemFields": [
+					{"id": "businessName", "title": "Business Name"},
+					{"id": "streetAddress", "title": "Street Address"},
+					{"id": "suburb", "title": "Suburb"},
+					{"id": "province", "title": "Province"},
+					{"id": "country", "title": "Country"}
+				]
+			}
+		]
+	},
+	"traits": {
+		"itemsByBlock": {
+			"*": {
+				"text": [
+					{
+						"id": "bold",
+						"title": "Bold"
+					},
+					{
+						"id": "italic",
+						"title": "Italic"
+					},
+					{
+						"id": "link",
+						"title": "Link",
+						"type": "fields",
+						"fields": [
+							{
+								"id": "type",
+								"title": "Type",
+								"type": "choice",
+								"choices": [
+									{
+										"id": "URL",
+										"title": "URL",
+										"fields": [
+											{
+												"type": "URL",
+												"id": "URL"
+											}
+										]
+									},
+									{
+										"id": "email",
+										"title": "Email",
+										"fields": [
+											{
+												"type": "email",
+												"id": "emailAddress"
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"id": "primary",
+						"title": "Primary"
+					},
+					{
+						"id": "secondary",
+						"title": "Secondary"
+					}
+				]
+			},
+			"heading": {
+				"text": [
+					
+				]
+			},
+			"figure": {
+				"image externalImage": [
+					{"id": "resolution-1x", "title": "1x Resolution"},
+					{"id": "resolution-2x", "title": "2x Resolution"}
+				]
+			}
+		}
+	}
+}

@@ -1,2 +1,3 @@
 var editor = require('./editor/editor.js');
-editor.go();
+//editor.go();
+editor.goOnDocumentLoad();

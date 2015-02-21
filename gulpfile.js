@@ -19,8 +19,15 @@ guilty.requireTask('compass', {
 
 // Browserify, for javascript use 'js-browserify'
 guilty.requireTask('js-browserify', {
+	taskName: 'js-main',
 	srcFilePath: 'index.js',
 	destFilePath: 'main.js'
+});
+
+guilty.requireTask('js-browserify', {
+	taskName: 'js-dummy',
+	srcFilePath: 'dummy/dummy.js',
+	destFilePath: 'dummy.js'
 });
 
 /*
@@ -47,7 +54,8 @@ gulp.task(
 	guilty.taskName([
 		'images',
 		'compass',
-		'js-browserify',
+		'js-main',
+		'js-dummy',
 		//'jst',
 		//'vendor-js', // Use the taskName customized above from the 'copy' task
 		'html'

@@ -42,6 +42,10 @@
     "underscore": "^1.6.0"
   },
   "scripts": {
-	  "start": "gulp watch"
+    "start": "gulp watch",
+	"prod": "gulp --production"
+  },
+  "devDependencies": {
+    "qwest": "^1.5.4"
   }
 }
