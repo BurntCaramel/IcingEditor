@@ -18,11 +18,15 @@ var ButtonMixin = {
 		if (props.className) {
 			classNames.push(props.className);
 		}
+		
+		var addClassNameExtension = function(extension) {
+			classNames.push.apply(classNames, baseClassNames.map(function(className) {
+				return className + extension;
+			}));
+		};
 
 		if (props.selected) {
-			classNames.push.apply(classNames, baseClassNames.map(function(className) {
-				return className + '-selected';
-			}));
+			addClassNameExtension('-selected');
 		}
 		
 		return React.createElement('button', {

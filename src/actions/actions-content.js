@@ -53,21 +53,30 @@ var ActionsContent = {
 				return ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
 			},
 			
-			editBlockWithKeyPath: function(keyPath) {
+			editBlockWithKeyPath: function(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.blockWithKeyPath,
 					documentID: documentID,
 					sectionID: sectionID,
-					blockKeyPath: keyPath
+					blockKeyPath: blockKeyPath
 				});
 			},
 			
-			editTextItemWithKeyPath: function(keyPath) {
+			editTextItemWithKeyPath: function(textItemKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.textItemWithKeyPath,
 					documentID: documentID,
 					sectionID: sectionID,
-					textItemKeyPath: keyPath
+					textItemKeyPath: textItemKeyPath
+				});
+			},
+			
+			editTextItemBasedBlockWithKeyPathAddingIfNeeded: function(blockKeyPath) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded,
+					documentID: documentID,
+					sectionID: sectionID,
+					blockKeyPath: blockKeyPath
 				});
 			},
 			
@@ -76,6 +85,26 @@ var ActionsContent = {
 					eventID: documentSectionEventIDs.finishEditing,
 					documentID: documentID,
 					sectionID: sectionID
+				});
+			},
+			
+			insertSubsectionOfTypeAtBlockIndex: function(subsectionType, blockIndex) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex,
+					documentID: documentID,
+					sectionID: sectionID,
+					subsectionType: subsectionType,
+					blockIndex: blockIndex
+				})
+			},
+			
+			changeTypeOfSubsectionAtKeyPath: function(subsectionKeyPath, subsectionType) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.subsectionAtKeyPath.changeType,
+					documentID: documentID,
+					sectionID: sectionID,
+					subsectionKeyPath: subsectionKeyPath,
+					subsectionType: subsectionType
 				});
 			},
 			

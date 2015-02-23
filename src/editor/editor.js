@@ -158,7 +158,6 @@ var SectionContent = React.createClass({
 			key: 'editorContent'
 		}, [
 			mainToolbar,
-			//contentElements
 			editorElement
 		]);
 	}
@@ -175,7 +174,6 @@ module.exports = {
 			document.getElementById('burntIcingEditor')
 		);
 		
-		console.log('LOAD', documentID, ContentStoreLoading);
 		ContentStoreLoading.loadContentForDocument(documentID);
 	},
 	

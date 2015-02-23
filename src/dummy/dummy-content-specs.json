@@ -60,6 +60,7 @@
 					},
 					{
 						"id": "link",
+						"disabled": true,
 						"title": "Link",
 						"type": "fields",
 						"fields": [
@@ -94,10 +95,12 @@
 					},
 					{
 						"id": "primary",
+						"disabled": true,
 						"title": "Primary"
 					},
 					{
 						"id": "secondary",
+						"disabled": true,
 						"title": "Secondary"
 					}
 				]

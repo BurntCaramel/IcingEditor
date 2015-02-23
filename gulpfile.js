@@ -24,25 +24,29 @@ guilty.requireTask('js-browserify', {
 	destFilePath: 'main.js'
 });
 
+// dummy.js
 guilty.requireTask('js-browserify', {
 	taskName: 'js-dummy',
 	srcFilePath: 'dummy/dummy.js',
 	destFilePath: 'dummy.js'
 });
 
-/*
-gulp.task('main-js-browserify', function(cb) {
-	cb();
-});*/
-
-/*
-// Use as many copy tasks as you like, just give them a unique taskName.
-guilty.requireTask('copy', {
-	taskName: 'vendor-js',
-	srcPathGlob: 'vendor-js/porthole.min.js',
-	destPath: './'
+// untitled.js
+guilty.requireTask('js-browserify', {
+	taskName: 'js-untitled',
+	srcFilePath: 'dummy/untitled.js',
+	destFilePath: 'untitled.js'
 });
-*/
+
+gulp.task(
+	guilty.taskName('js'),
+	guilty.taskName([
+		'js-main',
+		'js-dummy',
+		'js-untitled'
+	])
+);
+
 // Copies any html files straight across.
 guilty.requireTask('html');
 
@@ -54,8 +58,7 @@ gulp.task(
 	guilty.taskName([
 		'images',
 		'compass',
-		'js-main',
-		'js-dummy',
+		'js',
 		//'jst',
 		//'vendor-js', // Use the taskName customized above from the 'copy' task
 		'html'

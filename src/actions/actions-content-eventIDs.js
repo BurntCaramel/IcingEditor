@@ -6,14 +6,21 @@ var ActionsContentEventIDs = {
 		exitHTMLPreview: 'documentSection.exitHTMLPreview',
 		edit: {
 			blockWithKeyPath: 'documentSection.edit.blockWithKeyPath',
-			textItemWithKeyPath: 'documentSection.edit.textItemWithKeyPath'
+			textItemWithKeyPath: 'documentSection.edit.textItemWithKeyPath',
+			textItemBasedBlockWithKeyPathAddingIfNeeded: 'documentSection.edit.textItemBasedBlockWithKeyPathAddingIfNeeded'
 		},
 		finishEditing: 'documentSection.finishEditing',
+		blocks: {
+			insertSubsectionOfTypeAtIndex: 'documentSection.blocks.insertSubsectionOfTypeAtIndex'
+		},
 		blockAtKeyPath: {
 			changeType: 'documentSection.blockAtKeyPath.changeType',
 			changePlaceholderID: 'documentSection.blockAtKeyPath.changePlaceholderID',
 			remove: 'documentSection.blockAtKeyPath.remove',
 			insertRelatedBlockAfter: 'documentSection.blockAtKeyPath.insertRelatedBlockAfter'
+		},
+		subsectionAtKeyPath: {
+			changeType: 'documentSection.subsectionAtKeyPath.changeType'
 		},
 		editedBlock: {
 			remove: 'documentSection.editedBlock.remove',

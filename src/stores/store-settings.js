@@ -60,7 +60,7 @@ SettingsStore.getWantsPlaceholderFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsPlaceholderFunctionality', false);
 };
 
-SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
+SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [
 		{'id': 'body', 'title': 'Body'},
 		{'id': 'heading', 'title': 'Heading'},
@@ -71,9 +71,29 @@ SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, se
 		//{'id': 'media', 'title': 'Media'},
 		//{'id': 'quote', 'title': 'Quote'},
 		{'id': 'placeholder', 'title': 'Particular'},
-		//{'id': 'subsection', 'title': 'Subsection'},
+		{'id': 'subsection', 'title': 'Subsection'}
 		//{'id': 'external', 'title': 'External Element'},
 		//{'id': 'placeholder', 'title': 'Placeholder'}
+	];
+};
+
+SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
+	return [
+		{'id': 'body', 'title': 'Paragraph'},
+		{'id': 'heading', 'title': 'Heading 1'},
+		{'id': 'subhead1', 'title': 'Heading 2'},
+		{'id': 'subhead2', 'title': 'Heading 3'},
+		{'id': 'subhead3', 'title': 'Heading 4'},
+		{'id': 'placeholder', 'title': 'Particular'},
+		{'id': 'subsection', 'title': 'Subsection'}
+	];
+};
+
+SettingsStore.getAvailableSubsectionTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
+	return [
+		{'id': 'normal', 'title': 'Normal'},
+		{'id': 'unorderedList', 'title': 'Unordered List'},
+		{'id': 'orderedList', 'title': 'Ordered List'}
 	];
 };
 

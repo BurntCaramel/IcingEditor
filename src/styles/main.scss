@@ -20,6 +20,13 @@ $hoverTransitionDuration: 0.25s;
 	border: none;
 	background: none;
 }
+%toolbarButton_small
+{
+	@extend %toolbarItem;
+	
+	padding: 3px 6px;
+	font-size: 10px;
+}
 %toolbarDivider
 {
 	@extend %toolbarItem;
@@ -120,7 +127,7 @@ $editorMainToolbarFontSize: 14px;
 	font-family: 'Helvetica Neue', sans-serif;
 	max-width: $editorPreviewWidth;
 	margin: auto;
-	margin-top: $editorMainToolbarHeight;
+	margin-top: $editorMainToolbarHeight + 4px;
 	left: -20%;
 	padding-bottom: 160px;
 	
@@ -176,17 +183,66 @@ $editorMainToolbarFontSize: 14px;
 	}
 	
 	
+	.blocks_makeSubsection
+	{
+		position: relative;
+		visibility: hidden;
+	}
+	.blocks:hover .blocks_makeSubsection,
+	.blocks_makeSubsection-active,
+	.blocks_changeSubsection-hasSelectedSubsectionType {
+		visibility: visible;
+	}
+	.blocks_makeSubsection_mainButton,
+	.blocks_makeSubsection_choices > * {
+		@extend %toolbarButton_small;
+		display: block;
+		width: 100%;
+	}
+	.blocks_makeSubsection_mainButton {
+		//@extend %toolbarButton_light;
+		opacity: 0.1;
+		//margin-top: 4px;
+		//margin-bottom: 4px;
+	}
+	.blocks_changeSubsection-hasSelectedSubsectionType .blocks_makeSubsection_mainButton {
+		opacity: 0.5;
+	}
+	.blocks_makeSubsection-active .blocks_makeSubsection_mainButton,
+	.blocks_makeSubsection_mainButton:hover {
+		opacity: 1.0;
+		@extend %toolbarButton_light_hover;
+	};
+	
+	.blocks_makeSubsection_choices {
+		position: absolute;
+		width: 50%;
+		left: 25%;
+		//margin-top: -4px;
+		z-index: $zIndexActiveMenu;
+		background-color: $toolbarButtonSelectedBackgroundColor;
+		
+		> * {
+			@extend %toolbarButton_dark;
+			
+			&:hover {
+				@extend %toolbarButton_dark_hover;
+			};
+		}
+	}
+	
+	
 	.block
 	{
 		position: relative;
-		margin-bottom: 20px;
+		//margin-bottom: 20px;
 		font-size: 15px;
 		line-height: 1.3;
 		min-height: 1.3 * 15px;
 		transition: background-color $hoverTransitionDuration ease;
 		
 		&.block-edited,
-		&:hover {
+		&:not(.block-subsection):hover {
 			background-color: rgba(white, 0.25);
 		}
 	}
@@ -221,6 +277,35 @@ $editorMainToolbarFontSize: 14px;
 		
 		&.block-edited {
 			background-color: white;
+		}
+	}
+	
+	.subsection {
+		@extend %toolbarButton_small;
+		
+		display: block;
+		margin-top: 4px;
+		margin-bottom: 4px;
+		text-align: center;
+		font-size: 10px;
+	}
+	
+	.block-subsectionType-unorderedList {
+		&:before {
+			content: '•';
+			position: absolute;
+			left: -0.5em;
+		};
+	}
+	
+	.block-subsectionType-orderedList {
+		&:before {
+			content: attr(data-subsection-child-index) ".";
+			position: absolute;
+			left: -2.2em;
+			min-width: 1.9em; // Leave a little bit of space on the right.
+			text-align: right;
+			opacity: 0.45;
 		}
 	}
 	
@@ -313,14 +398,12 @@ $editorMainToolbarFontSize: 14px;
 	{
 		position: absolute;
 		left: 100%;
-		margin-top: -33px;
 		margin-left: 40px;
 		
 		textarea
 		{
 			width: $editorInputWidth;
 			height: 140px;
-			margin-top: 8px;
 			padding: 10px;
 			font-size: 17px;
 			line-height: 1.3;
@@ -399,7 +482,15 @@ $editorMainToolbarFontSize: 14px;
 	
 	
 	.previewHTMLHolder {
+		font-family: inherit;
 		white-space: pre-wrap;
+		font-size: 13px;
+		line-height: 1.3;
+		
+		code {
+			//font-family: "Courier", monospace;
+			font-family: inherit;
+		}
 	}
 	
 	

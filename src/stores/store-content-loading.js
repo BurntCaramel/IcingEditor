@@ -39,8 +39,26 @@ function receiveLoadedContentForDocument(documentID, contentBySectionsJSON) {
 			continue;
 		}
 		
+		var shouldEditFirstTextItem = false;
 		var contentJSON = contentBySectionsJSON[sectionID];
+		
+		if (!contentJSON) {
+			contentJSON = {
+				"blocks": [
+					{
+						"type": "body",
+						"textItems": []
+					}
+				]
+			};
+			shouldEditFirstTextItem = true;
+		}
+		
 		ContentStore.setContentFromJSONForDocumentSection(documentID, sectionID, contentJSON);
+		
+		if (shouldEditFirstTextItem) {
+			ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, ["blocks", 0]);
+		}
 	};
 }
 	

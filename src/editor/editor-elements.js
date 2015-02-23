@@ -2,8 +2,185 @@ var React = require('react');
 var Toolbars = require('./editor-toolbars');
 var Immutable = require('immutable');
 var ContentStore = require('../stores/store-content.js');
-//var SettingsStore = require('../stores/store-settings.js');
+var SettingsStore = require('../stores/store-settings.js');
 
+
+var ChangeSubsectionElement = React.createClass({
+	getDefaultProps: function() {
+		return {
+			isCreate: false
+		};
+	},
+	
+	getInitialState: function() {
+		return {
+			active: false
+		};
+	},
+	
+	onToggleActive: function() {
+		this.setState({
+			active: !this.state.active
+		});
+	},
+	
+	onCreateSubsectionOfType: function(subsectionType) {
+		var props = this.props;
+		var actions = props.actions;
+		actions.insertSubsectionOfTypeAtBlockIndex(subsectionType, props.followingBlockIndex);
+	},
+	
+	onChangeSubsectionType: function(subsectionType) {
+		var props = this.props;
+		var actions = props.actions;
+		actions.changeTypeOfSubsectionAtKeyPath(props.keyPath, subsectionType);
+		
+		this.onToggleActive();
+	},
+	
+	createElementForSubsectionInfo: function(subsectionInfo) {
+		var props = this.props;
+		var isCreate = props.isCreate;
+		var selectedSubsectionType = props.selectedSubsectionType;
+		
+		var onClick;
+		if (isCreate) {
+			onClickFunction = this.onCreateSubsectionOfType;
+		}
+		else {
+			onClickFunction = this.onChangeSubsectionType;
+		}
+		
+		return React.createElement(Toolbars.SecondaryButton, {
+			key: subsectionInfo.id,
+			baseClassNames: ['blocks_makeSubsection_choices_' + subsectionInfo.id],
+			title: subsectionInfo.title,
+			selected: (selectedSubsectionType === subsectionInfo.id),
+			onClick: onClickFunction.bind(this, subsectionInfo.id)
+		});
+	},
+	
+	render: function() {
+		var props = this.props;
+		var isCreate = props.isCreate;
+		
+		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+		
+		var classNames = ['blocks_makeSubsection'];
+		var children = [];
+		
+		if (props.isCreate) {
+			children.push(
+				React.createElement(Toolbars.SecondaryButton, {
+					key: 'mainButton',
+					baseClassNames: ['blocks_makeSubsection_mainButton'],
+					title: 'Make Subsection',
+					onClick: this.onToggleActive
+				})
+			);
+		}
+		else {
+			classNames.push('blocks_changeSubsection-hasSelectedSubsectionType')
+			
+			var selectedSubsectionType = props.selectedSubsectionType;
+			var selectedSubsectionInfo = null;
+			subsectionInfos.some(function(subsectionInfo) {
+				if (subsectionInfo.id === selectedSubsectionType) {
+					selectedSubsectionInfo = subsectionInfo;
+					return true;
+				}
+			});
+			
+			children.push(
+				React.createElement(Toolbars.SecondaryButton, {
+					key: 'mainButton',
+					baseClassNames: ['blocks_makeSubsection_mainButton'],
+					title: selectedSubsectionInfo.title,
+					onClick: this.onToggleActive
+				})
+			);
+		}
+		
+		if (this.state.active) {
+			var subsectionChoices = subsectionInfos.map(function(subsectionInfo) {
+				return this.createElementForSubsectionInfo(subsectionInfo);
+			}, this);
+			
+			children.push(
+				React.createElement('div', {
+					className: 'blocks_makeSubsection_choices',
+				}, subsectionChoices)
+			);
+			
+			classNames.push(
+				'blocks_makeSubsection-active'
+			);
+		}
+		
+		return React.createElement('div', {
+			key: ('makeSubsection-' + props.followingBlockIndex),
+			className: classNames.join(' ')
+		}, children);
+	}
+});
+
+var SubsectionElement = React.createClass({
+	getInitialState: function() {
+		return {
+			active: false
+		};
+	},
+	
+	onToggleActive: function() {
+		this.setState({
+			active: !this.state.active
+		});
+	},
+	
+	render: function() {
+		var props = this.props;
+		var state = this.state;
+		
+		var block = props.block;
+		var blockType = block.type;
+		var subsectionType = block.subsectionType;
+		var keyPath = props.keyPath;
+		var actions = props.actions;
+		var active = state.active;
+		var edited = props.edited;
+		
+		var classNames = ['subsection', 'subsection-type-' + subsectionType];
+		
+		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+		var subsectionTitle = null;
+		subsectionInfos.some(function(subsectionInfo) {
+			if (subsectionInfo.id === subsectionType) {
+				subsectionTitle = subsectionInfo.title;
+				return true;
+			}
+		});
+		
+		if (active) {
+			classNames.push('section-active');
+		}
+		if (edited) {
+			classNames.push('section-edited');
+		}
+		
+		var children = [];
+		children.push(
+			React.createElement(ChangeSubsectionElement, {
+				selectedSubsectionType: subsectionType,
+				keyPath: keyPath,
+				actions: actions
+			})
+		)
+		
+		return React.createElement('div', {
+			className: classNames.join(' ')
+		}, children);
+	}
+});
 
 var BlockElement = React.createClass({
 	getInitialState: function() {
@@ -30,11 +207,22 @@ var BlockElement = React.createClass({
 	
 	beginEditing: function(event) {
 		var props = this.props;
+		
+		// If already editing, no need to do anything.
+		if (props.edited) {
+			return;
+		}
+		
 		var type = props.type;
+		var actions = props.actions;
+		var keyPath = props.keyPath;
+		
 		if (type === 'placeholder') {
-			var actions = props.actions;
-			var keyPath = props.keyPath;
 			actions.editBlockWithKeyPath(keyPath);
+		}
+		else {
+			console.log('EDIT TEXT ITEM BASED BLOCK');
+			actions.editTextItemBasedBlockWithKeyPathAddingIfNeeded(keyPath);
 		}
 	},
 	
@@ -44,11 +232,15 @@ var BlockElement = React.createClass({
 		
 		var block = props.block;
 		var blockType = props.type;
+		var subsectionType = props.subsectionType;
+		var subsectionChildIndex = props.subsectionChildIndex;
 		var keyPath = props.keyPath;
 		var actions = props.actions;
 		var traitsConfig = props.traitsConfig;
 		var active = state.active;
 		var edited = props.edited;
+		
+		var classNames = ['block', 'block-' + blockType, 'block-subsectionType-' + subsectionType];
 		
 		var childrenInfo = {};
 		var children;
@@ -59,9 +251,23 @@ var BlockElement = React.createClass({
 			}, placeholderID);
 			children = [placeholderElement];
 		}
+		else if (blockType === 'subsection') {
+			children = [
+				React.createElement('div', {
+					
+				}, block.subsectionType)
+			];
+		}
 		else {
 			var textItemsKeyPath = keyPath.concat('textItems');
-			children = EditorElementCreator.reactElementsWithTextItems(props.textItems, textItemsKeyPath, actions, blockType, traitsConfig, childrenInfo);
+			children = EditorElementCreator.reactElementsWithTextItems(
+				props.textItems, textItemsKeyPath, actions, blockType, traitsConfig, childrenInfo
+			);
+			
+			if (children.length === 0) {
+				classNames.push('block-textItemsIsEmpty');
+				children.push(React.createElement('span'));
+			}
 		}
 		
 		var toolbarActions = {
@@ -91,8 +297,6 @@ var BlockElement = React.createClass({
 			}
 		}
 		
-		var classNames = ['block', 'block-' + blockType];
-		
 		if (active) {
 			classNames.push('block-active');
 		}
@@ -102,6 +306,7 @@ var BlockElement = React.createClass({
 		
 		return React.createElement('div', {
 			className: classNames.join(' '),
+			"data-subsection-child-index": (subsectionChildIndex + 1), // Change from zero to one based.
 			onClick: this.beginEditing
 		}, children);
 	}
@@ -125,6 +330,8 @@ var TextItem = React.createClass({
 		var actions = props.actions;
 		var keyPath = props.keyPath;
 		actions.editTextItemWithKeyPath(keyPath);
+		
+		event.stopPropagation(); // Don't bubble to block
 	},
 	
 	render: function() {
@@ -250,11 +457,16 @@ EditorElementCreator.reactElementsWithTextItems = function(textItems, keyPath, a
 EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsConfig) {
 	var editedBlockIdentifier = actions.getEditedBlockIdentifier();
 	
-	var elements = blocks.map(function(block, blockIndex) {
+	var currentSubsectionType = 'normal';
+	var currentSubsectionChildIndex = 0;
+	
+	var elementsForBlocks = blocks.map(function(block, blockIndex) {
 		var props = {
 			key: block.identifier,
 			block: block,
 			type: block.type,
+			subsectionType: currentSubsectionType,
+			subsectionChildIndex: currentSubsectionChildIndex,
 			actions: actions,
 			traitsConfig: traitsConfig,
 			keyPath: ['blocks', blockIndex]
@@ -268,9 +480,47 @@ EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsC
 		if (block.identifier === editedBlockIdentifier) {
 			props.edited = true;
 		}
-
-		return React.createElement(BlockElement, props);
+		
+		var elementToReturn;
+		
+		if (block.type === 'subsection') {
+			elementToReturn = React.createElement(SubsectionElement, props);
+			currentSubsectionType = block.subsectionType;
+			currentSubsectionChildIndex = 0;
+		}
+		else {
+			elementToReturn = React.createElement(BlockElement, props);
+			currentSubsectionChildIndex++;
+		}
+		
+		return elementToReturn;
 	});
+	
+	var elements = [];
+	var blockCount = blocks.length;
+	var previousBlockWasSubsection = false;
+	for (var blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+		var blockType = blocks[blockIndex].type;
+		var currentBlockIsSubsection = (blockType === 'subsection');
+		
+		if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
+			elements.push(
+				/*React.createElement(CreateSubsectionElement, {
+					followingBlockIndex: blockIndex,
+					actions: actions
+				})*/
+				React.createElement(ChangeSubsectionElement, {
+					isCreate: true,
+					followingBlockIndex: blockIndex,
+					actions: actions
+				})	
+			);
+		}
+		
+		previousBlockWasSubsection = currentBlockIsSubsection;
+		
+		elements.push(elementsForBlocks[blockIndex]);
+	}
 	
 	return elements;
 };

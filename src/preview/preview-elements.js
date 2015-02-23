@@ -122,13 +122,58 @@ PreviewElementCreator.reactElementsWithTextItems = function(textItems, keyPath, 
 		return [];
 	}
 };
+
+PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
+	var subsectionTypesToHolderTagNames = {
+		"unorderedList": "ul",
+		"orderedList": "ol",
+		"quote": "blockquote"
+	};
+	var elementsToReturn = [];
+	var tagName = subsectionTypesToHolderTagNames[subsectionType];
+	if (tagName) {
+		// Wrap elements in holder element.
+		elementsToReturn = [
+			React.createElement(tagName, {}, subsectionElements)
+		];
+	}
+	else {
+		elementsToReturn = subsectionElements;
+	}
+	return elementsToReturn;
+};
+
+PreviewElementCreator.reactElementForSubsectionChild = function(subsectionType, blockType, contentElements) {
+	var subsectionTypesToChildTagNames = {
+		"unorderedList": "li",
+		"orderedList": "li"
+	};
+	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
+	var tagNameForBlock = PreviewElementCreator.tagNameForBlockType(blockType);
+	
+	if (tagNameForSubsectionChild) {
+		if (blockType === 'body') {
+			// Paragraph elements by default just use the, for example, <li> instead of <li><p>
+			return React.createElement(tagNameForSubsectionChild, {}, contentElements);
+		}
+		else {
+			return React.createElement(tagNameForSubsectionChild, {},
+				React.createElement(tagNameForBlock, {}, contentElements)
+			);
+		}
+	}
+	else {
+		return React.createElement(tagNameForBlock, {}, contentElements);
+	}
+};
 	
 PreviewElementCreator.tagNameForBlockType = function(blockType) {
 	var tagNamesToBlockTypes = {
 		"body": "p",
 		"heading": "h1",
-		"subhead": "h2",
-		"subhead2": "h3"
+		"subhead1": "h2",
+		"subhead2": "h3",
+		"subhead3": "h4"
 	};
 	var tagName = tagNamesToBlockTypes[blockType];
 	if (!tagName) {
@@ -138,11 +183,16 @@ PreviewElementCreator.tagNameForBlockType = function(blockType) {
 };
 	
 PreviewElementCreator.reactElementsWithBlocks = function(blocks, traitsConfig) {
-	var elements = blocks.map(function(block, blockIndex) {
+	var mainElements = [];
+	var currentSubsectionType = 'normal';
+	var currentSubsectionElements = [];
+	
+	blocks.forEach(function(block, blockIndex) {
 		var props = {
 			key: block.identifier,
 			block: block,
 			type: block.type,
+			subsectionType: currentSubsectionType,
 			traitsConfig: traitsConfig,
 			keyPath: ['blocks', blockIndex]
 		};
@@ -156,8 +206,17 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocks, traitsConfig) {
 		var elements = [];
 		if (block.textItems) {
 			elements = elements.concat(block.textItems.map(function(textItem, textItemIndex) {
-				//return React.createElement('span', {}, textItem.text);
-				return textItem.text;
+				var traits = textItem.traits;
+				
+				var element = textItem.text;
+				if (traits.italic) {
+					element = React.createElement('em', {}, element);
+				}
+				if (traits.bold) {
+					element = React.createElement('strong', {}, element);
+				}
+				
+				return element;
 			}));
 		}
 		
@@ -165,13 +224,39 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocks, traitsConfig) {
 			return;
 		}
 		
-		var tagName = PreviewElementCreator.tagNameForBlockType(block.type);
+		if (block.type === 'subsection') {
+			// Wrap last elements.
+			if (currentSubsectionElements.length > 0) {
+				mainElements = mainElements.concat(
+					PreviewElementCreator.reactElementsForWrappingSubsectionChildren(
+						currentSubsectionType, currentSubsectionElements
+					)
+				);
+				currentSubsectionElements = [];
+			}
+			
+			currentSubsectionType = block.subsectionType;
+		}
+		else {
+			currentSubsectionElements.push(
+				PreviewElementCreator.reactElementForSubsectionChild(
+					currentSubsectionType, block.type, elements
+				)
+			);
+		}
 		
-		return React.createElement(tagName, {}, elements);
 		//return React.createElement(PreviewBlockElement, props);
 	});
 	
-	return elements;
+	if (currentSubsectionElements.length > 0) {
+		mainElements = mainElements.concat(
+			PreviewElementCreator.reactElementsForWrappingSubsectionChildren(
+				currentSubsectionType, currentSubsectionElements
+			)
+		);
+	}
+	
+	return mainElements;
 };
 
 PreviewElementCreator.MainElement = React.createClass({
@@ -221,18 +306,36 @@ PreviewElementCreator.previewHTMLWithContent = function(contentImmutable, specsI
 	
 	previewHTML = previewHTML.replace(/^<div class="blocks">|<\/div>$/gm, '');
 	
+	var inlineTagNames = {
+		"span": true,
+		"strong": true,
+		"em": true
+	};
+	
+	var holdingTagNames = {
+		"ul": true,
+		"ol": true,
+		"blockquote": true
+	};
+	
 	previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function(match, closingSlash, tagName, offset, string) {
-		if (tagName === 'span') {
+		// Inline elements are kept as-is
+		if (inlineTagNames[tagName]) {
 			return match;
 		}
+		// Block elements are given line breaks for nicer presentation.
 		else {
 			if (closingSlash.length > 0) {
 				return '<' + closingSlash + tagName + '>' + "\n";
 				//return "\n" + '<' + closingSlash + tagName + '>' + "\n";
 			}
 			else {
-				return '<' + tagName + '>';
-				//return '<' + tagName + '>' + "\n";
+				if (holdingTagNames[tagName]) {
+					return '<' + tagName + '>' + "\n";
+				}
+				else {
+					return '<' + tagName + '>';
+				}
 			}
 		}
 	});

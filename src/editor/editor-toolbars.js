@@ -102,7 +102,6 @@ var TextItemTextArea = React.createClass({
 				}
 				// Command key
 				else if (e.metaKey) {
-					console.log('FINSIH EDITING');
 					actions.finishEditing();
 				}
 				// Option key
@@ -116,6 +115,7 @@ var TextItemTextArea = React.createClass({
 					else {
 						var textSelectionRange = this.getTextSelectionRange();
 						actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
+						actions.splitBlockBeforeEditedTextItem();
 					}
 				}
 				
@@ -270,6 +270,10 @@ var ItemTraitsToolbar = React.createClass({
 	
 	createButtonsForTextItemTraitSpecs: function(traitSpecs, chosenTraits) {
 		return traitSpecs.map(function(textItemTraitSpec) {
+			if (textItemTraitSpec.disabled) {
+				return null;
+			}
+			
 			var traitID = textItemTraitSpec.id;
 			var onToggleTrait = this.onToggleTrait.bind(this, traitID);
 			return React.createElement(ToolbarButton, {
@@ -320,6 +324,10 @@ var TextItemEditor = React.createClass({
 		};
 	},
 	
+	onClick: function(event) {
+		event.stopPropagation();
+	},
+	
 	render: function() {
 		var props = this.props;
 		var text = props.text;
@@ -331,7 +339,8 @@ var TextItemEditor = React.createClass({
 		return React.createElement('div', {
 			key: 'textItemEditor',
 			className: 'textItemEditor',
-			id: 'icing-textItemEditor'
+			id: 'icing-textItemEditor',
+			onClick: this.onClick
 		}, [
 			React.createElement(TextItemTextArea, {
 				text: text,
@@ -646,7 +655,7 @@ var MainToolbar = React.createClass({
 		if (SettingsStore.getWantsViewHTMLFunctionality()) {
 			children.push(
 				React.createElement(ToolbarButton, {
-					title: 'Preview',
+					title: 'See HTML',
 					onClick: this.onTogglePreview,
 					selected: PreviewStore.getIsPreviewing()
 				})
@@ -667,6 +676,8 @@ var ElementToolbars = {
 	MainToolbar: MainToolbar,
 	BlockToolbar: BlockToolbar,
 	TextItemEditor: TextItemEditor,
-	PlaceholderEditor: PlaceholderEditor
+	PlaceholderEditor: PlaceholderEditor,
+	ToolbarButton: ToolbarButton,
+	SecondaryButton: SecondaryButton
 };
 module.exports = ElementToolbars;

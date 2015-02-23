@@ -35,22 +35,10 @@ module.exports={
 	"type": "textItems",
     "blocks": [
         {
-            "textItems": [
-                {
-                    "text": "{BLIK HEADER}",
-                    "type": "text"
-                }
-            ],
             "type": "placeholder",
 			"placeholderID": "blik.header"
         },
         {
-            "textItems": [
-                {
-                    "text": "{MAC APP STORE LINK}",
-                    "type": "text"
-                }
-            ],
             "type": "placeholder",
 			"placeholderID": "blik.macAppStoreLink"
         },
