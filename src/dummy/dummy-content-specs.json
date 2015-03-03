@@ -1,121 +1,214 @@
 {
 	"namespace": "com.burntcaramel",
-	"blockTypes": {
-		"heading": [
-			{"id": "subheading", "title": "Subheading"},
-			{"id": "subheadingB", "title": "Subheading B"},
-			{"id": "subheadingC", "title": "Subheading C"},
+	"sectionTypes": [
+		{"id": "normal", "title": "Normal"},
+		{"id": "unorderedList", "title": "Unordered List", "allowedChildren": "*"},
+		{"id": "orderedList", "title": "Ordered List", "allowedChildren": "*"},
+		{"id": "quote", "title": "Quote", "allowedChildren": "*"}
+	],
+	"defaultSectionType": "normal",
+	"blockTypesByGroups": {
+		"text": [
+			{"id": "body", "title": "Paragraph"},
+			{"id": "heading", "title": "Heading 1"},
+			{"id": "subhead1", "title": "Heading 2"},
+			{"id": "subhead2", "title": "Heading 3"},
+			{"id": "subhead3", "title": "Heading 4"},
+		],
+		"media": [
 			{
-				"id": "featureHeading",
-				"title": "Feature Heading",
-				"itemFieldsAreRequired": true,
-				"itemFields": [
-					{"id": "primary", "title": "Primary", "type": "text"},
-					{"id": "secondary", "title": "Secondary", "type": "text"}
+				"id": "externalImage",
+				"title": "External Image",
+				"fieldsAreRequired": true,
+				"fields": [
+					{
+						"id": "url",
+						"type": "url",
+						"title": "Image URL"
+					},
+					{
+						"id": "width",
+						"title": "Displayed Width",
+						"type": "number-integer"
+					},
+					{
+						"id": "height",
+						"title": "Displayed Height",
+						"type": "number-integer"
+					}
+				],
+				"HTMLTagNameForBlock": "p",
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "img",
+						"attributes": {
+							"src": ["url"],
+							"width": ["width"],
+							"height": ["height"]
+						}
+					}
 				]
 			}
 		],
-		"section": [
-			{"id": "list", "title": "List", "allowedChildren": "*"},
-			{"id": "quote", "title": "Quote", "allowedChildren": "*"}
-		],
 		"particular": [
-			{
-				"group": "blik",
-				"id": "header",
-				"title": "Blik Header",
-				"description": "The Blik logo"
-			},
-			{
-				"group": "blik",
-				"id": "mac-app-store-link",
-				"title": "Blik Mac App Store Link",
-				"description": "The official-style black button linking to the Mac App Store."
-			},
 			{
 				"id": "contactRichSnippet",
 				"title": "Contact Details (Rich Snippet)",
-				"itemFieldsAreRequired": true,
-				"itemFields": [
+				"fieldsAreRequired": false,
+				"fields": [
 					{"id": "businessName", "title": "Business Name"},
 					{"id": "streetAddress", "title": "Street Address"},
 					{"id": "suburb", "title": "Suburb"},
 					{"id": "province", "title": "Province"},
 					{"id": "country", "title": "Country"}
-				]
-			}
-		]
-	},
-	"traits": {
-		"itemsByBlock": {
-			"*": {
-				"text": [
+				],
+				"innerHTMLRepresentation": [
 					{
-						"id": "bold",
-						"title": "Bold"
-					},
-					{
-						"id": "italic",
-						"title": "Italic"
-					},
-					{
-						"id": "link",
-						"disabled": true,
-						"title": "Link",
-						"type": "fields",
-						"fields": [
+						"tagName": "div",
+						"attributes": {
+							"itemscope": true,
+							"itemtype": "http://schema.org/Organization"
+						},
+						"children": [
 							{
-								"id": "type",
-								"title": "Type",
-								"type": "choice",
-								"choices": [
+								"tagName": "div",
+								"attributes": {
+									"itemprop": "name"
+								},
+								"children": [
 									{
-										"id": "URL",
-										"title": "URL",
-										"fields": [
-											{
-												"type": "URL",
-												"id": "URL"
-											}
-										]
-									},
+										"textFromFields": ["businessName"]
+									}
+								]
+							},
+							{
+								"tagName": "div",
+								"attributes": {
+									"itemprop": "address",
+									"itemscope": true,
+									"itemtype": "http://schema.org/PostalAddress"
+								},
+								"children": [
 									{
-										"id": "email",
-										"title": "Email",
-										"fields": [
+										"tagName": "div",
+										"children": [
 											{
-												"type": "email",
-												"id": "emailAddress"
+												"textFromFields": ["streetAddress"]
 											}
 										]
 									}
 								]
 							}
 						]
-					},
-					{
-						"id": "primary",
-						"disabled": true,
-						"title": "Primary"
-					},
-					{
-						"id": "secondary",
-						"disabled": true,
-						"title": "Secondary"
 					}
 				]
 			},
-			"heading": {
-				"text": [
-					
+			{
+				"id": "blikPlaceholder",
+				"title": "Blik Placeholder",
+				"choices": [
+					{
+						"id": "header",
+						"title": "Blik Header",
+						"description": "The Blik logo"
+					},
+					{
+						"id": "mac-app-store-link",
+						"title": "Blik Mac App Store Link",
+						"description": "The official-style black button linking to the Mac App Store."
+					},
 				]
 			},
-			"figure": {
-				"image externalImage": [
-					{"id": "resolution-1x", "title": "1x Resolution"},
-					{"id": "resolution-2x", "title": "2x Resolution"}
+			{
+				"id": "featureHeading",
+				"title": "Feature Heading",
+				"fieldsAreRequired": true,
+				"fields": [
+					{"id": "primary", "title": "Primary"},
+					{"id": "secondary", "title": "Secondary"}
 				]
 			}
+		]
+	},
+	"allowedTextItemTraits": {
+		"bold": true,
+		"italic": true
+	},
+	"traits": [
+		{
+			"id": "bold",
+			"title": "Bold",
+			"allowedForAnyTextItems": true
+		},
+		{
+			"id": "italic",
+			"title": "Italic",
+			"allowedForAnyTextItems": true
+		},
+		{
+			"id": "link",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": {
+				"text": true,
+				"media": true
+			},
+			"disabled": false,
+			"title": "Link",
+			"type": "fields",
+			"fields": [
+				{
+					"id": "typeChoice",
+					"title": "Link Type",
+					"type": "choice",
+					"choices": [
+						{
+							"id": "URL",
+							"title": "URL",
+							"fields": [
+								{
+									"type": "url",
+									"id": "URL",
+									"title": "URL"
+								}
+							]
+						},
+						{
+							"id": "email",
+							"title": "Email",
+							"fields": [
+								{
+									"type": "email",
+									"id": "emailAddress",
+									"title": "Email Address"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "primary",
+			"disabled": true,
+			"title": "Primary"
+		},
+		{
+			"id": "secondary",
+			"disabled": true,
+			"title": "Secondary"
+		}
+	],
+	"itemsByBlock": {
+		"*": {
+			"text": [
+				
+			]
+		},
+		"media": {
+			"image externalImage": [
+				{"id": "resolution-1x", "title": "1x Resolution"},
+				{"id": "resolution-2x", "title": "2x Resolution"}
+			]
 		}
 	}
 }

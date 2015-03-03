@@ -4,125 +4,19 @@ var Immutable = require('immutable');
 var ContentStore = require('../stores/store-content.js');
 var SettingsStore = require('../stores/store-settings.js');
 
+var BlockTypesAssistant = require('../assistants/block-types-assistant');
+var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
 
-var ChangeSubsectionElement = React.createClass({
-	getDefaultProps: function() {
-		return {
-			isCreate: false
-		};
-	},
-	
-	getInitialState: function() {
-		return {
-			active: false
-		};
-	},
-	
-	onToggleActive: function() {
-		this.setState({
-			active: !this.state.active
-		});
-	},
-	
-	onCreateSubsectionOfType: function(subsectionType) {
-		var props = this.props;
-		var actions = props.actions;
-		actions.insertSubsectionOfTypeAtBlockIndex(subsectionType, props.followingBlockIndex);
-	},
-	
-	onChangeSubsectionType: function(subsectionType) {
-		var props = this.props;
-		var actions = props.actions;
-		actions.changeTypeOfSubsectionAtKeyPath(props.keyPath, subsectionType);
-		
-		this.onToggleActive();
-	},
-	
-	createElementForSubsectionInfo: function(subsectionInfo) {
-		var props = this.props;
-		var isCreate = props.isCreate;
-		var selectedSubsectionType = props.selectedSubsectionType;
-		
-		var onClick;
-		if (isCreate) {
-			onClickFunction = this.onCreateSubsectionOfType;
-		}
-		else {
-			onClickFunction = this.onChangeSubsectionType;
-		}
-		
-		return React.createElement(Toolbars.SecondaryButton, {
-			key: subsectionInfo.id,
-			baseClassNames: ['blocks_makeSubsection_choices_' + subsectionInfo.id],
-			title: subsectionInfo.title,
-			selected: (selectedSubsectionType === subsectionInfo.id),
-			onClick: onClickFunction.bind(this, subsectionInfo.id)
-		});
-	},
-	
-	render: function() {
-		var props = this.props;
-		var isCreate = props.isCreate;
-		
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
-		
-		var classNames = ['blocks_makeSubsection'];
-		var children = [];
-		
-		if (props.isCreate) {
-			children.push(
-				React.createElement(Toolbars.SecondaryButton, {
-					key: 'mainButton',
-					baseClassNames: ['blocks_makeSubsection_mainButton'],
-					title: 'Make Subsection',
-					onClick: this.onToggleActive
-				})
-			);
-		}
-		else {
-			classNames.push('blocks_changeSubsection-hasSelectedSubsectionType')
-			
-			var selectedSubsectionType = props.selectedSubsectionType;
-			var selectedSubsectionInfo = null;
-			subsectionInfos.some(function(subsectionInfo) {
-				if (subsectionInfo.id === selectedSubsectionType) {
-					selectedSubsectionInfo = subsectionInfo;
-					return true;
-				}
-			});
-			
-			children.push(
-				React.createElement(Toolbars.SecondaryButton, {
-					key: 'mainButton',
-					baseClassNames: ['blocks_makeSubsection_mainButton'],
-					title: selectedSubsectionInfo.title,
-					onClick: this.onToggleActive
-				})
-			);
-		}
-		
-		if (this.state.active) {
-			var subsectionChoices = subsectionInfos.map(function(subsectionInfo) {
-				return this.createElementForSubsectionInfo(subsectionInfo);
-			}, this);
-			
-			children.push(
-				React.createElement('div', {
-					className: 'blocks_makeSubsection_choices',
-				}, subsectionChoices)
-			);
-			
-			classNames.push(
-				'blocks_makeSubsection-active'
-			);
-		}
-		
-		return React.createElement('div', {
-			key: ('makeSubsection-' + props.followingBlockIndex),
-			className: classNames.join(' ')
-		}, children);
-	}
-});
+let {
+	BaseClassNamesMixin
+} = require('../ui/ui-mixins');
+
+let {
+	KeyCodes
+} = require('../ui/ui-constants');
+
+var HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
+
 
 var SubsectionElement = React.createClass({
 	getInitialState: function() {
@@ -141,9 +35,7 @@ var SubsectionElement = React.createClass({
 		var props = this.props;
 		var state = this.state;
 		
-		var block = props.block;
-		var blockType = block.type;
-		var subsectionType = block.subsectionType;
+		var subsectionType = props.type;
 		var keyPath = props.keyPath;
 		var actions = props.actions;
 		var active = state.active;
@@ -161,15 +53,15 @@ var SubsectionElement = React.createClass({
 		});
 		
 		if (active) {
-			classNames.push('section-active');
+			classNames.push('subsection-active');
 		}
 		if (edited) {
-			classNames.push('section-edited');
+			classNames.push('subsection-edited');
 		}
 		
 		var children = [];
 		children.push(
-			React.createElement(ChangeSubsectionElement, {
+			React.createElement(Toolbars.ChangeSubsectionElement, {
 				selectedSubsectionType: subsectionType,
 				keyPath: keyPath,
 				actions: actions
@@ -183,29 +75,30 @@ var SubsectionElement = React.createClass({
 });
 
 var BlockElement = React.createClass({
-	getInitialState: function() {
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
 		return {
-			active: false
+			baseClassNames: ['block']
+		}
+	},
+	
+	getInitialState() {
+		return {
+			hovered: false
 		};
 	},
 	
-	onToggleActive: function() {
-		this.setState({
-			active: !this.state.active
-		});
-	},
-	
-	onChangeChosenBlockType: function(blockTypeOptions, event) {
+	onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event) {
 		var props = this.props;
-		var type = blockTypeOptions.id;
-		var keyPath = props.keyPath;
 		var actions = props.actions;
-		actions.changeTypeOfBlockAtKeyPath(type, keyPath);
-		
-		this.onToggleActive();
+		var keyPath = props.keyPath;
+		actions.changeTypeOfBlockAtKeyPath(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), keyPath);
 	},
 	
-	beginEditing: function(event) {
+	beginEditing(event) {
+		event.stopPropagation();
+		
 		var props = this.props;
 		
 		// If already editing, no need to do anything.
@@ -213,59 +106,94 @@ var BlockElement = React.createClass({
 			return;
 		}
 		
+		var typeGroup = props.typeGroup;
 		var type = props.type;
 		var actions = props.actions;
 		var keyPath = props.keyPath;
 		
-		if (type === 'placeholder') {
-			actions.editBlockWithKeyPath(keyPath);
+		if (typeGroup === 'text') {
+			actions.editTextItemBasedBlockWithKeyPathAddingIfNeeded(keyPath);
 		}
 		else {
-			console.log('EDIT TEXT ITEM BASED BLOCK');
-			actions.editTextItemBasedBlockWithKeyPathAddingIfNeeded(keyPath);
+			actions.editBlockWithKeyPath(keyPath);
 		}
 	},
 	
-	render: function() {
-		var props = this.props;
-		var state = this.state;
+	onMouseEnter(event) {
+		this.setState({
+			hovered: true
+		});
+	},
+	
+	onMouseLeave(event) {
+		this.setState({
+			hovered: false
+		});
+	},
+	
+	render() {
+		let {
+			props,
+			state
+		} = this;
 		
-		var block = props.block;
+		let {
+			block,
+			typeGroup,
+			subsectionType,
+			subsectionChildIndex,
+			keyPath,
+			actions,
+			traitSpecs,
+			blockGroupIDsToTypesMap,
+			edited
+		} = props;
 		var blockType = props.type;
-		var subsectionType = props.subsectionType;
-		var subsectionChildIndex = props.subsectionChildIndex;
-		var keyPath = props.keyPath;
-		var actions = props.actions;
-		var traitsConfig = props.traitsConfig;
-		var active = state.active;
-		var edited = props.edited;
 		
-		var classNames = ['block', 'block-' + blockType, 'block-subsectionType-' + subsectionType];
+		var classNameExtensions = [
+			`-${typeGroup}`,
+			`-${typeGroup}-${blockType}`,
+			`-inSubsection-${subsectionType}`
+		];
+		
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+			typeGroup, blockType, blockGroupIDsToTypesMap
+		);
 		
 		var childrenInfo = {};
 		var children;
-		if (blockType === 'placeholder') {
-			var placeholderID = block.placeholderID;
-			var placeholderElement = React.createElement('div', {
-				className: 'block-placeholder-content'
-			}, placeholderID);
-			children = [placeholderElement];
-		}
-		else if (blockType === 'subsection') {
-			children = [
-				React.createElement('div', {
-					
-				}, block.subsectionType)
-			];
+		if (typeGroup === 'media' || typeGroup === 'particular') {
+			// http://www.burntcaramel.com/images/stylised-name.png
+			var value = block.get('value', Immutable.Map());
+			var HTMLRepresentation = blockTypeOptions.get('innerHTMLRepresentation');
+			if (HTMLRepresentation) {
+				var elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
+					HTMLRepresentation, value
+				);
+				children = [
+					React.createElement('div', {
+						className: 'block-' + typeGroup + '-' + blockType + '-HTMLRepresentation'
+					}, elementsForHTMLRepresentation)
+				];
+			}
+			else {
+				children = [
+					React.createElement('div', {
+						className: 'block-noRepresentationForContent'
+					}, '(No HTML Representation)')
+				];
+			}
 		}
 		else {
 			var textItemsKeyPath = keyPath.concat('textItems');
 			children = EditorElementCreator.reactElementsWithTextItems(
-				props.textItems, textItemsKeyPath, actions, blockType, traitsConfig, childrenInfo
+				props.textItems, textItemsKeyPath, actions, block, typeGroup, blockType, traitSpecs, childrenInfo
 			);
 			
 			if (children.length === 0) {
-				classNames.push('block-textItemsIsEmpty');
+				classNameExtensions.push(
+					'-textItemsIsEmpty'
+				);
 				children.push(React.createElement('span'));
 			}
 		}
@@ -278,43 +206,56 @@ var BlockElement = React.createClass({
 		children.push(
 			React.createElement(Toolbars.BlockToolbar, {
 				key: 'blockToolbar',
-				chosenBlockTypeID: blockType,
-				actions: toolbarActions,
-				active: state.active
+				chosenBlockTypeGroup: typeGroup,
+				chosenBlockType: blockType,
+				blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+				blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+				actions: toolbarActions
 			})
 		);
 		
 		if (edited) {
-			if (blockType === 'placeholder') {
+			if (typeGroup === 'particular' || typeGroup === 'media') {
 				children.push(
-					React.createElement(Toolbars.PlaceholderEditor, {
-						key: 'placeholderEditor',
+					React.createElement(Toolbars.ParticularEditor, {
+						key: 'particularEditor',
+						block: block,
+						typeGroup: typeGroup,
+						type: blockType,
+						blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+						blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+						traitSpecs,
+						traits: block.get('traits', Immutable.Map()).toJS(),
 						actions: actions,
-						keyPath: keyPath,
-						placeholderID: block.placeholderID
+						keyPath: keyPath
 					})
 				);
 			}
 		}
 		
-		if (active) {
-			classNames.push('block-active');
-		}
 		if (edited) {
-			classNames.push('block-edited');
+			classNameExtensions.push('-edited');
+		}
+		else if (state.hovered) {
+			classNameExtensions.push('-hover');
 		}
 		
 		return React.createElement('div', {
-			className: classNames.join(' '),
+			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			"data-subsection-child-index": (subsectionChildIndex + 1), // Change from zero to one based.
-			onClick: this.beginEditing
+			onClick: this.beginEditing,
+			onMouseEnter: this.onMouseEnter,
+			onMouseLeave: this.onMouseLeave
 		}, children);
 	}
 });
 
 var TextItem = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
 	getDefaultProps: function() {
 		return {
+			baseClassNames: ['textItem'],
 			traits: {}
 		};
 	},
@@ -336,48 +277,69 @@ var TextItem = React.createClass({
 	
 	render: function() {
 		var props = this.props;
-		var text = props.text;
-		var classes = ['textItem'];
-		var id = '';
+		var {
+			text,
+			traits,
+			edited
+		} = props;
 		
-		if (props.edited) {
-			classes.push('textItem-edited');
+		var classNameExtensions = [];
+		var id = null;
+		
+		if (edited) {
+			classNameExtensions.push('-edited');
 			id = 'icing-textItem-edited';
 		}
 		
-		if (props.traits.bold) {
-			classes.push('textItem-hasTrait-bold');
-		}
-		if (props.traits.italic) {
-			classes.push('textItem-hasTrait-italic');
+		for (var traitID in traits) {
+			if (traits.hasOwnProperty(traitID) && !!traits[traitID]) {
+				classNameExtensions.push(`-hasTrait-${traitID}`);
+			}
 		}
 		
 		var contentChildren = [];
 		
-		if (props.edited) {
+		if (edited) {
 			contentChildren.push(
 				React.createElement(Toolbars.TextItemEditor, {
-					key: ('edited-' + props.key),
+					key: 'itemEditor',
 					text: text,
 					traits: props.traits,
-					actions: props.actions,
+					traitSpecs: props.traitSpecs,
+					block: props.block,
+					blockTypeGroup: props.blockTypeGroup,
 					blockType: props.blockType,
-					availableTraits: props.traitsConfig
+					actions: props.actions
 				})
 			);
 		}
 		
-		contentChildren.push(
-			React.createElement('span', {
-				key: 'text',
-				className: 'text'
-			}, text)
-		);
+		if (typeof text === 'undefined' || text.length === 0 || text === ' ') {
+			// Make inline element have some sort of content, to lay out text editor properly.
+			// TODO: get multiple spaces
+			contentChildren.push(
+				React.createElement('span', {
+					key: 'text',
+					className: 'text',
+					dangerouslySetInnerHTML: {
+						__html: '&nbsp;'
+					}
+				})
+			);
+		}
+		else {
+			contentChildren.push(
+				React.createElement('span', {
+					key: 'text',
+					className: 'text'
+				}, text)
+			);
+		}
 		
 		return React.createElement('span', {
 			key: 'mainElement',
 			id: id,
-			className: classes.join(' '),
+			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			onClick: this.beginEditing
 		}, contentChildren);
 	}
@@ -396,32 +358,32 @@ var EditorElementCreator = {};
 EditorElementCreator.BlockElement = BlockElement;
 EditorElementCreator.TextItem = TextItem;
 
-EditorElementCreator.reactElementsWithTextItems = function(textItems, keyPath, actions, blockType, traitsConfig, outputInfo) {
+EditorElementCreator.reactElementsWithTextItems = function(textItems, keyPath, actions, block, blockTypeGroup, blockType, traitSpecs, outputInfo) {
 	if (textItems) {
 		var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
 		
 		var editedItem = null;
 		
 		var elements = textItems.map(function(textItem, textItemIndex) {
+			var identifier = textItem.identifier;
+			
 			var props = {
+				key: identifier,
 				keyPath: keyPath.concat(textItemIndex),
-				actions: actions,
-				blockType: blockType,
-				traitsConfig: traitsConfig
+				identifier,
+				block,
+				blockTypeGroup,
+				blockType,
+				traitSpecs,
+				actions
 			};
 	
-			if (textItem.identifier) {
-				var identifier = textItem.identifier;
-				props.identifier = identifier;
-				props.key = identifier;
-				
-				if (editedTextItemIdentifier === identifier) {
-					props.edited = true;
-					editedItem = textItem;
-				}
+			if (editedTextItemIdentifier === identifier) {
+				props.edited = true;
+				editedItem = textItem;
 			}
 			if (textItem.traits) {
-				props.traits = textItem.traits || {};
+				props.traits = textItem.traits;
 			}
 			if (textItem.text) {
 				props.text = textItem.text;
@@ -454,38 +416,45 @@ EditorElementCreator.reactElementsWithTextItems = function(textItems, keyPath, a
 	}
 };
 
-EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsConfig) {
-	var editedBlockIdentifier = actions.getEditedBlockIdentifier();
+EditorElementCreator.reactElementsWithBlocks = function(blocksImmutable, actions, specsImmutable) {
+	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
+	var traitSpecs = specsImmutable.get('traits', Immutable.List());
 	
-	var currentSubsectionType = 'normal';
+	var editedBlockIdentifier = actions.getEditedBlockIdentifier();
+	var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
+	
+	var currentSubsectionType = specsImmutable.get('defaultSectionType', 'normal');
 	var currentSubsectionChildIndex = 0;
 	
-	var elementsForBlocks = blocks.map(function(block, blockIndex) {
+	var elementsForBlocks = blocksImmutable.map(function(blockImmutable, blockIndex) {
+		var blockIdentifier = blockImmutable.get('identifier');
+		var typeGroup = blockImmutable.get('typeGroup');
+		var type = blockImmutable.get('type');
 		var props = {
-			key: block.identifier,
-			block: block,
-			type: block.type,
+			key: blockIdentifier,
+			block: blockImmutable,
+			typeGroup: typeGroup,
+			type: type,
 			subsectionType: currentSubsectionType,
 			subsectionChildIndex: currentSubsectionChildIndex,
 			actions: actions,
-			traitsConfig: traitsConfig,
+			traitSpecs: traitSpecs,
+			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
 			keyPath: ['blocks', blockIndex]
 		};
-		if (block.traits) {
-			props.traits = block.traits;
+		
+		if (typeGroup === 'text') {
+			props.textItems = blockImmutable.get('textItems', Immutable.List()).toJS();
 		}
-		if (block.textItems) {
-			props.textItems = block.textItems;
-		}
-		if (block.identifier === editedBlockIdentifier) {
+		if (blockIdentifier === editedBlockIdentifier) {
 			props.edited = true;
 		}
 		
 		var elementToReturn;
 		
-		if (block.type === 'subsection') {
+		if (typeGroup === 'subsection') {
 			elementToReturn = React.createElement(SubsectionElement, props);
-			currentSubsectionType = block.subsectionType;
+			currentSubsectionType = type;
 			currentSubsectionChildIndex = 0;
 		}
 		else {
@@ -497,11 +466,11 @@ EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsC
 	});
 	
 	var elements = [];
-	var blockCount = blocks.length;
+	var blockCount = blocksImmutable.count();
 	var previousBlockWasSubsection = false;
 	for (var blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-		var blockType = blocks[blockIndex].type;
-		var currentBlockIsSubsection = (blockType === 'subsection');
+		var blockTypeGroup = blocksImmutable.getIn([blockIndex, 'typeGroup']);
+		var currentBlockIsSubsection = (blockTypeGroup === 'subsection');
 		
 		if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 			elements.push(
@@ -509,7 +478,7 @@ EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsC
 					followingBlockIndex: blockIndex,
 					actions: actions
 				})*/
-				React.createElement(ChangeSubsectionElement, {
+				React.createElement(Toolbars.ChangeSubsectionElement, {
 					isCreate: true,
 					followingBlockIndex: blockIndex,
 					actions: actions
@@ -519,7 +488,7 @@ EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsC
 		
 		previousBlockWasSubsection = currentBlockIsSubsection;
 		
-		elements.push(elementsForBlocks[blockIndex]);
+		elements.push(elementsForBlocks.get(blockIndex));
 	}
 	
 	return elements;
@@ -534,14 +503,31 @@ EditorElementCreator.MainElement = React.createClass({
 		};
 	},
 	
+	onClick(event) {
+		event.stopPropagation();
+		
+		//console.log('main element clicked', event);
+		
+		let actions = this.props.actions;
+		actions.finishEditing();
+	},
+	
+	onKeyPress(event) {
+		let actions = this.props.actions;
+		
+		if (event.which === KeyCodes.RETURN_OR_ENTER) {
+			actions.insertRelatedBlockAfterEditedBlock();
+		}
+	},
+	
 	updateTextItemEditorPosition: function() {
 		var masterNode = this.getDOMNode();
-		var activeTextItem = masterNode.getElementsByClassName('textItem-active')[0];
-		var textItemEditor = masterNode.getElementsByClassName('textItemEditor')[0];
+		var editedTextItemElement = masterNode.getElementsByClassName('textItem-edited')[0];
+		var textItemEditorElement = masterNode.getElementsByClassName('textItemEditor')[0];
 		
-		if (activeTextItem && textItemEditor) {
-			var offsetTop = activeTextItem.offsetTop;
-			textItemEditor.style.top = offsetTop + 'px';
+		if (editedTextItemElement && textItemEditorElement) {
+			var offsetTop = editedTextItemElement.offsetTop;
+			textItemEditorElement.style.top = offsetTop + 'px';
 		}
 	},
 	
@@ -581,15 +567,14 @@ EditorElementCreator.MainElement = React.createClass({
 	
 		var elements = [];
 	
-		if (contentImmutable && contentImmutable.get('blocks')) {
-			var content = contentImmutable.toJS();
-			var blocks = content.blocks;
-			var traitsConfig = specsImmutable.get('traits', Immutable.Map()).toJS();
-	
-			elements = EditorElementCreator.reactElementsWithBlocks(blocks, actions, traitsConfig);
+		if (contentImmutable && contentImmutable.has('blocks')) {
+			var blocksImmutable = contentImmutable.get('blocks');
+			elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, actions, specsImmutable);
 		}
 		else {
-			elements = React.createElement('div', {}, 'Loading…');
+			elements = React.createElement('div', {
+				key: 'loadingIndicator'
+			}, 'Loading…');
 		}
 	
 		var isEditingBlock = (actions.getEditedBlockIdentifier() != null);
@@ -599,7 +584,9 @@ EditorElementCreator.MainElement = React.createClass({
 	
 		return React.createElement('div', {
 			key: 'blocks',
-			className: classNames.join(' ')
+			className: classNames.join(' '),
+			onClick: this.onClick,
+			onKeyPress: this.onKeyPress
 		}, elements);
 	}
 });

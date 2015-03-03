@@ -1,33 +1,90 @@
 var React = require('react');
 
+
+function getClassNamesWithSuffixes(baseClassNames, suffixes) {
+	if (suffixes.length === 0) {
+		return [];
+	}
+	
+	return baseClassNames.reduce(function(classNamesSoFar, className) {
+		classNamesSoFar.push.apply(classNamesSoFar, suffixes.map(function(suffix) {
+			return className + suffix;
+		}));
+		return classNamesSoFar;
+	}, []);
+};
+
+
+var BaseClassNamesMixin = {
+	getBaseClassNames() {
+		var props = this.props;
+		var baseClassNames = props.baseClassNames || [];
+		
+		if (props.className) {
+			baseClassNames = baseClassNames.concat(props.className);
+		}
+		
+		return baseClassNames;
+	},
+	
+	getClassNamesWithExtensions(additionalExtensions) {
+		var props = this.props;
+		var baseClassNames = this.getBaseClassNames();
+		
+		var extensions = [];
+		if (props.additionalClassNameExtensions) {
+			extensions = extensions.concat(props.additionalClassNameExtensions);
+		}
+		if (additionalExtensions) {
+			extensions = extensions.concat(additionalExtensions);
+		}
+		
+		var classNamesWithExtensions = getClassNamesWithSuffixes(baseClassNames, extensions);
+		return baseClassNames.concat(classNamesWithExtensions);
+	},
+	
+	getClassNameStringWithExtensions(additionalExtensions) {
+		return this.getClassNamesWithExtensions(additionalExtensions).join(' ');
+	},
+	
+	getClassNamesWithChildSuffixes(childSuffixes) {
+		return getClassNamesWithSuffixes(this.getBaseClassNames(), childSuffixes);
+	},
+	
+	getClassNameStringWithChildSuffixes(childSuffixes) {
+		return this.getClassNamesWithChildSuffixes(childSuffixes).join(' ');
+	},
+	
+	getClassNamesWithChildSuffix(childSuffix) {
+		return getClassNamesWithSuffixes(this.getBaseClassNames(), [childSuffix]);
+	},
+	
+	getClassNameStringWithChildSuffix(childSuffix) {
+		return this.getClassNamesWithChildSuffix(childSuffix).join(' ');
+	}
+};
+
+
 var ButtonMixin = {
-	getDefaultProps: function() {
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
 		return {
 			selected: false
 			//baseClassNames: ['button']
 		};
 	},
 	
-	render: function() {
+	render() {
 		var props = this.props;
 		var title = props.title;
 		
-		var baseClassNames = props.baseClassNames;
-		var classNames = baseClassNames.slice();
-		
-		if (props.className) {
-			classNames.push(props.className);
-		}
-		
-		var addClassNameExtension = function(extension) {
-			classNames.push.apply(classNames, baseClassNames.map(function(className) {
-				return className + extension;
-			}));
-		};
-
+		var extensions = [];
 		if (props.selected) {
-			addClassNameExtension('-selected');
+			extensions.push('-selected');
 		}
+		
+		var classNames = this.getClassNamesWithExtensions(extensions);
 		
 		return React.createElement('button', {
 			className: classNames.join(' '),
@@ -37,6 +94,7 @@ var ButtonMixin = {
 };
 
 var Mixins = {
-	ButtonMixin: ButtonMixin
+	ButtonMixin,
+	BaseClassNamesMixin
 };
 module.exports = Mixins;

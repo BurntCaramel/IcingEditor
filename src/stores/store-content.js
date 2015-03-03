@@ -1,25 +1,22 @@
 var AppDispatcher = require('../app-dispatcher');
 var Immutable = require('immutable');
 var MicroEvent = require('microevent');
+var SettingsStore = require('../stores/store-settings.js');
 var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+
+//TODO: renamed Section to Portion?
+
+
+var documentSectionSpecs = Immutable.Map();
 
 var ContentStore = {
 	baseConfig: null,
 	documentSectionContents: Immutable.Map({}),
 	documentSectionEditedTextItemIdentifiers: Immutable.Map({}),
 	
-	setUpInitialSpecs: function() {
-		//var dummyContentJSON = require('../dummy/dummy-content.json');
-		//this.setContentFromJSONForDocumentSection('dummy', 'main', dummyContentJSON);
-		
-		//var dummyContent = this.newContentForTextItems();
-		//this.setContentFromImmutableForDocumentSection('dummy', 'main', dummyContent);
-		
-		var specsJSON = require('../dummy/dummy-content-specs.json');
-		this.setBaseConfigFromJSON(specsJSON);
-	},
-	
+	/*
 	newContentForTextItems: function() {
 		return Immutable.Map({
 			"type": "textItems",
@@ -28,6 +25,7 @@ var ContentStore = {
 			])
 		});
 	},
+	*/
 	
 	newIdentifier: function() {
 		return 'i-' + (Math.random().toString().replace('0.', ''));
@@ -47,56 +45,57 @@ var ContentStore = {
 		return textItem;
 	},
 	
-	blockTypeHasTextItems: function(blockType) {
-		if (blockType === 'placeholder' || blockType === 'particular' || blockType === 'subsection') {
-			return false;
-		}
-		else {
-			return true;
-		}
+	newLineBreakTextItem: function() {
+		var textItem = Immutable.Map({
+			"type": "lineBreak",
+			"identifier": this.newIdentifier()
+		});
+		
+		return textItem;
 	},
 	
-	newBlockOfType: function(blockType) {
+	blockGroupTypeHasTextItems: function(blockGroupType) {
+		return (blockGroupType === 'text');
+	},
+	
+	newBlockOfType: function(typeGroup, type) {
 		var blockJSON = {
-			"type": blockType,
+			"typeGroup": typeGroup,
+			"type": type,
 			"identifier": this.newIdentifier()
 		};
 		
-		if (this.blockTypeHasTextItems(blockType)) {
+		if (this.blockGroupTypeHasTextItems(typeGroup)) {
 			blockJSON.textItems = [];
 		}
 		
-		if (blockType === 'figure') {
-			
-		}
-		
 		return Immutable.Map(blockJSON);
 	},
 	
+	newBlockWithSameType: function(block) {
+		return this.newBlockOfType(block.get('typeGroup'), block.get('type'));
+	},
+	
 	newBlockSubsectionOfType: function(subsectionType) {
-		var blockJSON = {
-			"type": "subsection",
-			"subsectionType": subsectionType,
+		return Immutable.Map({
+			"typeGroup": "subsection",
+			"type": subsectionType,
 			"identifier": this.newIdentifier()
-		};
-		
-		return Immutable.Map(blockJSON);
+		});
 	},
 	
 	blockKeyPathForItemKeyPath: function(itemKeyPath) {
 		return itemKeyPath.slice(0, -2);
 	},
 	
-	prepareConfigFromJSON: function(configJSON) {
-		return Immutable.fromJS(configJSON);
-	},
-	
-	setBaseConfigFromJSON: function(configJSON) {
-		this.baseConfig = this.prepareConfigFromJSON(configJSON);
-	},
-	
-	getConfigForDocumentSection: function(documentID, sectionID) {
-		return this.baseConfig;
+	getSpecsForDocumentSection: function(documentID, sectionID) {
+		var keyPath = [documentID, sectionID];
+		var specs = documentSectionSpecs.getIn(keyPath);
+		if (!specs) {
+			specs = SettingsStore.getContentSpecsForDocumentSection(documentID, sectionID);
+			documentSectionSpecs.setIn(keyPath, specs);
+		}
+		return specs;
 	},
 	
 	prepareContentFromJSON: function(contentJSON) {
@@ -117,13 +116,17 @@ var ContentStore = {
 	},
 	
 	getContentForDocumentSection: function(documentID, sectionID) {
-		var content = this.documentSectionContents.getIn([documentID, sectionID]);
-		return content;
+		return this.documentSectionContents.getIn([documentID, sectionID]);
 	},
 	
 	getContentAsJSONForDocumentSection: function(documentID, sectionID) {
 		var content = this.getContentForDocumentSection(documentID, sectionID);
-		return content.toJS();
+		if (content) {
+			return content.toJS();
+		}
+		else {
+			return null;
+		}
 	},
 	
 	setContentFromImmutableForDocumentSection: function(documentID, sectionID, content) {
@@ -144,21 +147,40 @@ var ContentStore = {
 		return this.documentSectionContents.getIn([documentID, sectionID].concat(keyPath));
 	},
 	
-	updateBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater) {
+	updateContentObjectAtKeyPathForDocumentSection: function(documentID, sectionID, keyPath, updater, options) {
 		var fullKeyPath = [documentID, sectionID].concat(keyPath);
 		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, updater);
-		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+	
+		if (!options || options.trigger) {
+			this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+		}
 	},
 	
-	removeBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, options) {
-		var blockIndex = keyPath.slice(-1)[0];
-		var blocksKeyPath = keyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(blocksKeyPath);
+	/*
+	updateBlocksAtKeyPathForDocumentSection: function(documentID, sectionID, updater, options) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, ['blocks'], updater, options);
+	},
+
+	updateTextItemsAtKeyPathForDocumentSection: function(documentID, sectionID, textItemsKeyPath, updater, options) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, updater, options);
+	},
+	*/
+	
+	updateBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater, options) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
+	},
+	
+	removeBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
+		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		var isEditingThisBlock = (editedBlockKeyPath == blockKeyPath);
+		if (isEditingThisBlock) {
+			this.finishEditingInDocumentSection(documentID, sectionID);
+		}
 		
-		console.log('REMOVE', fullKeyPath, blockIndex);
+		var blockIndex = blockKeyPath.slice(-1)[0];
+		var blocksKeyPath = blockKeyPath.slice(0, -1);
 		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(blocks) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function(blocks) {
 			return blocks.remove(blockIndex);
 		});
 		
@@ -171,16 +193,14 @@ var ContentStore = {
 		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
 	},
 	
-	updateTextItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater) {
-		var fullKeyPath = [documentID, sectionID].concat(keyPath);
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, updater);
-		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+	updateTextItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater, options) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
 	},
 	
 	textItemIsEmptyAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath) {
-		var fullKeyPath = [documentID, sectionID].concat(keyPath).concat('text');
-		var text = this.documentSectionContents.getIn(fullKeyPath);
+		var text = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath.concat('text'));
+		//var fullKeyPath = [documentID, sectionID].concat(keyPath).concat('text');
+		//var text = this.documentSectionContents.getIn(fullKeyPath);
 		var isEmpty = (!text || text.length === 0);
 		return isEmpty;
 	},
@@ -188,9 +208,8 @@ var ContentStore = {
 	removeTextItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath) {
 		var itemIndex = keyPath.slice(-1)[0];
 		var textItemsKeyPath = keyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(textItemsKeyPath);
 		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function(textItems) {
 			return textItems.remove(itemIndex);
 		});
 	},
@@ -198,9 +217,8 @@ var ContentStore = {
 	insertItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, item, options) {
 		var insertIndex = keyPath.slice(-1)[0];
 		var textItemsKeyPath = keyPath.slice(0, -1); // Without the index
-		var fullKeyPath = [documentID, sectionID].concat(textItemsKeyPath);
 		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function(textItems) {
 			// Insert the item.
 			return textItems.splice(insertIndex, 0, item);
 		});
@@ -211,40 +229,44 @@ var ContentStore = {
 		}
 	},
 	
-	insertItemAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, item) {
+	insertItemAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, item, options) {
 		var textItemIndex = keyPath.slice(-1)[0];
 		var textItemsKeyPath = keyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(textItemsKeyPath);
 		
 		var newItemIndex = textItemIndex + 1;
 		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function(textItems) {
 			// Insert the item.
 			return textItems.splice(newItemIndex, 0, item);
 		});
 		
-		var newItemKeyPath = textItemsKeyPath.concat(newItemIndex);
-		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
+		if (options && options.edit) {
+			var newItemKeyPath = textItemsKeyPath.concat(newItemIndex);
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
+		}
 	},
 	
-	addNewItemAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath) {
+	addNewItemAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, options) {
 		var newTextItem = this.newTextItem();
-		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, newTextItem);
+		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, newTextItem, options);
+	},
+	
+	addLineBreakAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, options) {
+		var item = this.newLineBreakTextItem();
+		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options);
 	},
 	
 	insertBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, block, options) {
 		var insertIndex = keyPath.slice(-1)[0];
 		var blocksKeyPath = keyPath.slice(0, -1); // Without the index
-		var fullKeyPath = [documentID, sectionID].concat(blocksKeyPath);
 		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function(blocks) {
 			// Insert the item.
-			return textItems.splice(insertIndex, 0, block);
+			return blocks.splice(insertIndex, 0, block);
 		});
 		
 		if (options && options.edit) {
 			var newBlockKeyPath = blocksKeyPath.concat(insertIndex);
-			
 			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, {editTextItemsIfPresent: true});
 		}
 	},
@@ -259,50 +281,46 @@ var ContentStore = {
 		}
 	},
 	
-	changeTypeOfBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, newBlockType) {
+	changeTypeOfBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, newBlockGroupType, newBlockType) {
+		// Finish editing, as changing to a different type may edit in a different way.
+		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		this.finishEditingInDocumentSection(documentID, sectionID);
+		
 		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function(block) {
-			block = block.set('type', newBlockType);
-			if (newBlockType === 'placeholder') {
-				block = block.remove('textItems');
-			}
-			return block;
+			return block.withMutations(function(mutableBlock) {
+				mutableBlock.set('typeGroup', newBlockGroupType);
+				mutableBlock.set('type', newBlockType);
+				
+				if (!ContentStore.blockGroupTypeHasTextItems(newBlockGroupType)) {
+					mutableBlock.remove('textItems');
+				}
+			});
 		});
+		
+		if (editedBlockKeyPath) {
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {editTextItemsIfPresent: true});
+		}
 	},
 	
 	changeTypeOfSubsectionAtKeyPathInDocumentSection: function(documentID, sectionID, subsectionKeyPath, newSubsectionType) {
 		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, function(block) {
-			return block.set('subsectionType', newSubsectionType);
+			return block.set('type', newSubsectionType);
 		});
 	},
 	
 	insertBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, block, options) {
 		var blockIndex = blockKeyPath.slice(-1)[0];
 		var blocksKeyPath = blockKeyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(blocksKeyPath);
-		
 		var newBlockIndex = blockIndex + 1;
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(blocks) {
-			return blocks.splice(newBlockIndex, 0, block);
-		});
-		
 		var newBlockKeyPath = blocksKeyPath.concat(newBlockIndex);
-		if (options && options.edit) {
-			if (this.blockTypeHasTextItems(block.get('type')) && block.get('textItems').count() > 0) {
-				var itemKeyPath = newBlockKeyPath.concat('textItems', 0);
-				this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
-			}
-			else {
-				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath);
-			}
-		}
+		
+		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, block, options);
 	},
 	
 	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var blockType = currentBlock.get('type');
 		
-		var followingBlock = this.newBlockOfType(blockType);
+		var followingBlock = this.newBlockWithSameType(currentBlock);
 		
 		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, options);
 	},
@@ -310,7 +328,6 @@ var ContentStore = {
 	splitBlockBeforeItemAtKeyPathInDocumentSection: function(documentID, sectionID, itemKeyPath) {
 		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var blockType = currentBlock.get('type');
 		
 		var textItemIndex = itemKeyPath.slice(-1)[0];
 		
@@ -324,7 +341,7 @@ var ContentStore = {
 			return block;
 		});
 		
-		var followingBlock = this.newBlockOfType(blockType);
+		var followingBlock = this.newBlockWithSameType(currentBlock);
 		followingBlock = followingBlock.set('textItems', followingItems);
 		
 		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, {edit: true});
@@ -333,18 +350,18 @@ var ContentStore = {
 	joinBlockAtKeyPathWithPreviousInDocumentSection: function(documentID, sectionID, currentBlockKeyPath) {
 		var currentBlockIndex = currentBlockKeyPath.slice(-1)[0];
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, currentBlockKeyPath);
-		var currentBlockType = currentBlock.get('type');
 		
-		if (currentBlockIndex === 0 || !this.blockTypeHasTextItems(currentBlockType)) {
+		var currentBlockGroupType = currentBlock.get('typeGroup');
+		if (currentBlockIndex === 0 || !this.blockGroupTypeHasTextItems(currentBlockGroupType)) {
 			return false;
 		}
 		
 		var precedingBlockIndex = currentBlockIndex - 1;
 		var precedingBlockKeyPath = currentBlockKeyPath.slice(0, -1).concat(precedingBlockIndex);
 		var precedingBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingBlockKeyPath);
-		var precedingBlockType = precedingBlock.get('type');
 		
-		if (!this.blockTypeHasTextItems(precedingBlockType)) {
+		var precedingBlockGroupType = precedingBlock.get('typeGroup');
+		if (!this.blockGroupTypeHasTextItems(precedingBlockGroupType)) {
 			return false;
 		}
 		
@@ -387,7 +404,7 @@ var ContentStore = {
 		}
 	},
 	
-	splitTextInRangeOfItemAtKeyPathInDocumentSection: function(documentID, sectionID, textSplitRange, itemKeyPath) {
+	splitTextInRangeOfItemAtKeyPathInDocumentSection: function(documentID, sectionID, textSplitRange, itemKeyPath, insertedItem) {
 		var splitStart = textSplitRange.start;
 		var splitEnd = textSplitRange.end;
 		
@@ -400,23 +417,25 @@ var ContentStore = {
 		if (splitStart === splitEnd) {
 			var itemAText = currentText.slice(0, splitStart)
 			var itemBText = currentText.slice(splitStart);
-			console.log('split 2', [itemAText, itemBText]);
 			
 			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function(textItem) {
 				return textItem.set('text', itemAText);
 			});
 			
+			if (insertedItem) {
+				this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, insertedItem);
+			}
+			
 			var itemB = this.newTextItem({"text": itemBText});
 			//var itemBIndex = currentItemIndex + 1;
 			//var itemBKeyPath = textItemsKeyPath.concat(itemBIndex);
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB);
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, {edit: true});
 		}
 		// Actual selection range
 		else {
 			var itemAText = currentText.slice(0, splitStart)
 			var itemBText = currentText.slice(splitStart, splitEnd);
 			var itemCText = currentText.slice(splitEnd);
-			console.log('split 3', [itemAText, itemBText, itemCText]);
 			
 			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function(textItem) {
 				return textItem.set('text', itemAText);
@@ -427,14 +446,8 @@ var ContentStore = {
 			
 			// Insert itemC then itemB, so that itemB is in front of itemC
 			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemC);
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB);
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, {edit: true});
 		}
-		
-		/*
-		this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function(textItem) {
-			return textItem.set('text', combinedText);
-		});
-		*/
 	},
 	
 	getEditedBlockIdentifierForDocumentSection: function(documentID, sectionID) {
@@ -468,9 +481,9 @@ var ContentStore = {
 		}
 		
 		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var blockType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat('type'));
+		var blockGroupType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat('typeGroup'));
 		
-		if (this.blockTypeHasTextItems(blockType)) {
+		if (this.blockGroupTypeHasTextItems(blockGroupType)) {
 			var isEmpty = this.textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 			if (isEmpty) {
 				this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
@@ -487,7 +500,7 @@ var ContentStore = {
 		var blockIdentifier = block.get('identifier');
 		
 		if (options && options.editTextItemsIfPresent) {
-			if (this.blockTypeHasTextItems(block.get('type')) && block.get('textItems').count() > 0) {
+			if (this.blockGroupTypeHasTextItems(block.get('typeGroup')) && block.has('textItems') && block.get('textItems').count() > 0) {
 				var itemKeyPath = blockKeyPath.concat('textItems', 0);
 				this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 				return;
@@ -640,8 +653,7 @@ var ContentStore = {
 		};
 	}
 };
-//MicroEvent.mixin(ContentStore);
-//EventMixin.mixin(ContentStore);
+
 ContentStore.on = MicroEvent.prototype.bind;
 ContentStore.trigger = MicroEvent.prototype.trigger;
 ContentStore.off = MicroEvent.prototype.unbind;
@@ -649,14 +661,34 @@ ContentStore.off = MicroEvent.prototype.unbind;
 AppDispatcher.register( function(payload) {
 	var documentID = null;
 	var sectionID = null;
+	// TODO: use these two variables.
+	var blockKeyPath = null;
+	var textItemKeyPath = null;
 	var editedBlockKeyPath = null;
 	var editedTextItemKeyPath = null;
+	
 	if (payload.documentID) {
 		documentID = payload.documentID;
 		if (payload.sectionID) {
 			sectionID = payload.sectionID;
 			editedBlockKeyPath = ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
 			editedTextItemKeyPath = ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
+			
+			// TODO: use these variables.
+			if (payload.useEditedBlockKeyPath) {
+				blockKeyPath = editedBlockKeyPath;
+			}
+			else {
+				blockKeyPath = payload.blockKeyPath;
+			}
+			//var blockKeyPathIsEdited = (blockKeyPath === editedBlockKeyPath);
+			
+			if (payload.useEditedTextItemKeyPath) {
+				textItemKeyPath = editedTextItemKeyPath;
+			}
+			else {
+				textItemKeyPath = payload.textItemKeyPath;
+			}
 		}
 	}
 	
@@ -705,12 +737,20 @@ AppDispatcher.register( function(payload) {
 	
 	case (documentSectionEventIDs.blockAtKeyPath.changeType):
 		ContentStore.changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID,
-			payload.blockKeyPath, payload.blockType
+			payload.blockKeyPath, payload.blockTypeGroup, payload.blockType
 		);
 		break;
 		
 	case (documentSectionEventIDs.blockAtKeyPath.remove):
 		ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+		break;
+		
+	case (documentSectionEventIDs.blockAtKeyPath.changeValue):
+		var defaultValue = payload.defaultValue;
+		var newValueFunction = payload.newValueFunction;
+		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function(block) {
+			return block.updateIn(['value'], defaultValue, newValueFunction);
+		});
 		break;
 	
 	case (documentSectionEventIDs.blockAtKeyPath.changePlaceholderID):
@@ -723,6 +763,8 @@ AppDispatcher.register( function(payload) {
 		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.keyPath);
 		break;
 	
+	// EDITED BLOCK
+	
 	case (documentSectionEventIDs.editedBlock.remove):
 		ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {editPrevious: true});
 		break;
@@ -730,6 +772,24 @@ AppDispatcher.register( function(payload) {
 	case (documentSectionEventIDs.editedBlock.insertRelatedBlockAfter):
 		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {edit: true});
 		break;
+	
+	case (documentSectionEventIDs.editedBlock.changeTraitValue):
+		var traitID = payload.traitID;
+		var defaultValue = payload.defaultValue;
+		var newValueFunction = payload.newValueFunction;
+		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, function(block) {
+			return block.updateIn(['traits', traitID], defaultValue, newValueFunction);
+		});
+		break;
+		
+	case (documentSectionEventIDs.editedBlock.removeTrait):
+		var traitID = payload.traitID;
+		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(block) {
+			return block.removeIn(['traits', traitID]);
+		});
+		break;
+	
+	// EDITED TEXT ITEM
 		
 	case (documentSectionEventIDs.editedItem.remove):
 		ContentStore.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, {editPrevious: true});
@@ -743,11 +803,18 @@ AppDispatcher.register( function(payload) {
 		break;
 	
 	case (documentSectionEventIDs.editedItem.changeTraitValue):
-		var attributeID = payload.attributeID;
+		var traitID = payload.traitID;
 		var defaultValue = payload.defaultValue;
 		var newValueFunction = payload.newValueFunction;
 		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
-			return textItem.updateIn(['traits', attributeID], defaultValue, newValueFunction);
+			return textItem.updateIn(['traits', traitID], defaultValue, newValueFunction);
+		});
+		break;
+		
+	case (documentSectionEventIDs.editedItem.removeTrait):
+		var traitID = payload.traitID;
+		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
+			return textItem.removeIn(['traits', traitID]);
 		});
 		break;
 	
@@ -764,7 +831,11 @@ AppDispatcher.register( function(payload) {
 		break;
 	
 	case (documentSectionEventIDs.editedItem.addNewTextItemAfter):
-		ContentStore.addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+		ContentStore.addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, {edit: true});
+		break;
+	
+	case (documentSectionEventIDs.editedItem.addNewLineBreakAfter):
+		ContentStore.addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, {edit: true});
 		break;
 	
 	case (documentSectionEventIDs.editedItem.splitBlockBefore):
@@ -787,7 +858,5 @@ AppDispatcher.register( function(payload) {
 	
 	return true;
 });
-
-ContentStore.setUpInitialSpecs();
 
 module.exports = ContentStore;

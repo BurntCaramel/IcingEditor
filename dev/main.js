@@ -1,8 +1,14 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var editor = require('./editor/editor.js');
+"use strict";
+
+//require("babelify/polyfill");
+//require("babel/polyfill");
+
+var editor = require("./editor/editor.js");
 //editor.go();
 editor.goOnDocumentLoad();
-},{"./editor/editor.js":160}],2:[function(require,module,exports){
+
+},{"./editor/editor.js":163}],2:[function(require,module,exports){
 /**
  * Copyright (c) 2014, Facebook, Inc.
  * All rights reserved.
@@ -330,508 +336,4399 @@ module.exports = invariant;
  *  LICENSE file in the root directory of this source tree. An additional grant
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
-function universalModule() {
-  var $Object = Object;
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+  typeof define === 'function' && define.amd ? define(factory) :
+  global.Immutable = factory()
+}(this, function () { 'use strict';var SLICE$0 = Array.prototype.slice;
 
-function createClass(ctor, methods, staticMethods, superClass) {
-  var proto;
-  if (superClass) {
-    var superProto = superClass.prototype;
-    proto = $Object.create(superProto);
-  } else {
-    proto = ctor.prototype;
-  }
-  $Object.keys(methods).forEach(function (key) {
-    proto[key] = methods[key];
-  });
-  $Object.keys(staticMethods).forEach(function (key) {
-    ctor[key] = staticMethods[key];
-  });
-  proto.constructor = ctor;
-  ctor.prototype = proto;
-  return ctor;
-}
-
-function superCall(self, proto, name, args) {
-  return $Object.getPrototypeOf(proto)[name].apply(self, args);
-}
-
-function defaultSuperCall(self, proto, args) {
-  superCall(self, proto, 'constructor', args);
-}
-
-var $traceurRuntime = {};
-$traceurRuntime.createClass = createClass;
-$traceurRuntime.superCall = superCall;
-$traceurRuntime.defaultSuperCall = defaultSuperCall;
-"use strict";
-function is(first, second) {
-  if (first === second) {
-    return first !== 0 || second !== 0 || 1 / first === 1 / second;
-  }
-  if (first !== first) {
-    return second !== second;
-  }
-  if (first && typeof first.equals === 'function') {
-    return first.equals(second);
-  }
-  return false;
-}
-function invariant(condition, error) {
-  if (!condition)
-    throw new Error(error);
-}
-var DELETE = 'delete';
-var SHIFT = 5;
-var SIZE = 1 << SHIFT;
-var MASK = SIZE - 1;
-var NOT_SET = {};
-var CHANGE_LENGTH = {value: false};
-var DID_ALTER = {value: false};
-function MakeRef(ref) {
-  ref.value = false;
-  return ref;
-}
-function SetRef(ref) {
-  ref && (ref.value = true);
-}
-function OwnerID() {}
-function arrCopy(arr, offset) {
-  offset = offset || 0;
-  var len = Math.max(0, arr.length - offset);
-  var newArr = new Array(len);
-  for (var ii = 0; ii < len; ii++) {
-    newArr[ii] = arr[ii + offset];
-  }
-  return newArr;
-}
-function assertNotInfinite(size) {
-  invariant(size !== Infinity, 'Cannot perform this action with an infinite size.');
-}
-function ensureSize(iter) {
-  if (iter.size === undefined) {
-    iter.size = iter.__iterate(returnTrue);
-  }
-  return iter.size;
-}
-function wrapIndex(iter, index) {
-  return index >= 0 ? (+index) : ensureSize(iter) + (+index);
-}
-function returnTrue() {
-  return true;
-}
-function wholeSlice(begin, end, size) {
-  return (begin === 0 || (size !== undefined && begin <= -size)) && (end === undefined || (size !== undefined && end >= size));
-}
-function resolveBegin(begin, size) {
-  return resolveIndex(begin, size, 0);
-}
-function resolveEnd(end, size) {
-  return resolveIndex(end, size, size);
-}
-function resolveIndex(index, size, defaultIndex) {
-  return index === undefined ? defaultIndex : index < 0 ? Math.max(0, size + index) : size === undefined ? index : Math.min(size, index);
-}
-var imul = typeof Math.imul === 'function' && Math.imul(0xffffffff, 2) === -2 ? Math.imul : function imul(a, b) {
-  a = a | 0;
-  b = b | 0;
-  var c = a & 0xffff;
-  var d = b & 0xffff;
-  return (c * d) + ((((a >>> 16) * d + c * (b >>> 16)) << 16) >>> 0) | 0;
-};
-function smi(i32) {
-  return ((i32 >>> 1) & 0x40000000) | (i32 & 0xBFFFFFFF);
-}
-function hash(o) {
-  if (!o) {
-    return 0;
-  }
-  if (o === true) {
-    return 1;
-  }
-  var type = typeof o;
-  if (type === 'number') {
-    var h = o | 0;
-    while (o > 0xFFFFFFFF) {
-      o /= 0xFFFFFFFF;
-      h ^= o;
+  function createClass(ctor, superClass) {
+    if (superClass) {
+      ctor.prototype = Object.create(superClass.prototype);
     }
-    return smi(h);
+    ctor.prototype.constructor = ctor;
   }
-  if (type === 'string') {
-    return o.length > STRING_HASH_CACHE_MIN_STRLEN ? cachedHashString(o) : hashString(o);
+
+  // Used for setting prototype methods that IE8 chokes on.
+  var DELETE = 'delete';
+
+  // Constants describing the size of trie nodes.
+  var SHIFT = 5; // Resulted in best performance after ______?
+  var SIZE = 1 << SHIFT;
+  var MASK = SIZE - 1;
+
+  // A consistent shared value representing "not set" which equals nothing other
+  // than itself, and nothing that could be provided externally.
+  var NOT_SET = {};
+
+  // Boolean references, Rough equivalent of `bool &`.
+  var CHANGE_LENGTH = { value: false };
+  var DID_ALTER = { value: false };
+
+  function MakeRef(ref) {
+    ref.value = false;
+    return ref;
   }
-  if (o.hashCode) {
-    return hash(typeof o.hashCode === 'function' ? o.hashCode() : o.hashCode);
+
+  function SetRef(ref) {
+    ref && (ref.value = true);
   }
-  return hashJSObj(o);
-}
-function cachedHashString(string) {
-  var hash = stringHashCache[string];
-  if (hash === undefined) {
-    hash = hashString(string);
-    if (STRING_HASH_CACHE_SIZE === STRING_HASH_CACHE_MAX_SIZE) {
-      STRING_HASH_CACHE_SIZE = 0;
-      stringHashCache = {};
+
+  // A function which returns a value representing an "owner" for transient writes
+  // to tries. The return value will only ever equal itself, and will not equal
+  // the return of any subsequent call of this function.
+  function OwnerID() {}
+
+  // http://jsperf.com/copy-array-inline
+  function arrCopy(arr, offset) {
+    offset = offset || 0;
+    var len = Math.max(0, arr.length - offset);
+    var newArr = new Array(len);
+    for (var ii = 0; ii < len; ii++) {
+      newArr[ii] = arr[ii + offset];
     }
-    STRING_HASH_CACHE_SIZE++;
-    stringHashCache[string] = hash;
+    return newArr;
   }
-  return hash;
-}
-function hashString(string) {
-  var hash = 0;
-  for (var ii = 0; ii < string.length; ii++) {
-    hash = 31 * hash + string.charCodeAt(ii) | 0;
+
+  function ensureSize(iter) {
+    if (iter.size === undefined) {
+      iter.size = iter.__iterate(returnTrue);
+    }
+    return iter.size;
   }
-  return smi(hash);
-}
-function hashJSObj(obj) {
-  var hash = weakMap && weakMap.get(obj);
-  if (hash)
-    return hash;
-  hash = obj[UID_HASH_KEY];
-  if (hash)
-    return hash;
-  if (!canDefineProperty) {
-    hash = obj.propertyIsEnumerable && obj.propertyIsEnumerable[UID_HASH_KEY];
-    if (hash)
-      return hash;
-    hash = getIENodeHash(obj);
-    if (hash)
-      return hash;
+
+  function wrapIndex(iter, index) {
+    return index >= 0 ? (+index) : ensureSize(iter) + (+index);
   }
-  if (Object.isExtensible && !Object.isExtensible(obj)) {
-    throw new Error('Non-extensible objects are not allowed as keys.');
-  }
-  hash = ++objHashUID;
-  if (objHashUID & 0x40000000) {
-    objHashUID = 0;
-  }
-  if (weakMap) {
-    weakMap.set(obj, hash);
-  } else if (canDefineProperty) {
-    Object.defineProperty(obj, UID_HASH_KEY, {
-      'enumerable': false,
-      'configurable': false,
-      'writable': false,
-      'value': hash
-    });
-  } else if (obj.propertyIsEnumerable && obj.propertyIsEnumerable === obj.constructor.prototype.propertyIsEnumerable) {
-    obj.propertyIsEnumerable = function() {
-      return this.constructor.prototype.propertyIsEnumerable.apply(this, arguments);
-    };
-    obj.propertyIsEnumerable[UID_HASH_KEY] = hash;
-  } else if (obj.nodeType) {
-    obj[UID_HASH_KEY] = hash;
-  } else {
-    throw new Error('Unable to set a non-enumerable property on object.');
-  }
-  return hash;
-}
-var canDefineProperty = (function() {
-  try {
-    Object.defineProperty({}, 'x', {});
+
+  function returnTrue() {
     return true;
-  } catch (e) {
-    return false;
   }
-}());
-function getIENodeHash(node) {
-  if (node && node.nodeType > 0) {
-    switch (node.nodeType) {
-      case 1:
-        return node.uniqueID;
-      case 9:
-        return node.documentElement && node.documentElement.uniqueID;
+
+  function wholeSlice(begin, end, size) {
+    return (begin === 0 || (size !== undefined && begin <= -size)) &&
+      (end === undefined || (size !== undefined && end >= size));
+  }
+
+  function resolveBegin(begin, size) {
+    return resolveIndex(begin, size, 0);
+  }
+
+  function resolveEnd(end, size) {
+    return resolveIndex(end, size, size);
+  }
+
+  function resolveIndex(index, size, defaultIndex) {
+    return index === undefined ?
+      defaultIndex :
+      index < 0 ?
+        Math.max(0, size + index) :
+        size === undefined ?
+          index :
+          Math.min(size, index);
+  }
+
+  function Iterable(value) {
+      return isIterable(value) ? value : Seq(value);
     }
+
+
+  createClass(KeyedIterable, Iterable);
+    function KeyedIterable(value) {
+      return isKeyed(value) ? value : KeyedSeq(value);
+    }
+
+
+  createClass(IndexedIterable, Iterable);
+    function IndexedIterable(value) {
+      return isIndexed(value) ? value : IndexedSeq(value);
+    }
+
+
+  createClass(SetIterable, Iterable);
+    function SetIterable(value) {
+      return isIterable(value) && !isAssociative(value) ? value : SetSeq(value);
+    }
+
+
+
+  function isIterable(maybeIterable) {
+    return !!(maybeIterable && maybeIterable[IS_ITERABLE_SENTINEL]);
   }
-}
-var weakMap = typeof WeakMap === 'function' && new WeakMap();
-var objHashUID = 0;
-var UID_HASH_KEY = '__immutablehash__';
-if (typeof Symbol === 'function') {
-  UID_HASH_KEY = Symbol(UID_HASH_KEY);
-}
-var STRING_HASH_CACHE_MIN_STRLEN = 16;
-var STRING_HASH_CACHE_MAX_SIZE = 255;
-var STRING_HASH_CACHE_SIZE = 0;
-var stringHashCache = {};
-var ITERATE_KEYS = 0;
-var ITERATE_VALUES = 1;
-var ITERATE_ENTRIES = 2;
-var FAUX_ITERATOR_SYMBOL = '@@iterator';
-var REAL_ITERATOR_SYMBOL = typeof Symbol === 'function' && Symbol.iterator;
-var ITERATOR_SYMBOL = REAL_ITERATOR_SYMBOL || FAUX_ITERATOR_SYMBOL;
-var Iterator = function Iterator(next) {
-  this.next = next;
-};
-($traceurRuntime.createClass)(Iterator, {toString: function() {
-    return '[Iterator]';
-  }}, {});
-Iterator.KEYS = ITERATE_KEYS;
-Iterator.VALUES = ITERATE_VALUES;
-Iterator.ENTRIES = ITERATE_ENTRIES;
-var IteratorPrototype = Iterator.prototype;
-IteratorPrototype.inspect = IteratorPrototype.toSource = function() {
-  return this.toString();
-};
-IteratorPrototype[ITERATOR_SYMBOL] = function() {
-  return this;
-};
-function iteratorValue(type, k, v, iteratorResult) {
-  var value = type === 0 ? k : type === 1 ? v : [k, v];
-  iteratorResult ? (iteratorResult.value = value) : (iteratorResult = {
-    value: value,
-    done: false
-  });
-  return iteratorResult;
-}
-function iteratorDone() {
-  return {
-    value: undefined,
-    done: true
+
+  function isKeyed(maybeKeyed) {
+    return !!(maybeKeyed && maybeKeyed[IS_KEYED_SENTINEL]);
+  }
+
+  function isIndexed(maybeIndexed) {
+    return !!(maybeIndexed && maybeIndexed[IS_INDEXED_SENTINEL]);
+  }
+
+  function isAssociative(maybeAssociative) {
+    return isKeyed(maybeAssociative) || isIndexed(maybeAssociative);
+  }
+
+  function isOrdered(maybeOrdered) {
+    return !!(maybeOrdered && maybeOrdered[IS_ORDERED_SENTINEL]);
+  }
+
+  Iterable.isIterable = isIterable;
+  Iterable.isKeyed = isKeyed;
+  Iterable.isIndexed = isIndexed;
+  Iterable.isAssociative = isAssociative;
+  Iterable.isOrdered = isOrdered;
+
+  Iterable.Keyed = KeyedIterable;
+  Iterable.Indexed = IndexedIterable;
+  Iterable.Set = SetIterable;
+
+
+  var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
+  var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
+  var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
+  var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
+
+  /* global Symbol */
+
+  var ITERATE_KEYS = 0;
+  var ITERATE_VALUES = 1;
+  var ITERATE_ENTRIES = 2;
+
+  var REAL_ITERATOR_SYMBOL = typeof Symbol === 'function' && Symbol.iterator;
+  var FAUX_ITERATOR_SYMBOL = '@@iterator';
+
+  var ITERATOR_SYMBOL = REAL_ITERATOR_SYMBOL || FAUX_ITERATOR_SYMBOL;
+
+
+  function Iterator(next) {
+      this.next = next;
+    }
+
+    Iterator.prototype.toString = function() {
+      return '[Iterator]';
+    };
+
+
+  Iterator.KEYS = ITERATE_KEYS;
+  Iterator.VALUES = ITERATE_VALUES;
+  Iterator.ENTRIES = ITERATE_ENTRIES;
+
+  Iterator.prototype.inspect =
+  Iterator.prototype.toSource = function () { return this.toString(); }
+  Iterator.prototype[ITERATOR_SYMBOL] = function () {
+    return this;
   };
-}
-function hasIterator(maybeIterable) {
-  return !!_iteratorFn(maybeIterable);
-}
-function isIterator(maybeIterator) {
-  return maybeIterator && typeof maybeIterator.next === 'function';
-}
-function getIterator(iterable) {
-  var iteratorFn = _iteratorFn(iterable);
-  return iteratorFn && iteratorFn.call(iterable);
-}
-function _iteratorFn(iterable) {
-  var iteratorFn = iterable && ((REAL_ITERATOR_SYMBOL && iterable[REAL_ITERATOR_SYMBOL]) || iterable[FAUX_ITERATOR_SYMBOL]);
-  if (typeof iteratorFn === 'function') {
-    return iteratorFn;
-  }
-}
-var Iterable = function Iterable(value) {
-  return isIterable(value) ? value : Seq(value);
-};
-var $Iterable = Iterable;
-($traceurRuntime.createClass)(Iterable, {
-  toArray: function() {
-    assertNotInfinite(this.size);
-    var array = new Array(this.size || 0);
-    this.valueSeq().__iterate((function(v, i) {
-      array[i] = v;
-    }));
-    return array;
-  },
-  toIndexedSeq: function() {
-    return new ToIndexedSequence(this);
-  },
-  toJS: function() {
-    return this.toSeq().map((function(value) {
-      return value && typeof value.toJS === 'function' ? value.toJS() : value;
-    })).__toJS();
-  },
-  toKeyedSeq: function() {
-    return new ToKeyedSequence(this, true);
-  },
-  toMap: function() {
-    assertNotInfinite(this.size);
-    return Map(this.toKeyedSeq());
-  },
-  toObject: function() {
-    assertNotInfinite(this.size);
-    var object = {};
-    this.__iterate((function(v, k) {
-      object[k] = v;
-    }));
-    return object;
-  },
-  toOrderedMap: function() {
-    assertNotInfinite(this.size);
-    return OrderedMap(this.toKeyedSeq());
-  },
-  toOrderedSet: function() {
-    assertNotInfinite(this.size);
-    return OrderedSet(isKeyed(this) ? this.valueSeq() : this);
-  },
-  toSet: function() {
-    assertNotInfinite(this.size);
-    return Set(isKeyed(this) ? this.valueSeq() : this);
-  },
-  toSetSeq: function() {
-    return new ToSetSequence(this);
-  },
-  toSeq: function() {
-    return isIndexed(this) ? this.toIndexedSeq() : isKeyed(this) ? this.toKeyedSeq() : this.toSetSeq();
-  },
-  toStack: function() {
-    assertNotInfinite(this.size);
-    return Stack(isKeyed(this) ? this.valueSeq() : this);
-  },
-  toList: function() {
-    assertNotInfinite(this.size);
-    return List(isKeyed(this) ? this.valueSeq() : this);
-  },
-  toString: function() {
-    return '[Iterable]';
-  },
-  __toString: function(head, tail) {
-    if (this.size === 0) {
-      return head + tail;
-    }
-    return head + ' ' + this.toSeq().map(this.__toStringMapper).join(', ') + ' ' + tail;
-  },
-  concat: function() {
-    for (var values = [],
-        $__2 = 0; $__2 < arguments.length; $__2++)
-      values[$__2] = arguments[$__2];
-    return reify(this, concatFactory(this, values));
-  },
-  contains: function(searchValue) {
-    return this.some((function(value) {
-      return is(value, searchValue);
-    }));
-  },
-  entries: function() {
-    return this.__iterator(ITERATE_ENTRIES);
-  },
-  every: function(predicate, context) {
-    var returnValue = true;
-    this.__iterate((function(v, k, c) {
-      if (!predicate.call(context, v, k, c)) {
-        returnValue = false;
-        return false;
-      }
-    }));
-    return returnValue;
-  },
-  filter: function(predicate, context) {
-    return reify(this, filterFactory(this, predicate, context, true));
-  },
-  find: function(predicate, context, notSetValue) {
-    var foundValue = notSetValue;
-    this.__iterate((function(v, k, c) {
-      if (predicate.call(context, v, k, c)) {
-        foundValue = v;
-        return false;
-      }
-    }));
-    return foundValue;
-  },
-  forEach: function(sideEffect, context) {
-    return this.__iterate(context ? sideEffect.bind(context) : sideEffect);
-  },
-  join: function(separator) {
-    separator = separator !== undefined ? '' + separator : ',';
-    var joined = '';
-    var isFirst = true;
-    this.__iterate((function(v) {
-      isFirst ? (isFirst = false) : (joined += separator);
-      joined += v !== null && v !== undefined ? v : '';
-    }));
-    return joined;
-  },
-  keys: function() {
-    return this.__iterator(ITERATE_KEYS);
-  },
-  map: function(mapper, context) {
-    return reify(this, mapFactory(this, mapper, context));
-  },
-  reduce: function(reducer, initialReduction, context) {
-    var reduction;
-    var useFirst;
-    if (arguments.length < 2) {
-      useFirst = true;
-    } else {
-      reduction = initialReduction;
-    }
-    this.__iterate((function(v, k, c) {
-      if (useFirst) {
-        useFirst = false;
-        reduction = v;
-      } else {
-        reduction = reducer.call(context, reduction, v, k, c);
-      }
-    }));
-    return reduction;
-  },
-  reduceRight: function(reducer, initialReduction, context) {
-    var reversed = this.toKeyedSeq().reverse();
-    return reversed.reduce.apply(reversed, arguments);
-  },
-  reverse: function() {
-    return reify(this, reverseFactory(this, true));
-  },
-  slice: function(begin, end) {
-    if (wholeSlice(begin, end, this.size)) {
-      return this;
-    }
-    var resolvedBegin = resolveBegin(begin, this.size);
-    var resolvedEnd = resolveEnd(end, this.size);
-    if (resolvedBegin !== resolvedBegin || resolvedEnd !== resolvedEnd) {
-      return this.toSeq().cacheResult().slice(begin, end);
-    }
-    var skipped = resolvedBegin === 0 ? this : this.skip(resolvedBegin);
-    return reify(this, resolvedEnd === undefined || resolvedEnd === this.size ? skipped : skipped.take(resolvedEnd - resolvedBegin));
-  },
-  some: function(predicate, context) {
-    return !this.every(not(predicate), context);
-  },
-  sort: function(comparator) {
-    return reify(this, sortFactory(this, comparator));
-  },
-  values: function() {
-    return this.__iterator(ITERATE_VALUES);
-  },
-  butLast: function() {
-    return this.slice(0, -1);
-  },
-  count: function(predicate, context) {
-    return ensureSize(predicate ? this.toSeq().filter(predicate, context) : this);
-  },
-  countBy: function(grouper, context) {
-    return countByFactory(this, grouper, context);
-  },
-  equals: function(other) {
-    return deepEqual(this, other);
-  },
-  entrySeq: function() {
-    var iterable = this;
-    if (iterable._cache) {
-      return new ArraySeq(iterable._cache);
-    }
-    var entriesSequence = iterable.toSeq().map(entryMapper).toIndexedSeq();
-    entriesSequence.fromEntrySeq = (function() {
-      return iterable.toSeq();
+
+
+  function iteratorValue(type, k, v, iteratorResult) {
+    var value = type === 0 ? k : type === 1 ? v : [k, v];
+    iteratorResult ? (iteratorResult.value = value) : (iteratorResult = {
+      value: value, done: false
     });
-    return entriesSequence;
-  },
-  filterNot: function(predicate, context) {
-    return this.filter(not(predicate), context);
-  },
-  findLast: function(predicate, context, notSetValue) {
-    return this.toKeyedSeq().reverse().find(predicate, context, notSetValue);
-  },
-  first: function() {
-    return this.find(returnTrue);
-  },
-  flatMap: function(mapper, context) {
-    return reify(this, flatMapFactory(this, mapper, context));
-  },
-  flatten: function(depth) {
-    return reify(this, flattenFactory(this, depth, true));
-  },
-  fromEntrySeq: function() {
-    return new FromEntriesSequence(this);
-  },
-  get: function(searchKey, notSetValue) {
-    return this.find((function(_, key) {
-      return is(key, searchKey);
-    }), undefined, notSetValue);
-  },
-  getIn: function(searchKeyPath, notSetValue) {
-    var nested = this;
-    if (searchKeyPath) {
-      var iter = getIterator(searchKeyPath) || getIterator($Iterable(searchKeyPath));
+    return iteratorResult;
+  }
+
+  function iteratorDone() {
+    return { value: undefined, done: true };
+  }
+
+  function hasIterator(maybeIterable) {
+    return !!getIteratorFn(maybeIterable);
+  }
+
+  function isIterator(maybeIterator) {
+    return maybeIterator && typeof maybeIterator.next === 'function';
+  }
+
+  function getIterator(iterable) {
+    var iteratorFn = getIteratorFn(iterable);
+    return iteratorFn && iteratorFn.call(iterable);
+  }
+
+  function getIteratorFn(iterable) {
+    var iteratorFn = iterable && (
+      (REAL_ITERATOR_SYMBOL && iterable[REAL_ITERATOR_SYMBOL]) ||
+      iterable[FAUX_ITERATOR_SYMBOL]
+    );
+    if (typeof iteratorFn === 'function') {
+      return iteratorFn;
+    }
+  }
+
+  function isArrayLike(value) {
+    return value && typeof value.length === 'number';
+  }
+
+  createClass(Seq, Iterable);
+    function Seq(value) {
+      return value === null || value === undefined ? emptySequence() :
+        isIterable(value) ? value.toSeq() : seqFromValue(value);
+    }
+
+    Seq.of = function(/*...values*/) {
+      return Seq(arguments);
+    };
+
+    Seq.prototype.toSeq = function() {
+      return this;
+    };
+
+    Seq.prototype.toString = function() {
+      return this.__toString('Seq {', '}');
+    };
+
+    Seq.prototype.cacheResult = function() {
+      if (!this._cache && this.__iterateUncached) {
+        this._cache = this.entrySeq().toArray();
+        this.size = this._cache.length;
+      }
+      return this;
+    };
+
+    // abstract __iterateUncached(fn, reverse)
+
+    Seq.prototype.__iterate = function(fn, reverse) {
+      return seqIterate(this, fn, reverse, true);
+    };
+
+    // abstract __iteratorUncached(type, reverse)
+
+    Seq.prototype.__iterator = function(type, reverse) {
+      return seqIterator(this, type, reverse, true);
+    };
+
+
+
+  createClass(KeyedSeq, Seq);
+    function KeyedSeq(value) {
+      return value === null || value === undefined ?
+        emptySequence().toKeyedSeq() :
+        isIterable(value) ?
+          (isKeyed(value) ? value.toSeq() : value.fromEntrySeq()) :
+          keyedSeqFromValue(value);
+    }
+
+    KeyedSeq.of = function(/*...values*/) {
+      return KeyedSeq(arguments);
+    };
+
+    KeyedSeq.prototype.toKeyedSeq = function() {
+      return this;
+    };
+
+    KeyedSeq.prototype.toSeq = function() {
+      return this;
+    };
+
+
+
+  createClass(IndexedSeq, Seq);
+    function IndexedSeq(value) {
+      return value === null || value === undefined ? emptySequence() :
+        !isIterable(value) ? indexedSeqFromValue(value) :
+        isKeyed(value) ? value.entrySeq() : value.toIndexedSeq();
+    }
+
+    IndexedSeq.of = function(/*...values*/) {
+      return IndexedSeq(arguments);
+    };
+
+    IndexedSeq.prototype.toIndexedSeq = function() {
+      return this;
+    };
+
+    IndexedSeq.prototype.toString = function() {
+      return this.__toString('Seq [', ']');
+    };
+
+    IndexedSeq.prototype.__iterate = function(fn, reverse) {
+      return seqIterate(this, fn, reverse, false);
+    };
+
+    IndexedSeq.prototype.__iterator = function(type, reverse) {
+      return seqIterator(this, type, reverse, false);
+    };
+
+
+
+  createClass(SetSeq, Seq);
+    function SetSeq(value) {
+      return (
+        value === null || value === undefined ? emptySequence() :
+        !isIterable(value) ? indexedSeqFromValue(value) :
+        isKeyed(value) ? value.entrySeq() : value
+      ).toSetSeq();
+    }
+
+    SetSeq.of = function(/*...values*/) {
+      return SetSeq(arguments);
+    };
+
+    SetSeq.prototype.toSetSeq = function() {
+      return this;
+    };
+
+
+
+  Seq.isSeq = isSeq;
+  Seq.Keyed = KeyedSeq;
+  Seq.Set = SetSeq;
+  Seq.Indexed = IndexedSeq;
+
+  var IS_SEQ_SENTINEL = '@@__IMMUTABLE_SEQ__@@';
+
+  Seq.prototype[IS_SEQ_SENTINEL] = true;
+
+
+
+  // #pragma Root Sequences
+
+  createClass(ArraySeq, IndexedSeq);
+    function ArraySeq(array) {
+      this._array = array;
+      this.size = array.length;
+    }
+
+    ArraySeq.prototype.get = function(index, notSetValue) {
+      return this.has(index) ? this._array[wrapIndex(this, index)] : notSetValue;
+    };
+
+    ArraySeq.prototype.__iterate = function(fn, reverse) {
+      var array = this._array;
+      var maxIndex = array.length - 1;
+      for (var ii = 0; ii <= maxIndex; ii++) {
+        if (fn(array[reverse ? maxIndex - ii : ii], ii, this) === false) {
+          return ii + 1;
+        }
+      }
+      return ii;
+    };
+
+    ArraySeq.prototype.__iterator = function(type, reverse) {
+      var array = this._array;
+      var maxIndex = array.length - 1;
+      var ii = 0;
+      return new Iterator(function() 
+        {return ii > maxIndex ?
+          iteratorDone() :
+          iteratorValue(type, ii, array[reverse ? maxIndex - ii++ : ii++])}
+      );
+    };
+
+
+
+  createClass(ObjectSeq, KeyedSeq);
+    function ObjectSeq(object) {
+      var keys = Object.keys(object);
+      this._object = object;
+      this._keys = keys;
+      this.size = keys.length;
+    }
+
+    ObjectSeq.prototype.get = function(key, notSetValue) {
+      if (notSetValue !== undefined && !this.has(key)) {
+        return notSetValue;
+      }
+      return this._object[key];
+    };
+
+    ObjectSeq.prototype.has = function(key) {
+      return this._object.hasOwnProperty(key);
+    };
+
+    ObjectSeq.prototype.__iterate = function(fn, reverse) {
+      var object = this._object;
+      var keys = this._keys;
+      var maxIndex = keys.length - 1;
+      for (var ii = 0; ii <= maxIndex; ii++) {
+        var key = keys[reverse ? maxIndex - ii : ii];
+        if (fn(object[key], key, this) === false) {
+          return ii + 1;
+        }
+      }
+      return ii;
+    };
+
+    ObjectSeq.prototype.__iterator = function(type, reverse) {
+      var object = this._object;
+      var keys = this._keys;
+      var maxIndex = keys.length - 1;
+      var ii = 0;
+      return new Iterator(function()  {
+        var key = keys[reverse ? maxIndex - ii : ii];
+        return ii++ > maxIndex ?
+          iteratorDone() :
+          iteratorValue(type, key, object[key]);
+      });
+    };
+
+  ObjectSeq.prototype[IS_ORDERED_SENTINEL] = true;
+
+
+  createClass(IterableSeq, IndexedSeq);
+    function IterableSeq(iterable) {
+      this._iterable = iterable;
+      this.size = iterable.length || iterable.size;
+    }
+
+    IterableSeq.prototype.__iterateUncached = function(fn, reverse) {
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      var iterable = this._iterable;
+      var iterator = getIterator(iterable);
+      var iterations = 0;
+      if (isIterator(iterator)) {
+        var step;
+        while (!(step = iterator.next()).done) {
+          if (fn(step.value, iterations++, this) === false) {
+            break;
+          }
+        }
+      }
+      return iterations;
+    };
+
+    IterableSeq.prototype.__iteratorUncached = function(type, reverse) {
+      if (reverse) {
+        return this.cacheResult().__iterator(type, reverse);
+      }
+      var iterable = this._iterable;
+      var iterator = getIterator(iterable);
+      if (!isIterator(iterator)) {
+        return new Iterator(iteratorDone);
+      }
+      var iterations = 0;
+      return new Iterator(function()  {
+        var step = iterator.next();
+        return step.done ? step : iteratorValue(type, iterations++, step.value);
+      });
+    };
+
+
+
+  createClass(IteratorSeq, IndexedSeq);
+    function IteratorSeq(iterator) {
+      this._iterator = iterator;
+      this._iteratorCache = [];
+    }
+
+    IteratorSeq.prototype.__iterateUncached = function(fn, reverse) {
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      var iterator = this._iterator;
+      var cache = this._iteratorCache;
+      var iterations = 0;
+      while (iterations < cache.length) {
+        if (fn(cache[iterations], iterations++, this) === false) {
+          return iterations;
+        }
+      }
+      var step;
+      while (!(step = iterator.next()).done) {
+        var val = step.value;
+        cache[iterations] = val;
+        if (fn(val, iterations++, this) === false) {
+          break;
+        }
+      }
+      return iterations;
+    };
+
+    IteratorSeq.prototype.__iteratorUncached = function(type, reverse) {
+      if (reverse) {
+        return this.cacheResult().__iterator(type, reverse);
+      }
+      var iterator = this._iterator;
+      var cache = this._iteratorCache;
+      var iterations = 0;
+      return new Iterator(function()  {
+        if (iterations >= cache.length) {
+          var step = iterator.next();
+          if (step.done) {
+            return step;
+          }
+          cache[iterations] = step.value;
+        }
+        return iteratorValue(type, iterations, cache[iterations++]);
+      });
+    };
+
+
+
+
+  // # pragma Helper functions
+
+  function isSeq(maybeSeq) {
+    return !!(maybeSeq && maybeSeq[IS_SEQ_SENTINEL]);
+  }
+
+  var EMPTY_SEQ;
+
+  function emptySequence() {
+    return EMPTY_SEQ || (EMPTY_SEQ = new ArraySeq([]));
+  }
+
+  function keyedSeqFromValue(value) {
+    var seq =
+      Array.isArray(value) ? new ArraySeq(value).fromEntrySeq() :
+      isIterator(value) ? new IteratorSeq(value).fromEntrySeq() :
+      hasIterator(value) ? new IterableSeq(value).fromEntrySeq() :
+      typeof value === 'object' ? new ObjectSeq(value) :
+      undefined;
+    if (!seq) {
+      throw new TypeError(
+        'Expected Array or iterable object of [k, v] entries, '+
+        'or keyed object: ' + value
+      );
+    }
+    return seq;
+  }
+
+  function indexedSeqFromValue(value) {
+    var seq = maybeIndexedSeqFromValue(value);
+    if (!seq) {
+      throw new TypeError(
+        'Expected Array or iterable object of values: ' + value
+      );
+    }
+    return seq;
+  }
+
+  function seqFromValue(value) {
+    var seq = maybeIndexedSeqFromValue(value) ||
+      (typeof value === 'object' && new ObjectSeq(value));
+    if (!seq) {
+      throw new TypeError(
+        'Expected Array or iterable object of values, or keyed object: ' + value
+      );
+    }
+    return seq;
+  }
+
+  function maybeIndexedSeqFromValue(value) {
+    return (
+      isArrayLike(value) ? new ArraySeq(value) :
+      isIterator(value) ? new IteratorSeq(value) :
+      hasIterator(value) ? new IterableSeq(value) :
+      undefined
+    );
+  }
+
+  function seqIterate(seq, fn, reverse, useKeys) {
+    var cache = seq._cache;
+    if (cache) {
+      var maxIndex = cache.length - 1;
+      for (var ii = 0; ii <= maxIndex; ii++) {
+        var entry = cache[reverse ? maxIndex - ii : ii];
+        if (fn(entry[1], useKeys ? entry[0] : ii, seq) === false) {
+          return ii + 1;
+        }
+      }
+      return ii;
+    }
+    return seq.__iterateUncached(fn, reverse);
+  }
+
+  function seqIterator(seq, type, reverse, useKeys) {
+    var cache = seq._cache;
+    if (cache) {
+      var maxIndex = cache.length - 1;
+      var ii = 0;
+      return new Iterator(function()  {
+        var entry = cache[reverse ? maxIndex - ii : ii];
+        return ii++ > maxIndex ?
+          iteratorDone() :
+          iteratorValue(type, useKeys ? entry[0] : ii - 1, entry[1]);
+      });
+    }
+    return seq.__iteratorUncached(type, reverse);
+  }
+
+  createClass(Collection, Iterable);
+    function Collection() {
+      throw TypeError('Abstract');
+    }
+
+
+  createClass(KeyedCollection, Collection);function KeyedCollection() {}
+
+  createClass(IndexedCollection, Collection);function IndexedCollection() {}
+
+  createClass(SetCollection, Collection);function SetCollection() {}
+
+
+  Collection.Keyed = KeyedCollection;
+  Collection.Indexed = IndexedCollection;
+  Collection.Set = SetCollection;
+
+  /**
+   * An extension of the "same-value" algorithm as [described for use by ES6 Map
+   * and Set](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map#Key_equality)
+   *
+   * NaN is considered the same as NaN, however -0 and 0 are considered the same
+   * value, which is different from the algorithm described by
+   * [`Object.is`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is).
+   *
+   * This is extended further to allow Objects to describe the values they
+   * represent, by way of `valueOf` or `equals` (and `hashCode`).
+   *
+   * Note: because of this extension, the key equality of Immutable.Map and the
+   * value equality of Immutable.Set will differ from ES6 Map and Set.
+   *
+   * ### Defining custom values
+   *
+   * The easiest way to describe the value an object represents is by implementing
+   * `valueOf`. For example, `Date` represents a value by returning a unix
+   * timestamp for `valueOf`:
+   *
+   *     var date1 = new Date(1234567890000); // Fri Feb 13 2009 ...
+   *     var date2 = new Date(1234567890000);
+   *     date1.valueOf(); // 1234567890000
+   *     assert( date1 !== date2 );
+   *     assert( Immutable.is( date1, date2 ) );
+   *
+   * Note: overriding `valueOf` may have other implications if you use this object
+   * where JavaScript expects a primitive, such as implicit string coercion.
+   *
+   * For more complex types, especially collections, implementing `valueOf` may
+   * not be performant. An alternative is to implement `equals` and `hashCode`.
+   *
+   * `equals` takes another object, presumably of similar type, and returns true
+   * if the it is equal. Equality is symmetrical, so the same result should be
+   * returned if this and the argument are flipped.
+   *
+   *     assert( a.equals(b) === b.equals(a) );
+   *
+   * `hashCode` returns a 32bit integer number representing the object which will
+   * be used to determine how to store the value object in a Map or Set. You must
+   * provide both or neither methods, one must not exist without the other.
+   *
+   * Also, an important relationship between these methods must be upheld: if two
+   * values are equal, they *must* return the same hashCode. If the values are not
+   * equal, they might have the same hashCode; this is called a hash collision,
+   * and while undesirable for performance reasons, it is acceptable.
+   *
+   *     if (a.equals(b)) {
+   *       assert( a.hashCode() === b.hashCode() );
+   *     }
+   *
+   * All Immutable collections implement `equals` and `hashCode`.
+   *
+   */
+  function is(valueA, valueB) {
+    if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
+      return true;
+    }
+    if (!valueA || !valueB) {
+      return false;
+    }
+    if (typeof valueA.valueOf === 'function' &&
+        typeof valueB.valueOf === 'function') {
+      valueA = valueA.valueOf();
+      valueB = valueB.valueOf();
+    }
+    return typeof valueA.equals === 'function' &&
+      typeof valueB.equals === 'function' ?
+        valueA.equals(valueB) :
+        valueA === valueB || (valueA !== valueA && valueB !== valueB);
+  }
+
+  function fromJS(json, converter) {
+    return converter ?
+      fromJSWith(converter, json, '', {'': json}) :
+      fromJSDefault(json);
+  }
+
+  function fromJSWith(converter, json, key, parentJSON) {
+    if (Array.isArray(json)) {
+      return converter.call(parentJSON, key, IndexedSeq(json).map(function(v, k)  {return fromJSWith(converter, v, k, json)}));
+    }
+    if (isPlainObj(json)) {
+      return converter.call(parentJSON, key, KeyedSeq(json).map(function(v, k)  {return fromJSWith(converter, v, k, json)}));
+    }
+    return json;
+  }
+
+  function fromJSDefault(json) {
+    if (Array.isArray(json)) {
+      return IndexedSeq(json).map(fromJSDefault).toList();
+    }
+    if (isPlainObj(json)) {
+      return KeyedSeq(json).map(fromJSDefault).toMap();
+    }
+    return json;
+  }
+
+  function isPlainObj(value) {
+    return value && value.constructor === Object;
+  }
+
+  var Math__imul =
+    typeof Math.imul === 'function' && Math.imul(0xffffffff, 2) === -2 ?
+    Math.imul :
+    function Math__imul(a, b) {
+      a = a | 0; // int
+      b = b | 0; // int
+      var c = a & 0xffff;
+      var d = b & 0xffff;
+      // Shift by 0 fixes the sign on the high part.
+      return (c * d) + ((((a >>> 16) * d + c * (b >>> 16)) << 16) >>> 0) | 0; // int
+    };
+
+  // v8 has an optimization for storing 31-bit signed numbers.
+  // Values which have either 00 or 11 as the high order bits qualify.
+  // This function drops the highest order bit in a signed number, maintaining
+  // the sign bit.
+  function smi(i32) {
+    return ((i32 >>> 1) & 0x40000000) | (i32 & 0xBFFFFFFF);
+  }
+
+  function hash(o) {
+    if (o === false || o === null || o === undefined) {
+      return 0;
+    }
+    if (typeof o.valueOf === 'function') {
+      o = o.valueOf();
+      if (o === false || o === null || o === undefined) {
+        return 0;
+      }
+    }
+    if (o === true) {
+      return 1;
+    }
+    var type = typeof o;
+    if (type === 'number') {
+      var h = o | 0;
+      if (h !== o) {
+        h ^= o * 0xFFFFFFFF;
+      }
+      while (o > 0xFFFFFFFF) {
+        o /= 0xFFFFFFFF;
+        h ^= o;
+      }
+      return smi(h);
+    }
+    if (type === 'string') {
+      return o.length > STRING_HASH_CACHE_MIN_STRLEN ? cachedHashString(o) : hashString(o);
+    }
+    if (typeof o.hashCode === 'function') {
+      return o.hashCode();
+    }
+    return hashJSObj(o);
+  }
+
+  function cachedHashString(string) {
+    var hash = stringHashCache[string];
+    if (hash === undefined) {
+      hash = hashString(string);
+      if (STRING_HASH_CACHE_SIZE === STRING_HASH_CACHE_MAX_SIZE) {
+        STRING_HASH_CACHE_SIZE = 0;
+        stringHashCache = {};
+      }
+      STRING_HASH_CACHE_SIZE++;
+      stringHashCache[string] = hash;
+    }
+    return hash;
+  }
+
+  // http://jsperf.com/hashing-strings
+  function hashString(string) {
+    // This is the hash from JVM
+    // The hash code for a string is computed as
+    // s[0] * 31 ^ (n - 1) + s[1] * 31 ^ (n - 2) + ... + s[n - 1],
+    // where s[i] is the ith character of the string and n is the length of
+    // the string. We "mod" the result to make it between 0 (inclusive) and 2^31
+    // (exclusive) by dropping high bits.
+    var hash = 0;
+    for (var ii = 0; ii < string.length; ii++) {
+      hash = 31 * hash + string.charCodeAt(ii) | 0;
+    }
+    return smi(hash);
+  }
+
+  function hashJSObj(obj) {
+    var hash = weakMap && weakMap.get(obj);
+    if (hash) return hash;
+
+    hash = obj[UID_HASH_KEY];
+    if (hash) return hash;
+
+    if (!canDefineProperty) {
+      hash = obj.propertyIsEnumerable && obj.propertyIsEnumerable[UID_HASH_KEY];
+      if (hash) return hash;
+
+      hash = getIENodeHash(obj);
+      if (hash) return hash;
+    }
+
+    if (Object.isExtensible && !Object.isExtensible(obj)) {
+      throw new Error('Non-extensible objects are not allowed as keys.');
+    }
+
+    hash = ++objHashUID;
+    if (objHashUID & 0x40000000) {
+      objHashUID = 0;
+    }
+
+    if (weakMap) {
+      weakMap.set(obj, hash);
+    } else if (canDefineProperty) {
+      Object.defineProperty(obj, UID_HASH_KEY, {
+        'enumerable': false,
+        'configurable': false,
+        'writable': false,
+        'value': hash
+      });
+    } else if (obj.propertyIsEnumerable &&
+               obj.propertyIsEnumerable === obj.constructor.prototype.propertyIsEnumerable) {
+      // Since we can't define a non-enumerable property on the object
+      // we'll hijack one of the less-used non-enumerable properties to
+      // save our hash on it. Since this is a function it will not show up in
+      // `JSON.stringify` which is what we want.
+      obj.propertyIsEnumerable = function() {
+        return this.constructor.prototype.propertyIsEnumerable.apply(this, arguments);
+      };
+      obj.propertyIsEnumerable[UID_HASH_KEY] = hash;
+    } else if (obj.nodeType) {
+      // At this point we couldn't get the IE `uniqueID` to use as a hash
+      // and we couldn't use a non-enumerable property to exploit the
+      // dontEnum bug so we simply add the `UID_HASH_KEY` on the node
+      // itself.
+      obj[UID_HASH_KEY] = hash;
+    } else {
+      throw new Error('Unable to set a non-enumerable property on object.');
+    }
+
+    return hash;
+  }
+
+  // True if Object.defineProperty works as expected. IE8 fails this test.
+  var canDefineProperty = (function() {
+    try {
+      Object.defineProperty({}, 'x', {});
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }());
+
+  // IE has a `uniqueID` property on DOM nodes. We can construct the hash from it
+  // and avoid memory leaks from the IE cloneNode bug.
+  function getIENodeHash(node) {
+    if (node && node.nodeType > 0) {
+      switch (node.nodeType) {
+        case 1: // Element
+          return node.uniqueID;
+        case 9: // Document
+          return node.documentElement && node.documentElement.uniqueID;
+      }
+    }
+  }
+
+  // If possible, use a WeakMap.
+  var weakMap = typeof WeakMap === 'function' && new WeakMap();
+
+  var objHashUID = 0;
+
+  var UID_HASH_KEY = '__immutablehash__';
+  if (typeof Symbol === 'function') {
+    UID_HASH_KEY = Symbol(UID_HASH_KEY);
+  }
+
+  var STRING_HASH_CACHE_MIN_STRLEN = 16;
+  var STRING_HASH_CACHE_MAX_SIZE = 255;
+  var STRING_HASH_CACHE_SIZE = 0;
+  var stringHashCache = {};
+
+  function invariant(condition, error) {
+    if (!condition) throw new Error(error);
+  }
+
+  function assertNotInfinite(size) {
+    invariant(
+      size !== Infinity,
+      'Cannot perform this action with an infinite size.'
+    );
+  }
+
+  createClass(ToKeyedSequence, KeyedSeq);
+    function ToKeyedSequence(indexed, useKeys) {
+      this._iter = indexed;
+      this._useKeys = useKeys;
+      this.size = indexed.size;
+    }
+
+    ToKeyedSequence.prototype.get = function(key, notSetValue) {
+      return this._iter.get(key, notSetValue);
+    };
+
+    ToKeyedSequence.prototype.has = function(key) {
+      return this._iter.has(key);
+    };
+
+    ToKeyedSequence.prototype.valueSeq = function() {
+      return this._iter.valueSeq();
+    };
+
+    ToKeyedSequence.prototype.reverse = function() {var this$0 = this;
+      var reversedSequence = reverseFactory(this, true);
+      if (!this._useKeys) {
+        reversedSequence.valueSeq = function()  {return this$0._iter.toSeq().reverse()};
+      }
+      return reversedSequence;
+    };
+
+    ToKeyedSequence.prototype.map = function(mapper, context) {var this$0 = this;
+      var mappedSequence = mapFactory(this, mapper, context);
+      if (!this._useKeys) {
+        mappedSequence.valueSeq = function()  {return this$0._iter.toSeq().map(mapper, context)};
+      }
+      return mappedSequence;
+    };
+
+    ToKeyedSequence.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      var ii;
+      return this._iter.__iterate(
+        this._useKeys ?
+          function(v, k)  {return fn(v, k, this$0)} :
+          ((ii = reverse ? resolveSize(this) : 0),
+            function(v ) {return fn(v, reverse ? --ii : ii++, this$0)}),
+        reverse
+      );
+    };
+
+    ToKeyedSequence.prototype.__iterator = function(type, reverse) {
+      if (this._useKeys) {
+        return this._iter.__iterator(type, reverse);
+      }
+      var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
+      var ii = reverse ? resolveSize(this) : 0;
+      return new Iterator(function()  {
+        var step = iterator.next();
+        return step.done ? step :
+          iteratorValue(type, reverse ? --ii : ii++, step.value, step);
+      });
+    };
+
+  ToKeyedSequence.prototype[IS_ORDERED_SENTINEL] = true;
+
+
+  createClass(ToIndexedSequence, IndexedSeq);
+    function ToIndexedSequence(iter) {
+      this._iter = iter;
+      this.size = iter.size;
+    }
+
+    ToIndexedSequence.prototype.contains = function(value) {
+      return this._iter.contains(value);
+    };
+
+    ToIndexedSequence.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      var iterations = 0;
+      return this._iter.__iterate(function(v ) {return fn(v, iterations++, this$0)}, reverse);
+    };
+
+    ToIndexedSequence.prototype.__iterator = function(type, reverse) {
+      var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
+      var iterations = 0;
+      return new Iterator(function()  {
+        var step = iterator.next();
+        return step.done ? step :
+          iteratorValue(type, iterations++, step.value, step)
+      });
+    };
+
+
+
+  createClass(ToSetSequence, SetSeq);
+    function ToSetSequence(iter) {
+      this._iter = iter;
+      this.size = iter.size;
+    }
+
+    ToSetSequence.prototype.has = function(key) {
+      return this._iter.contains(key);
+    };
+
+    ToSetSequence.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      return this._iter.__iterate(function(v ) {return fn(v, v, this$0)}, reverse);
+    };
+
+    ToSetSequence.prototype.__iterator = function(type, reverse) {
+      var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
+      return new Iterator(function()  {
+        var step = iterator.next();
+        return step.done ? step :
+          iteratorValue(type, step.value, step.value, step);
+      });
+    };
+
+
+
+  createClass(FromEntriesSequence, KeyedSeq);
+    function FromEntriesSequence(entries) {
+      this._iter = entries;
+      this.size = entries.size;
+    }
+
+    FromEntriesSequence.prototype.entrySeq = function() {
+      return this._iter.toSeq();
+    };
+
+    FromEntriesSequence.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      return this._iter.__iterate(function(entry ) {
+        // Check if entry exists first so array access doesn't throw for holes
+        // in the parent iteration.
+        if (entry) {
+          validateEntry(entry);
+          return fn(entry[1], entry[0], this$0);
+        }
+      }, reverse);
+    };
+
+    FromEntriesSequence.prototype.__iterator = function(type, reverse) {
+      var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
+      return new Iterator(function()  {
+        while (true) {
+          var step = iterator.next();
+          if (step.done) {
+            return step;
+          }
+          var entry = step.value;
+          // Check if entry exists first so array access doesn't throw for holes
+          // in the parent iteration.
+          if (entry) {
+            validateEntry(entry);
+            return type === ITERATE_ENTRIES ? step :
+              iteratorValue(type, entry[0], entry[1], step);
+          }
+        }
+      });
+    };
+
+
+  ToIndexedSequence.prototype.cacheResult =
+  ToKeyedSequence.prototype.cacheResult =
+  ToSetSequence.prototype.cacheResult =
+  FromEntriesSequence.prototype.cacheResult =
+    cacheResultThrough;
+
+
+  function flipFactory(iterable) {
+    var flipSequence = makeSequence(iterable);
+    flipSequence._iter = iterable;
+    flipSequence.size = iterable.size;
+    flipSequence.flip = function()  {return iterable};
+    flipSequence.reverse = function () {
+      var reversedSequence = iterable.reverse.apply(this); // super.reverse()
+      reversedSequence.flip = function()  {return iterable.reverse()};
+      return reversedSequence;
+    };
+    flipSequence.has = function(key ) {return iterable.contains(key)};
+    flipSequence.contains = function(key ) {return iterable.has(key)};
+    flipSequence.cacheResult = cacheResultThrough;
+    flipSequence.__iterateUncached = function (fn, reverse) {var this$0 = this;
+      return iterable.__iterate(function(v, k)  {return fn(k, v, this$0) !== false}, reverse);
+    }
+    flipSequence.__iteratorUncached = function(type, reverse) {
+      if (type === ITERATE_ENTRIES) {
+        var iterator = iterable.__iterator(type, reverse);
+        return new Iterator(function()  {
+          var step = iterator.next();
+          if (!step.done) {
+            var k = step.value[0];
+            step.value[0] = step.value[1];
+            step.value[1] = k;
+          }
+          return step;
+        });
+      }
+      return iterable.__iterator(
+        type === ITERATE_VALUES ? ITERATE_KEYS : ITERATE_VALUES,
+        reverse
+      );
+    }
+    return flipSequence;
+  }
+
+
+  function mapFactory(iterable, mapper, context) {
+    var mappedSequence = makeSequence(iterable);
+    mappedSequence.size = iterable.size;
+    mappedSequence.has = function(key ) {return iterable.has(key)};
+    mappedSequence.get = function(key, notSetValue)  {
+      var v = iterable.get(key, NOT_SET);
+      return v === NOT_SET ?
+        notSetValue :
+        mapper.call(context, v, key, iterable);
+    };
+    mappedSequence.__iterateUncached = function (fn, reverse) {var this$0 = this;
+      return iterable.__iterate(
+        function(v, k, c)  {return fn(mapper.call(context, v, k, c), k, this$0) !== false},
+        reverse
+      );
+    }
+    mappedSequence.__iteratorUncached = function (type, reverse) {
+      var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
+      return new Iterator(function()  {
+        var step = iterator.next();
+        if (step.done) {
+          return step;
+        }
+        var entry = step.value;
+        var key = entry[0];
+        return iteratorValue(
+          type,
+          key,
+          mapper.call(context, entry[1], key, iterable),
+          step
+        );
+      });
+    }
+    return mappedSequence;
+  }
+
+
+  function reverseFactory(iterable, useKeys) {
+    var reversedSequence = makeSequence(iterable);
+    reversedSequence._iter = iterable;
+    reversedSequence.size = iterable.size;
+    reversedSequence.reverse = function()  {return iterable};
+    if (iterable.flip) {
+      reversedSequence.flip = function () {
+        var flipSequence = flipFactory(iterable);
+        flipSequence.reverse = function()  {return iterable.flip()};
+        return flipSequence;
+      };
+    }
+    reversedSequence.get = function(key, notSetValue) 
+      {return iterable.get(useKeys ? key : -1 - key, notSetValue)};
+    reversedSequence.has = function(key )
+      {return iterable.has(useKeys ? key : -1 - key)};
+    reversedSequence.contains = function(value ) {return iterable.contains(value)};
+    reversedSequence.cacheResult = cacheResultThrough;
+    reversedSequence.__iterate = function (fn, reverse) {var this$0 = this;
+      return iterable.__iterate(function(v, k)  {return fn(v, k, this$0)}, !reverse);
+    };
+    reversedSequence.__iterator =
+      function(type, reverse)  {return iterable.__iterator(type, !reverse)};
+    return reversedSequence;
+  }
+
+
+  function filterFactory(iterable, predicate, context, useKeys) {
+    var filterSequence = makeSequence(iterable);
+    if (useKeys) {
+      filterSequence.has = function(key ) {
+        var v = iterable.get(key, NOT_SET);
+        return v !== NOT_SET && !!predicate.call(context, v, key, iterable);
+      };
+      filterSequence.get = function(key, notSetValue)  {
+        var v = iterable.get(key, NOT_SET);
+        return v !== NOT_SET && predicate.call(context, v, key, iterable) ?
+          v : notSetValue;
+      };
+    }
+    filterSequence.__iterateUncached = function (fn, reverse) {var this$0 = this;
+      var iterations = 0;
+      iterable.__iterate(function(v, k, c)  {
+        if (predicate.call(context, v, k, c)) {
+          iterations++;
+          return fn(v, useKeys ? k : iterations - 1, this$0);
+        }
+      }, reverse);
+      return iterations;
+    };
+    filterSequence.__iteratorUncached = function (type, reverse) {
+      var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
+      var iterations = 0;
+      return new Iterator(function()  {
+        while (true) {
+          var step = iterator.next();
+          if (step.done) {
+            return step;
+          }
+          var entry = step.value;
+          var key = entry[0];
+          var value = entry[1];
+          if (predicate.call(context, value, key, iterable)) {
+            return iteratorValue(type, useKeys ? key : iterations++, value, step);
+          }
+        }
+      });
+    }
+    return filterSequence;
+  }
+
+
+  function countByFactory(iterable, grouper, context) {
+    var groups = Map().asMutable();
+    iterable.__iterate(function(v, k)  {
+      groups.update(
+        grouper.call(context, v, k, iterable),
+        0,
+        function(a ) {return a + 1}
+      );
+    });
+    return groups.asImmutable();
+  }
+
+
+  function groupByFactory(iterable, grouper, context) {
+    var isKeyedIter = isKeyed(iterable);
+    var groups = (isOrdered(iterable) ? OrderedMap() : Map()).asMutable();
+    iterable.__iterate(function(v, k)  {
+      groups.update(
+        grouper.call(context, v, k, iterable),
+        function(a ) {return (a = a || [], a.push(isKeyedIter ? [k, v] : v), a)}
+      );
+    });
+    var coerce = iterableClass(iterable);
+    return groups.map(function(arr ) {return reify(iterable, coerce(arr))});
+  }
+
+
+  function sliceFactory(iterable, begin, end, useKeys) {
+    var originalSize = iterable.size;
+
+    if (wholeSlice(begin, end, originalSize)) {
+      return iterable;
+    }
+
+    var resolvedBegin = resolveBegin(begin, originalSize);
+    var resolvedEnd = resolveEnd(end, originalSize);
+
+    // begin or end will be NaN if they were provided as negative numbers and
+    // this iterable's size is unknown. In that case, cache first so there is
+    // a known size.
+    if (resolvedBegin !== resolvedBegin || resolvedEnd !== resolvedEnd) {
+      return sliceFactory(iterable.toSeq().cacheResult(), begin, end, useKeys);
+    }
+
+    var sliceSize = resolvedEnd - resolvedBegin;
+    if (sliceSize < 0) {
+      sliceSize = 0;
+    }
+
+    var sliceSeq = makeSequence(iterable);
+
+    sliceSeq.size = sliceSize === 0 ? sliceSize : iterable.size && sliceSize || undefined;
+
+    if (!useKeys && isSeq(iterable) && sliceSize >= 0) {
+      sliceSeq.get = function (index, notSetValue) {
+        index = wrapIndex(this, index);
+        return index >= 0 && index < sliceSize ?
+          iterable.get(index + resolvedBegin, notSetValue) :
+          notSetValue;
+      }
+    }
+
+    sliceSeq.__iterateUncached = function(fn, reverse) {var this$0 = this;
+      if (sliceSize === 0) {
+        return 0;
+      }
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      var skipped = 0;
+      var isSkipping = true;
+      var iterations = 0;
+      iterable.__iterate(function(v, k)  {
+        if (!(isSkipping && (isSkipping = skipped++ < resolvedBegin))) {
+          iterations++;
+          return fn(v, useKeys ? k : iterations - 1, this$0) !== false &&
+                 iterations !== sliceSize;
+        }
+      });
+      return iterations;
+    };
+
+    sliceSeq.__iteratorUncached = function(type, reverse) {
+      if (sliceSize && reverse) {
+        return this.cacheResult().__iterator(type, reverse);
+      }
+      // Don't bother instantiating parent iterator if taking 0.
+      var iterator = sliceSize && iterable.__iterator(type, reverse);
+      var skipped = 0;
+      var iterations = 0;
+      return new Iterator(function()  {
+        while (skipped++ !== resolvedBegin) {
+          iterator.next();
+        }
+        if (++iterations > sliceSize) {
+          return iteratorDone();
+        }
+        var step = iterator.next();
+        if (useKeys || type === ITERATE_VALUES) {
+          return step;
+        } else if (type === ITERATE_KEYS) {
+          return iteratorValue(type, iterations - 1, undefined, step);
+        } else {
+          return iteratorValue(type, iterations - 1, step.value[1], step);
+        }
+      });
+    }
+
+    return sliceSeq;
+  }
+
+
+  function takeWhileFactory(iterable, predicate, context) {
+    var takeSequence = makeSequence(iterable);
+    takeSequence.__iterateUncached = function(fn, reverse) {var this$0 = this;
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      var iterations = 0;
+      iterable.__iterate(function(v, k, c) 
+        {return predicate.call(context, v, k, c) && ++iterations && fn(v, k, this$0)}
+      );
+      return iterations;
+    };
+    takeSequence.__iteratorUncached = function(type, reverse) {var this$0 = this;
+      if (reverse) {
+        return this.cacheResult().__iterator(type, reverse);
+      }
+      var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
+      var iterating = true;
+      return new Iterator(function()  {
+        if (!iterating) {
+          return iteratorDone();
+        }
+        var step = iterator.next();
+        if (step.done) {
+          return step;
+        }
+        var entry = step.value;
+        var k = entry[0];
+        var v = entry[1];
+        if (!predicate.call(context, v, k, this$0)) {
+          iterating = false;
+          return iteratorDone();
+        }
+        return type === ITERATE_ENTRIES ? step :
+          iteratorValue(type, k, v, step);
+      });
+    };
+    return takeSequence;
+  }
+
+
+  function skipWhileFactory(iterable, predicate, context, useKeys) {
+    var skipSequence = makeSequence(iterable);
+    skipSequence.__iterateUncached = function (fn, reverse) {var this$0 = this;
+      if (reverse) {
+        return this.cacheResult().__iterate(fn, reverse);
+      }
+      var isSkipping = true;
+      var iterations = 0;
+      iterable.__iterate(function(v, k, c)  {
+        if (!(isSkipping && (isSkipping = predicate.call(context, v, k, c)))) {
+          iterations++;
+          return fn(v, useKeys ? k : iterations - 1, this$0);
+        }
+      });
+      return iterations;
+    };
+    skipSequence.__iteratorUncached = function(type, reverse) {var this$0 = this;
+      if (reverse) {
+        return this.cacheResult().__iterator(type, reverse);
+      }
+      var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
+      var skipping = true;
+      var iterations = 0;
+      return new Iterator(function()  {
+        var step, k, v;
+        do {
+          step = iterator.next();
+          if (step.done) {
+            if (useKeys || type === ITERATE_VALUES) {
+              return step;
+            } else if (type === ITERATE_KEYS) {
+              return iteratorValue(type, iterations++, undefined, step);
+            } else {
+              return iteratorValue(type, iterations++, step.value[1], step);
+            }
+          }
+          var entry = step.value;
+          k = entry[0];
+          v = entry[1];
+          skipping && (skipping = predicate.call(context, v, k, this$0));
+        } while (skipping);
+        return type === ITERATE_ENTRIES ? step :
+          iteratorValue(type, k, v, step);
+      });
+    };
+    return skipSequence;
+  }
+
+
+  function concatFactory(iterable, values) {
+    var isKeyedIterable = isKeyed(iterable);
+    var iters = [iterable].concat(values).map(function(v ) {
+      if (!isIterable(v)) {
+        v = isKeyedIterable ?
+          keyedSeqFromValue(v) :
+          indexedSeqFromValue(Array.isArray(v) ? v : [v]);
+      } else if (isKeyedIterable) {
+        v = KeyedIterable(v);
+      }
+      return v;
+    }).filter(function(v ) {return v.size !== 0});
+
+    if (iters.length === 0) {
+      return iterable;
+    }
+
+    if (iters.length === 1) {
+      var singleton = iters[0];
+      if (singleton === iterable ||
+          isKeyedIterable && isKeyed(singleton) ||
+          isIndexed(iterable) && isIndexed(singleton)) {
+        return singleton;
+      }
+    }
+
+    var concatSeq = new ArraySeq(iters);
+    if (isKeyedIterable) {
+      concatSeq = concatSeq.toKeyedSeq();
+    } else if (!isIndexed(iterable)) {
+      concatSeq = concatSeq.toSetSeq();
+    }
+    concatSeq = concatSeq.flatten(true);
+    concatSeq.size = iters.reduce(
+      function(sum, seq)  {
+        if (sum !== undefined) {
+          var size = seq.size;
+          if (size !== undefined) {
+            return sum + size;
+          }
+        }
+      },
+      0
+    );
+    return concatSeq;
+  }
+
+
+  function flattenFactory(iterable, depth, useKeys) {
+    var flatSequence = makeSequence(iterable);
+    flatSequence.__iterateUncached = function(fn, reverse) {
+      var iterations = 0;
+      var stopped = false;
+      function flatDeep(iter, currentDepth) {var this$0 = this;
+        iter.__iterate(function(v, k)  {
+          if ((!depth || currentDepth < depth) && isIterable(v)) {
+            flatDeep(v, currentDepth + 1);
+          } else if (fn(v, useKeys ? k : iterations++, this$0) === false) {
+            stopped = true;
+          }
+          return !stopped;
+        }, reverse);
+      }
+      flatDeep(iterable, 0);
+      return iterations;
+    }
+    flatSequence.__iteratorUncached = function(type, reverse) {
+      var iterator = iterable.__iterator(type, reverse);
+      var stack = [];
+      var iterations = 0;
+      return new Iterator(function()  {
+        while (iterator) {
+          var step = iterator.next();
+          if (step.done !== false) {
+            iterator = stack.pop();
+            continue;
+          }
+          var v = step.value;
+          if (type === ITERATE_ENTRIES) {
+            v = v[1];
+          }
+          if ((!depth || stack.length < depth) && isIterable(v)) {
+            stack.push(iterator);
+            iterator = v.__iterator(type, reverse);
+          } else {
+            return useKeys ? step : iteratorValue(type, iterations++, v, step);
+          }
+        }
+        return iteratorDone();
+      });
+    }
+    return flatSequence;
+  }
+
+
+  function flatMapFactory(iterable, mapper, context) {
+    var coerce = iterableClass(iterable);
+    return iterable.toSeq().map(
+      function(v, k)  {return coerce(mapper.call(context, v, k, iterable))}
+    ).flatten(true);
+  }
+
+
+  function interposeFactory(iterable, separator) {
+    var interposedSequence = makeSequence(iterable);
+    interposedSequence.size = iterable.size && iterable.size * 2 -1;
+    interposedSequence.__iterateUncached = function(fn, reverse) {var this$0 = this;
+      var iterations = 0;
+      iterable.__iterate(function(v, k) 
+        {return (!iterations || fn(separator, iterations++, this$0) !== false) &&
+        fn(v, iterations++, this$0) !== false},
+        reverse
+      );
+      return iterations;
+    };
+    interposedSequence.__iteratorUncached = function(type, reverse) {
+      var iterator = iterable.__iterator(ITERATE_VALUES, reverse);
+      var iterations = 0;
+      var step;
+      return new Iterator(function()  {
+        if (!step || iterations % 2) {
+          step = iterator.next();
+          if (step.done) {
+            return step;
+          }
+        }
+        return iterations % 2 ?
+          iteratorValue(type, iterations++, separator) :
+          iteratorValue(type, iterations++, step.value, step);
+      });
+    };
+    return interposedSequence;
+  }
+
+
+  function sortFactory(iterable, comparator, mapper) {
+    if (!comparator) {
+      comparator = defaultComparator;
+    }
+    var isKeyedIterable = isKeyed(iterable);
+    var index = 0;
+    var entries = iterable.toSeq().map(
+      function(v, k)  {return [k, v, index++, mapper ? mapper(v, k, iterable) : v]}
+    ).toArray();
+    entries.sort(function(a, b)  {return comparator(a[3], b[3]) || a[2] - b[2]}).forEach(
+      isKeyedIterable ?
+      function(v, i)  { entries[i].length = 2; } :
+      function(v, i)  { entries[i] = v[1]; }
+    );
+    return isKeyedIterable ? KeyedSeq(entries) :
+      isIndexed(iterable) ? IndexedSeq(entries) :
+      SetSeq(entries);
+  }
+
+
+  function maxFactory(iterable, comparator, mapper) {
+    if (!comparator) {
+      comparator = defaultComparator;
+    }
+    if (mapper) {
+      var entry = iterable.toSeq()
+        .map(function(v, k)  {return [v, mapper(v, k, iterable)]})
+        .reduce(function(a, b)  {return maxCompare(comparator, a[1], b[1]) ? b : a});
+      return entry && entry[0];
+    } else {
+      return iterable.reduce(function(a, b)  {return maxCompare(comparator, a, b) ? b : a});
+    }
+  }
+
+  function maxCompare(comparator, a, b) {
+    var comp = comparator(b, a);
+    // b is considered the new max if the comparator declares them equal, but
+    // they are not equal and b is in fact a nullish value.
+    return (comp === 0 && b !== a && (b === undefined || b === null || b !== b)) || comp > 0;
+  }
+
+
+  function zipWithFactory(keyIter, zipper, iters) {
+    var zipSequence = makeSequence(keyIter);
+    zipSequence.size = new ArraySeq(iters).map(function(i ) {return i.size}).min();
+    // Note: this a generic base implementation of __iterate in terms of
+    // __iterator which may be more generically useful in the future.
+    zipSequence.__iterate = function(fn, reverse) {
+      /* generic:
+      var iterator = this.__iterator(ITERATE_ENTRIES, reverse);
+      var step;
+      var iterations = 0;
+      while (!(step = iterator.next()).done) {
+        iterations++;
+        if (fn(step.value[1], step.value[0], this) === false) {
+          break;
+        }
+      }
+      return iterations;
+      */
+      // indexed:
+      var iterator = this.__iterator(ITERATE_VALUES, reverse);
+      var step;
+      var iterations = 0;
+      while (!(step = iterator.next()).done) {
+        if (fn(step.value, iterations++, this) === false) {
+          break;
+        }
+      }
+      return iterations;
+    };
+    zipSequence.__iteratorUncached = function(type, reverse) {
+      var iterators = iters.map(function(i )
+        {return (i = Iterable(i), getIterator(reverse ? i.reverse() : i))}
+      );
+      var iterations = 0;
+      var isDone = false;
+      return new Iterator(function()  {
+        var steps;
+        if (!isDone) {
+          steps = iterators.map(function(i ) {return i.next()});
+          isDone = steps.some(function(s ) {return s.done});
+        }
+        if (isDone) {
+          return iteratorDone();
+        }
+        return iteratorValue(
+          type,
+          iterations++,
+          zipper.apply(null, steps.map(function(s ) {return s.value}))
+        );
+      });
+    };
+    return zipSequence
+  }
+
+
+  // #pragma Helper Functions
+
+  function reify(iter, seq) {
+    return isSeq(iter) ? seq : iter.constructor(seq);
+  }
+
+  function validateEntry(entry) {
+    if (entry !== Object(entry)) {
+      throw new TypeError('Expected [K, V] tuple: ' + entry);
+    }
+  }
+
+  function resolveSize(iter) {
+    assertNotInfinite(iter.size);
+    return ensureSize(iter);
+  }
+
+  function iterableClass(iterable) {
+    return isKeyed(iterable) ? KeyedIterable :
+      isIndexed(iterable) ? IndexedIterable :
+      SetIterable;
+  }
+
+  function makeSequence(iterable) {
+    return Object.create(
+      (
+        isKeyed(iterable) ? KeyedSeq :
+        isIndexed(iterable) ? IndexedSeq :
+        SetSeq
+      ).prototype
+    );
+  }
+
+  function cacheResultThrough() {
+    if (this._iter.cacheResult) {
+      this._iter.cacheResult();
+      this.size = this._iter.size;
+      return this;
+    } else {
+      return Seq.prototype.cacheResult.call(this);
+    }
+  }
+
+  function defaultComparator(a, b) {
+    return a > b ? 1 : a < b ? -1 : 0;
+  }
+
+  function forceIterator(keyPath) {
+    var iter = getIterator(keyPath);
+    if (!iter) {
+      // Array might not be iterable in this environment, so we need a fallback
+      // to our wrapped type.
+      if (!isArrayLike(keyPath)) {
+        throw new TypeError('Expected iterable or array-like: ' + keyPath);
+      }
+      iter = getIterator(Iterable(keyPath));
+    }
+    return iter;
+  }
+
+  createClass(Map, KeyedCollection);
+
+    // @pragma Construction
+
+    function Map(value) {
+      return value === null || value === undefined ? emptyMap() :
+        isMap(value) ? value :
+        emptyMap().withMutations(function(map ) {
+          var iter = KeyedIterable(value);
+          assertNotInfinite(iter.size);
+          iter.forEach(function(v, k)  {return map.set(k, v)});
+        });
+    }
+
+    Map.prototype.toString = function() {
+      return this.__toString('Map {', '}');
+    };
+
+    // @pragma Access
+
+    Map.prototype.get = function(k, notSetValue) {
+      return this._root ?
+        this._root.get(0, undefined, k, notSetValue) :
+        notSetValue;
+    };
+
+    // @pragma Modification
+
+    Map.prototype.set = function(k, v) {
+      return updateMap(this, k, v);
+    };
+
+    Map.prototype.setIn = function(keyPath, v) {
+      return this.updateIn(keyPath, NOT_SET, function()  {return v});
+    };
+
+    Map.prototype.remove = function(k) {
+      return updateMap(this, k, NOT_SET);
+    };
+
+    Map.prototype.deleteIn = function(keyPath) {
+      return this.updateIn(keyPath, function()  {return NOT_SET});
+    };
+
+    Map.prototype.update = function(k, notSetValue, updater) {
+      return arguments.length === 1 ?
+        k(this) :
+        this.updateIn([k], notSetValue, updater);
+    };
+
+    Map.prototype.updateIn = function(keyPath, notSetValue, updater) {
+      if (!updater) {
+        updater = notSetValue;
+        notSetValue = undefined;
+      }
+      var updatedValue = updateInDeepMap(
+        this,
+        forceIterator(keyPath),
+        notSetValue,
+        updater
+      );
+      return updatedValue === NOT_SET ? undefined : updatedValue;
+    };
+
+    Map.prototype.clear = function() {
+      if (this.size === 0) {
+        return this;
+      }
+      if (this.__ownerID) {
+        this.size = 0;
+        this._root = null;
+        this.__hash = undefined;
+        this.__altered = true;
+        return this;
+      }
+      return emptyMap();
+    };
+
+    // @pragma Composition
+
+    Map.prototype.merge = function(/*...iters*/) {
+      return mergeIntoMapWith(this, undefined, arguments);
+    };
+
+    Map.prototype.mergeWith = function(merger) {var iters = SLICE$0.call(arguments, 1);
+      return mergeIntoMapWith(this, merger, iters);
+    };
+
+    Map.prototype.mergeIn = function(keyPath) {var iters = SLICE$0.call(arguments, 1);
+      return this.updateIn(keyPath, emptyMap(), function(m ) {return m.merge.apply(m, iters)});
+    };
+
+    Map.prototype.mergeDeep = function(/*...iters*/) {
+      return mergeIntoMapWith(this, deepMerger(undefined), arguments);
+    };
+
+    Map.prototype.mergeDeepWith = function(merger) {var iters = SLICE$0.call(arguments, 1);
+      return mergeIntoMapWith(this, deepMerger(merger), iters);
+    };
+
+    Map.prototype.mergeDeepIn = function(keyPath) {var iters = SLICE$0.call(arguments, 1);
+      return this.updateIn(keyPath, emptyMap(), function(m ) {return m.mergeDeep.apply(m, iters)});
+    };
+
+    Map.prototype.sort = function(comparator) {
+      // Late binding
+      return OrderedMap(sortFactory(this, comparator));
+    };
+
+    Map.prototype.sortBy = function(mapper, comparator) {
+      // Late binding
+      return OrderedMap(sortFactory(this, comparator, mapper));
+    };
+
+    // @pragma Mutability
+
+    Map.prototype.withMutations = function(fn) {
+      var mutable = this.asMutable();
+      fn(mutable);
+      return mutable.wasAltered() ? mutable.__ensureOwner(this.__ownerID) : this;
+    };
+
+    Map.prototype.asMutable = function() {
+      return this.__ownerID ? this : this.__ensureOwner(new OwnerID());
+    };
+
+    Map.prototype.asImmutable = function() {
+      return this.__ensureOwner();
+    };
+
+    Map.prototype.wasAltered = function() {
+      return this.__altered;
+    };
+
+    Map.prototype.__iterator = function(type, reverse) {
+      return new MapIterator(this, type, reverse);
+    };
+
+    Map.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      var iterations = 0;
+      this._root && this._root.iterate(function(entry ) {
+        iterations++;
+        return fn(entry[1], entry[0], this$0);
+      }, reverse);
+      return iterations;
+    };
+
+    Map.prototype.__ensureOwner = function(ownerID) {
+      if (ownerID === this.__ownerID) {
+        return this;
+      }
+      if (!ownerID) {
+        this.__ownerID = ownerID;
+        this.__altered = false;
+        return this;
+      }
+      return makeMap(this.size, this._root, ownerID, this.__hash);
+    };
+
+
+  function isMap(maybeMap) {
+    return !!(maybeMap && maybeMap[IS_MAP_SENTINEL]);
+  }
+
+  Map.isMap = isMap;
+
+  var IS_MAP_SENTINEL = '@@__IMMUTABLE_MAP__@@';
+
+  var MapPrototype = Map.prototype;
+  MapPrototype[IS_MAP_SENTINEL] = true;
+  MapPrototype[DELETE] = MapPrototype.remove;
+  MapPrototype.removeIn = MapPrototype.deleteIn;
+
+
+  // #pragma Trie Nodes
+
+
+
+    function ArrayMapNode(ownerID, entries) {
+      this.ownerID = ownerID;
+      this.entries = entries;
+    }
+
+    ArrayMapNode.prototype.get = function(shift, keyHash, key, notSetValue) {
+      var entries = this.entries;
+      for (var ii = 0, len = entries.length; ii < len; ii++) {
+        if (is(key, entries[ii][0])) {
+          return entries[ii][1];
+        }
+      }
+      return notSetValue;
+    };
+
+    ArrayMapNode.prototype.update = function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+      var removed = value === NOT_SET;
+
+      var entries = this.entries;
+      var idx = 0;
+      for (var len = entries.length; idx < len; idx++) {
+        if (is(key, entries[idx][0])) {
+          break;
+        }
+      }
+      var exists = idx < len;
+
+      if (exists ? entries[idx][1] === value : removed) {
+        return this;
+      }
+
+      SetRef(didAlter);
+      (removed || !exists) && SetRef(didChangeSize);
+
+      if (removed && entries.length === 1) {
+        return; // undefined
+      }
+
+      if (!exists && !removed && entries.length >= MAX_ARRAY_MAP_SIZE) {
+        return createNodes(ownerID, entries, key, value);
+      }
+
+      var isEditable = ownerID && ownerID === this.ownerID;
+      var newEntries = isEditable ? entries : arrCopy(entries);
+
+      if (exists) {
+        if (removed) {
+          idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
+        } else {
+          newEntries[idx] = [key, value];
+        }
+      } else {
+        newEntries.push([key, value]);
+      }
+
+      if (isEditable) {
+        this.entries = newEntries;
+        return this;
+      }
+
+      return new ArrayMapNode(ownerID, newEntries);
+    };
+
+
+
+
+    function BitmapIndexedNode(ownerID, bitmap, nodes) {
+      this.ownerID = ownerID;
+      this.bitmap = bitmap;
+      this.nodes = nodes;
+    }
+
+    BitmapIndexedNode.prototype.get = function(shift, keyHash, key, notSetValue) {
+      if (keyHash === undefined) {
+        keyHash = hash(key);
+      }
+      var bit = (1 << ((shift === 0 ? keyHash : keyHash >>> shift) & MASK));
+      var bitmap = this.bitmap;
+      return (bitmap & bit) === 0 ? notSetValue :
+        this.nodes[popCount(bitmap & (bit - 1))].get(shift + SHIFT, keyHash, key, notSetValue);
+    };
+
+    BitmapIndexedNode.prototype.update = function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+      if (keyHash === undefined) {
+        keyHash = hash(key);
+      }
+      var keyHashFrag = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+      var bit = 1 << keyHashFrag;
+      var bitmap = this.bitmap;
+      var exists = (bitmap & bit) !== 0;
+
+      if (!exists && value === NOT_SET) {
+        return this;
+      }
+
+      var idx = popCount(bitmap & (bit - 1));
+      var nodes = this.nodes;
+      var node = exists ? nodes[idx] : undefined;
+      var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
+
+      if (newNode === node) {
+        return this;
+      }
+
+      if (!exists && newNode && nodes.length >= MAX_BITMAP_INDEXED_SIZE) {
+        return expandNodes(ownerID, nodes, bitmap, keyHashFrag, newNode);
+      }
+
+      if (exists && !newNode && nodes.length === 2 && isLeafNode(nodes[idx ^ 1])) {
+        return nodes[idx ^ 1];
+      }
+
+      if (exists && newNode && nodes.length === 1 && isLeafNode(newNode)) {
+        return newNode;
+      }
+
+      var isEditable = ownerID && ownerID === this.ownerID;
+      var newBitmap = exists ? newNode ? bitmap : bitmap ^ bit : bitmap | bit;
+      var newNodes = exists ? newNode ?
+        setIn(nodes, idx, newNode, isEditable) :
+        spliceOut(nodes, idx, isEditable) :
+        spliceIn(nodes, idx, newNode, isEditable);
+
+      if (isEditable) {
+        this.bitmap = newBitmap;
+        this.nodes = newNodes;
+        return this;
+      }
+
+      return new BitmapIndexedNode(ownerID, newBitmap, newNodes);
+    };
+
+
+
+
+    function HashArrayMapNode(ownerID, count, nodes) {
+      this.ownerID = ownerID;
+      this.count = count;
+      this.nodes = nodes;
+    }
+
+    HashArrayMapNode.prototype.get = function(shift, keyHash, key, notSetValue) {
+      if (keyHash === undefined) {
+        keyHash = hash(key);
+      }
+      var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+      var node = this.nodes[idx];
+      return node ? node.get(shift + SHIFT, keyHash, key, notSetValue) : notSetValue;
+    };
+
+    HashArrayMapNode.prototype.update = function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+      if (keyHash === undefined) {
+        keyHash = hash(key);
+      }
+      var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+      var removed = value === NOT_SET;
+      var nodes = this.nodes;
+      var node = nodes[idx];
+
+      if (removed && !node) {
+        return this;
+      }
+
+      var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
+      if (newNode === node) {
+        return this;
+      }
+
+      var newCount = this.count;
+      if (!node) {
+        newCount++;
+      } else if (!newNode) {
+        newCount--;
+        if (newCount < MIN_HASH_ARRAY_MAP_SIZE) {
+          return packNodes(ownerID, nodes, newCount, idx);
+        }
+      }
+
+      var isEditable = ownerID && ownerID === this.ownerID;
+      var newNodes = setIn(nodes, idx, newNode, isEditable);
+
+      if (isEditable) {
+        this.count = newCount;
+        this.nodes = newNodes;
+        return this;
+      }
+
+      return new HashArrayMapNode(ownerID, newCount, newNodes);
+    };
+
+
+
+
+    function HashCollisionNode(ownerID, keyHash, entries) {
+      this.ownerID = ownerID;
+      this.keyHash = keyHash;
+      this.entries = entries;
+    }
+
+    HashCollisionNode.prototype.get = function(shift, keyHash, key, notSetValue) {
+      var entries = this.entries;
+      for (var ii = 0, len = entries.length; ii < len; ii++) {
+        if (is(key, entries[ii][0])) {
+          return entries[ii][1];
+        }
+      }
+      return notSetValue;
+    };
+
+    HashCollisionNode.prototype.update = function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+      if (keyHash === undefined) {
+        keyHash = hash(key);
+      }
+
+      var removed = value === NOT_SET;
+
+      if (keyHash !== this.keyHash) {
+        if (removed) {
+          return this;
+        }
+        SetRef(didAlter);
+        SetRef(didChangeSize);
+        return mergeIntoNode(this, ownerID, shift, keyHash, [key, value]);
+      }
+
+      var entries = this.entries;
+      var idx = 0;
+      for (var len = entries.length; idx < len; idx++) {
+        if (is(key, entries[idx][0])) {
+          break;
+        }
+      }
+      var exists = idx < len;
+
+      if (exists ? entries[idx][1] === value : removed) {
+        return this;
+      }
+
+      SetRef(didAlter);
+      (removed || !exists) && SetRef(didChangeSize);
+
+      if (removed && len === 2) {
+        return new ValueNode(ownerID, this.keyHash, entries[idx ^ 1]);
+      }
+
+      var isEditable = ownerID && ownerID === this.ownerID;
+      var newEntries = isEditable ? entries : arrCopy(entries);
+
+      if (exists) {
+        if (removed) {
+          idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
+        } else {
+          newEntries[idx] = [key, value];
+        }
+      } else {
+        newEntries.push([key, value]);
+      }
+
+      if (isEditable) {
+        this.entries = newEntries;
+        return this;
+      }
+
+      return new HashCollisionNode(ownerID, this.keyHash, newEntries);
+    };
+
+
+
+
+    function ValueNode(ownerID, keyHash, entry) {
+      this.ownerID = ownerID;
+      this.keyHash = keyHash;
+      this.entry = entry;
+    }
+
+    ValueNode.prototype.get = function(shift, keyHash, key, notSetValue) {
+      return is(key, this.entry[0]) ? this.entry[1] : notSetValue;
+    };
+
+    ValueNode.prototype.update = function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+      var removed = value === NOT_SET;
+      var keyMatch = is(key, this.entry[0]);
+      if (keyMatch ? value === this.entry[1] : removed) {
+        return this;
+      }
+
+      SetRef(didAlter);
+
+      if (removed) {
+        SetRef(didChangeSize);
+        return; // undefined
+      }
+
+      if (keyMatch) {
+        if (ownerID && ownerID === this.ownerID) {
+          this.entry[1] = value;
+          return this;
+        }
+        return new ValueNode(ownerID, this.keyHash, [key, value]);
+      }
+
+      SetRef(didChangeSize);
+      return mergeIntoNode(this, ownerID, shift, hash(key), [key, value]);
+    };
+
+
+
+  // #pragma Iterators
+
+  ArrayMapNode.prototype.iterate =
+  HashCollisionNode.prototype.iterate = function (fn, reverse) {
+    var entries = this.entries;
+    for (var ii = 0, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+      if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
+        return false;
+      }
+    }
+  }
+
+  BitmapIndexedNode.prototype.iterate =
+  HashArrayMapNode.prototype.iterate = function (fn, reverse) {
+    var nodes = this.nodes;
+    for (var ii = 0, maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
+      var node = nodes[reverse ? maxIndex - ii : ii];
+      if (node && node.iterate(fn, reverse) === false) {
+        return false;
+      }
+    }
+  }
+
+  ValueNode.prototype.iterate = function (fn, reverse) {
+    return fn(this.entry);
+  }
+
+  createClass(MapIterator, Iterator);
+
+    function MapIterator(map, type, reverse) {
+      this._type = type;
+      this._reverse = reverse;
+      this._stack = map._root && mapIteratorFrame(map._root);
+    }
+
+    MapIterator.prototype.next = function() {
+      var type = this._type;
+      var stack = this._stack;
+      while (stack) {
+        var node = stack.node;
+        var index = stack.index++;
+        var maxIndex;
+        if (node.entry) {
+          if (index === 0) {
+            return mapIteratorValue(type, node.entry);
+          }
+        } else if (node.entries) {
+          maxIndex = node.entries.length - 1;
+          if (index <= maxIndex) {
+            return mapIteratorValue(type, node.entries[this._reverse ? maxIndex - index : index]);
+          }
+        } else {
+          maxIndex = node.nodes.length - 1;
+          if (index <= maxIndex) {
+            var subNode = node.nodes[this._reverse ? maxIndex - index : index];
+            if (subNode) {
+              if (subNode.entry) {
+                return mapIteratorValue(type, subNode.entry);
+              }
+              stack = this._stack = mapIteratorFrame(subNode, stack);
+            }
+            continue;
+          }
+        }
+        stack = this._stack = this._stack.__prev;
+      }
+      return iteratorDone();
+    };
+
+
+  function mapIteratorValue(type, entry) {
+    return iteratorValue(type, entry[0], entry[1]);
+  }
+
+  function mapIteratorFrame(node, prev) {
+    return {
+      node: node,
+      index: 0,
+      __prev: prev
+    };
+  }
+
+  function makeMap(size, root, ownerID, hash) {
+    var map = Object.create(MapPrototype);
+    map.size = size;
+    map._root = root;
+    map.__ownerID = ownerID;
+    map.__hash = hash;
+    map.__altered = false;
+    return map;
+  }
+
+  var EMPTY_MAP;
+  function emptyMap() {
+    return EMPTY_MAP || (EMPTY_MAP = makeMap(0));
+  }
+
+  function updateMap(map, k, v) {
+    var newRoot;
+    var newSize;
+    if (!map._root) {
+      if (v === NOT_SET) {
+        return map;
+      }
+      newSize = 1;
+      newRoot = new ArrayMapNode(map.__ownerID, [[k, v]]);
+    } else {
+      var didChangeSize = MakeRef(CHANGE_LENGTH);
+      var didAlter = MakeRef(DID_ALTER);
+      newRoot = updateNode(map._root, map.__ownerID, 0, undefined, k, v, didChangeSize, didAlter);
+      if (!didAlter.value) {
+        return map;
+      }
+      newSize = map.size + (didChangeSize.value ? v === NOT_SET ? -1 : 1 : 0);
+    }
+    if (map.__ownerID) {
+      map.size = newSize;
+      map._root = newRoot;
+      map.__hash = undefined;
+      map.__altered = true;
+      return map;
+    }
+    return newRoot ? makeMap(newSize, newRoot) : emptyMap();
+  }
+
+  function updateNode(node, ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+    if (!node) {
+      if (value === NOT_SET) {
+        return node;
+      }
+      SetRef(didAlter);
+      SetRef(didChangeSize);
+      return new ValueNode(ownerID, keyHash, [key, value]);
+    }
+    return node.update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter);
+  }
+
+  function isLeafNode(node) {
+    return node.constructor === ValueNode || node.constructor === HashCollisionNode;
+  }
+
+  function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
+    if (node.keyHash === keyHash) {
+      return new HashCollisionNode(ownerID, keyHash, [node.entry, entry]);
+    }
+
+    var idx1 = (shift === 0 ? node.keyHash : node.keyHash >>> shift) & MASK;
+    var idx2 = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+
+    var newNode;
+    var nodes = idx1 === idx2 ?
+      [mergeIntoNode(node, ownerID, shift + SHIFT, keyHash, entry)] :
+      ((newNode = new ValueNode(ownerID, keyHash, entry)), idx1 < idx2 ? [node, newNode] : [newNode, node]);
+
+    return new BitmapIndexedNode(ownerID, (1 << idx1) | (1 << idx2), nodes);
+  }
+
+  function createNodes(ownerID, entries, key, value) {
+    if (!ownerID) {
+      ownerID = new OwnerID();
+    }
+    var node = new ValueNode(ownerID, hash(key), [key, value]);
+    for (var ii = 0; ii < entries.length; ii++) {
+      var entry = entries[ii];
+      node = node.update(ownerID, 0, undefined, entry[0], entry[1]);
+    }
+    return node;
+  }
+
+  function packNodes(ownerID, nodes, count, excluding) {
+    var bitmap = 0;
+    var packedII = 0;
+    var packedNodes = new Array(count);
+    for (var ii = 0, bit = 1, len = nodes.length; ii < len; ii++, bit <<= 1) {
+      var node = nodes[ii];
+      if (node !== undefined && ii !== excluding) {
+        bitmap |= bit;
+        packedNodes[packedII++] = node;
+      }
+    }
+    return new BitmapIndexedNode(ownerID, bitmap, packedNodes);
+  }
+
+  function expandNodes(ownerID, nodes, bitmap, including, node) {
+    var count = 0;
+    var expandedNodes = new Array(SIZE);
+    for (var ii = 0; bitmap !== 0; ii++, bitmap >>>= 1) {
+      expandedNodes[ii] = bitmap & 1 ? nodes[count++] : undefined;
+    }
+    expandedNodes[including] = node;
+    return new HashArrayMapNode(ownerID, count + 1, expandedNodes);
+  }
+
+  function mergeIntoMapWith(map, merger, iterables) {
+    var iters = [];
+    for (var ii = 0; ii < iterables.length; ii++) {
+      var value = iterables[ii];
+      var iter = KeyedIterable(value);
+      if (!isIterable(value)) {
+        iter = iter.map(function(v ) {return fromJS(v)});
+      }
+      iters.push(iter);
+    }
+    return mergeIntoCollectionWith(map, merger, iters);
+  }
+
+  function deepMerger(merger) {
+    return function(existing, value) 
+      {return existing && existing.mergeDeepWith && isIterable(value) ?
+        existing.mergeDeepWith(merger, value) :
+        merger ? merger(existing, value) : value};
+  }
+
+  function mergeIntoCollectionWith(collection, merger, iters) {
+    iters = iters.filter(function(x ) {return x.size !== 0});
+    if (iters.length === 0) {
+      return collection;
+    }
+    if (collection.size === 0 && iters.length === 1) {
+      return collection.constructor(iters[0]);
+    }
+    return collection.withMutations(function(collection ) {
+      var mergeIntoMap = merger ?
+        function(value, key)  {
+          collection.update(key, NOT_SET, function(existing )
+            {return existing === NOT_SET ? value : merger(existing, value)}
+          );
+        } :
+        function(value, key)  {
+          collection.set(key, value);
+        }
+      for (var ii = 0; ii < iters.length; ii++) {
+        iters[ii].forEach(mergeIntoMap);
+      }
+    });
+  }
+
+  function updateInDeepMap(existing, keyPathIter, notSetValue, updater) {
+    var isNotSet = existing === NOT_SET;
+    var step = keyPathIter.next();
+    if (step.done) {
+      var existingValue = isNotSet ? notSetValue : existing;
+      var newValue = updater(existingValue);
+      return newValue === existingValue ? existing : newValue;
+    }
+    invariant(
+      isNotSet || (existing && existing.set),
+      'invalid keyPath'
+    );
+    var key = step.value;
+    var nextExisting = isNotSet ? NOT_SET : existing.get(key, NOT_SET);
+    var nextUpdated = updateInDeepMap(
+      nextExisting,
+      keyPathIter,
+      notSetValue,
+      updater
+    );
+    return nextUpdated === nextExisting ? existing :
+      nextUpdated === NOT_SET ? existing.remove(key) :
+      (isNotSet ? emptyMap() : existing).set(key, nextUpdated);
+  }
+
+  function popCount(x) {
+    x = x - ((x >> 1) & 0x55555555);
+    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+    x = (x + (x >> 4)) & 0x0f0f0f0f;
+    x = x + (x >> 8);
+    x = x + (x >> 16);
+    return x & 0x7f;
+  }
+
+  function setIn(array, idx, val, canEdit) {
+    var newArray = canEdit ? array : arrCopy(array);
+    newArray[idx] = val;
+    return newArray;
+  }
+
+  function spliceIn(array, idx, val, canEdit) {
+    var newLen = array.length + 1;
+    if (canEdit && idx + 1 === newLen) {
+      array[idx] = val;
+      return array;
+    }
+    var newArray = new Array(newLen);
+    var after = 0;
+    for (var ii = 0; ii < newLen; ii++) {
+      if (ii === idx) {
+        newArray[ii] = val;
+        after = -1;
+      } else {
+        newArray[ii] = array[ii + after];
+      }
+    }
+    return newArray;
+  }
+
+  function spliceOut(array, idx, canEdit) {
+    var newLen = array.length - 1;
+    if (canEdit && idx === newLen) {
+      array.pop();
+      return array;
+    }
+    var newArray = new Array(newLen);
+    var after = 0;
+    for (var ii = 0; ii < newLen; ii++) {
+      if (ii === idx) {
+        after = 1;
+      }
+      newArray[ii] = array[ii + after];
+    }
+    return newArray;
+  }
+
+  var MAX_ARRAY_MAP_SIZE = SIZE / 4;
+  var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
+  var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
+
+  createClass(List, IndexedCollection);
+
+    // @pragma Construction
+
+    function List(value) {
+      var empty = emptyList();
+      if (value === null || value === undefined) {
+        return empty;
+      }
+      if (isList(value)) {
+        return value;
+      }
+      var iter = IndexedIterable(value);
+      var size = iter.size;
+      if (size === 0) {
+        return empty;
+      }
+      assertNotInfinite(size);
+      if (size > 0 && size < SIZE) {
+        return makeList(0, size, SHIFT, null, new VNode(iter.toArray()));
+      }
+      return empty.withMutations(function(list ) {
+        list.setSize(size);
+        iter.forEach(function(v, i)  {return list.set(i, v)});
+      });
+    }
+
+    List.of = function(/*...values*/) {
+      return this(arguments);
+    };
+
+    List.prototype.toString = function() {
+      return this.__toString('List [', ']');
+    };
+
+    // @pragma Access
+
+    List.prototype.get = function(index, notSetValue) {
+      index = wrapIndex(this, index);
+      if (index < 0 || index >= this.size) {
+        return notSetValue;
+      }
+      index += this._origin;
+      var node = listNodeFor(this, index);
+      return node && node.array[index & MASK];
+    };
+
+    // @pragma Modification
+
+    List.prototype.set = function(index, value) {
+      return updateList(this, index, value);
+    };
+
+    List.prototype.remove = function(index) {
+      return !this.has(index) ? this :
+        index === 0 ? this.shift() :
+        index === this.size - 1 ? this.pop() :
+        this.splice(index, 1);
+    };
+
+    List.prototype.clear = function() {
+      if (this.size === 0) {
+        return this;
+      }
+      if (this.__ownerID) {
+        this.size = this._origin = this._capacity = 0;
+        this._level = SHIFT;
+        this._root = this._tail = null;
+        this.__hash = undefined;
+        this.__altered = true;
+        return this;
+      }
+      return emptyList();
+    };
+
+    List.prototype.push = function(/*...values*/) {
+      var values = arguments;
+      var oldSize = this.size;
+      return this.withMutations(function(list ) {
+        setListBounds(list, 0, oldSize + values.length);
+        for (var ii = 0; ii < values.length; ii++) {
+          list.set(oldSize + ii, values[ii]);
+        }
+      });
+    };
+
+    List.prototype.pop = function() {
+      return setListBounds(this, 0, -1);
+    };
+
+    List.prototype.unshift = function(/*...values*/) {
+      var values = arguments;
+      return this.withMutations(function(list ) {
+        setListBounds(list, -values.length);
+        for (var ii = 0; ii < values.length; ii++) {
+          list.set(ii, values[ii]);
+        }
+      });
+    };
+
+    List.prototype.shift = function() {
+      return setListBounds(this, 1);
+    };
+
+    // @pragma Composition
+
+    List.prototype.merge = function(/*...iters*/) {
+      return mergeIntoListWith(this, undefined, arguments);
+    };
+
+    List.prototype.mergeWith = function(merger) {var iters = SLICE$0.call(arguments, 1);
+      return mergeIntoListWith(this, merger, iters);
+    };
+
+    List.prototype.mergeDeep = function(/*...iters*/) {
+      return mergeIntoListWith(this, deepMerger(undefined), arguments);
+    };
+
+    List.prototype.mergeDeepWith = function(merger) {var iters = SLICE$0.call(arguments, 1);
+      return mergeIntoListWith(this, deepMerger(merger), iters);
+    };
+
+    List.prototype.setSize = function(size) {
+      return setListBounds(this, 0, size);
+    };
+
+    // @pragma Iteration
+
+    List.prototype.slice = function(begin, end) {
+      var size = this.size;
+      if (wholeSlice(begin, end, size)) {
+        return this;
+      }
+      return setListBounds(
+        this,
+        resolveBegin(begin, size),
+        resolveEnd(end, size)
+      );
+    };
+
+    List.prototype.__iterator = function(type, reverse) {
+      var index = 0;
+      var values = iterateList(this, reverse);
+      return new Iterator(function()  {
+        var value = values();
+        return value === DONE ?
+          iteratorDone() :
+          iteratorValue(type, index++, value);
+      });
+    };
+
+    List.prototype.__iterate = function(fn, reverse) {
+      var index = 0;
+      var values = iterateList(this, reverse);
+      var value;
+      while ((value = values()) !== DONE) {
+        if (fn(value, index++, this) === false) {
+          break;
+        }
+      }
+      return index;
+    };
+
+    List.prototype.__ensureOwner = function(ownerID) {
+      if (ownerID === this.__ownerID) {
+        return this;
+      }
+      if (!ownerID) {
+        this.__ownerID = ownerID;
+        return this;
+      }
+      return makeList(this._origin, this._capacity, this._level, this._root, this._tail, ownerID, this.__hash);
+    };
+
+
+  function isList(maybeList) {
+    return !!(maybeList && maybeList[IS_LIST_SENTINEL]);
+  }
+
+  List.isList = isList;
+
+  var IS_LIST_SENTINEL = '@@__IMMUTABLE_LIST__@@';
+
+  var ListPrototype = List.prototype;
+  ListPrototype[IS_LIST_SENTINEL] = true;
+  ListPrototype[DELETE] = ListPrototype.remove;
+  ListPrototype.setIn = MapPrototype.setIn;
+  ListPrototype.deleteIn =
+  ListPrototype.removeIn = MapPrototype.removeIn;
+  ListPrototype.update = MapPrototype.update;
+  ListPrototype.updateIn = MapPrototype.updateIn;
+  ListPrototype.mergeIn = MapPrototype.mergeIn;
+  ListPrototype.mergeDeepIn = MapPrototype.mergeDeepIn;
+  ListPrototype.withMutations = MapPrototype.withMutations;
+  ListPrototype.asMutable = MapPrototype.asMutable;
+  ListPrototype.asImmutable = MapPrototype.asImmutable;
+  ListPrototype.wasAltered = MapPrototype.wasAltered;
+
+
+
+    function VNode(array, ownerID) {
+      this.array = array;
+      this.ownerID = ownerID;
+    }
+
+    // TODO: seems like these methods are very similar
+
+    VNode.prototype.removeBefore = function(ownerID, level, index) {
+      if (index === level ? 1 << level : 0 || this.array.length === 0) {
+        return this;
+      }
+      var originIndex = (index >>> level) & MASK;
+      if (originIndex >= this.array.length) {
+        return new VNode([], ownerID);
+      }
+      var removingFirst = originIndex === 0;
+      var newChild;
+      if (level > 0) {
+        var oldChild = this.array[originIndex];
+        newChild = oldChild && oldChild.removeBefore(ownerID, level - SHIFT, index);
+        if (newChild === oldChild && removingFirst) {
+          return this;
+        }
+      }
+      if (removingFirst && !newChild) {
+        return this;
+      }
+      var editable = editableVNode(this, ownerID);
+      if (!removingFirst) {
+        for (var ii = 0; ii < originIndex; ii++) {
+          editable.array[ii] = undefined;
+        }
+      }
+      if (newChild) {
+        editable.array[originIndex] = newChild;
+      }
+      return editable;
+    };
+
+    VNode.prototype.removeAfter = function(ownerID, level, index) {
+      if (index === level ? 1 << level : 0 || this.array.length === 0) {
+        return this;
+      }
+      var sizeIndex = ((index - 1) >>> level) & MASK;
+      if (sizeIndex >= this.array.length) {
+        return this;
+      }
+      var removingLast = sizeIndex === this.array.length - 1;
+      var newChild;
+      if (level > 0) {
+        var oldChild = this.array[sizeIndex];
+        newChild = oldChild && oldChild.removeAfter(ownerID, level - SHIFT, index);
+        if (newChild === oldChild && removingLast) {
+          return this;
+        }
+      }
+      if (removingLast && !newChild) {
+        return this;
+      }
+      var editable = editableVNode(this, ownerID);
+      if (!removingLast) {
+        editable.array.pop();
+      }
+      if (newChild) {
+        editable.array[sizeIndex] = newChild;
+      }
+      return editable;
+    };
+
+
+
+  var DONE = {};
+
+  function iterateList(list, reverse) {
+    var left = list._origin;
+    var right = list._capacity;
+    var tailPos = getTailOffset(right);
+    var tail = list._tail;
+
+    return iterateNodeOrLeaf(list._root, list._level, 0);
+
+    function iterateNodeOrLeaf(node, level, offset) {
+      return level === 0 ?
+        iterateLeaf(node, offset) :
+        iterateNode(node, level, offset);
+    }
+
+    function iterateLeaf(node, offset) {
+      var array = offset === tailPos ? tail && tail.array : node && node.array;
+      var from = offset > left ? 0 : left - offset;
+      var to = right - offset;
+      if (to > SIZE) {
+        to = SIZE;
+      }
+      return function()  {
+        if (from === to) {
+          return DONE;
+        }
+        var idx = reverse ? --to : from++;
+        return array && array[idx];
+      };
+    }
+
+    function iterateNode(node, level, offset) {
+      var values;
+      var array = node && node.array;
+      var from = offset > left ? 0 : (left - offset) >> level;
+      var to = ((right - offset) >> level) + 1;
+      if (to > SIZE) {
+        to = SIZE;
+      }
+      return function()  {
+        do {
+          if (values) {
+            var value = values();
+            if (value !== DONE) {
+              return value;
+            }
+            values = null;
+          }
+          if (from === to) {
+            return DONE;
+          }
+          var idx = reverse ? --to : from++;
+          values = iterateNodeOrLeaf(
+            array && array[idx], level - SHIFT, offset + (idx << level)
+          );
+        } while (true);
+      };
+    }
+  }
+
+  function makeList(origin, capacity, level, root, tail, ownerID, hash) {
+    var list = Object.create(ListPrototype);
+    list.size = capacity - origin;
+    list._origin = origin;
+    list._capacity = capacity;
+    list._level = level;
+    list._root = root;
+    list._tail = tail;
+    list.__ownerID = ownerID;
+    list.__hash = hash;
+    list.__altered = false;
+    return list;
+  }
+
+  var EMPTY_LIST;
+  function emptyList() {
+    return EMPTY_LIST || (EMPTY_LIST = makeList(0, 0, SHIFT));
+  }
+
+  function updateList(list, index, value) {
+    index = wrapIndex(list, index);
+
+    if (index >= list.size || index < 0) {
+      return list.withMutations(function(list ) {
+        index < 0 ?
+          setListBounds(list, index).set(0, value) :
+          setListBounds(list, 0, index + 1).set(index, value)
+      });
+    }
+
+    index += list._origin;
+
+    var newTail = list._tail;
+    var newRoot = list._root;
+    var didAlter = MakeRef(DID_ALTER);
+    if (index >= getTailOffset(list._capacity)) {
+      newTail = updateVNode(newTail, list.__ownerID, 0, index, value, didAlter);
+    } else {
+      newRoot = updateVNode(newRoot, list.__ownerID, list._level, index, value, didAlter);
+    }
+
+    if (!didAlter.value) {
+      return list;
+    }
+
+    if (list.__ownerID) {
+      list._root = newRoot;
+      list._tail = newTail;
+      list.__hash = undefined;
+      list.__altered = true;
+      return list;
+    }
+    return makeList(list._origin, list._capacity, list._level, newRoot, newTail);
+  }
+
+  function updateVNode(node, ownerID, level, index, value, didAlter) {
+    var idx = (index >>> level) & MASK;
+    var nodeHas = node && idx < node.array.length;
+    if (!nodeHas && value === undefined) {
+      return node;
+    }
+
+    var newNode;
+
+    if (level > 0) {
+      var lowerNode = node && node.array[idx];
+      var newLowerNode = updateVNode(lowerNode, ownerID, level - SHIFT, index, value, didAlter);
+      if (newLowerNode === lowerNode) {
+        return node;
+      }
+      newNode = editableVNode(node, ownerID);
+      newNode.array[idx] = newLowerNode;
+      return newNode;
+    }
+
+    if (nodeHas && node.array[idx] === value) {
+      return node;
+    }
+
+    SetRef(didAlter);
+
+    newNode = editableVNode(node, ownerID);
+    if (value === undefined && idx === newNode.array.length - 1) {
+      newNode.array.pop();
+    } else {
+      newNode.array[idx] = value;
+    }
+    return newNode;
+  }
+
+  function editableVNode(node, ownerID) {
+    if (ownerID && node && ownerID === node.ownerID) {
+      return node;
+    }
+    return new VNode(node ? node.array.slice() : [], ownerID);
+  }
+
+  function listNodeFor(list, rawIndex) {
+    if (rawIndex >= getTailOffset(list._capacity)) {
+      return list._tail;
+    }
+    if (rawIndex < 1 << (list._level + SHIFT)) {
+      var node = list._root;
+      var level = list._level;
+      while (node && level > 0) {
+        node = node.array[(rawIndex >>> level) & MASK];
+        level -= SHIFT;
+      }
+      return node;
+    }
+  }
+
+  function setListBounds(list, begin, end) {
+    var owner = list.__ownerID || new OwnerID();
+    var oldOrigin = list._origin;
+    var oldCapacity = list._capacity;
+    var newOrigin = oldOrigin + begin;
+    var newCapacity = end === undefined ? oldCapacity : end < 0 ? oldCapacity + end : oldOrigin + end;
+    if (newOrigin === oldOrigin && newCapacity === oldCapacity) {
+      return list;
+    }
+
+    // If it's going to end after it starts, it's empty.
+    if (newOrigin >= newCapacity) {
+      return list.clear();
+    }
+
+    var newLevel = list._level;
+    var newRoot = list._root;
+
+    // New origin might require creating a higher root.
+    var offsetShift = 0;
+    while (newOrigin + offsetShift < 0) {
+      newRoot = new VNode(newRoot && newRoot.array.length ? [undefined, newRoot] : [], owner);
+      newLevel += SHIFT;
+      offsetShift += 1 << newLevel;
+    }
+    if (offsetShift) {
+      newOrigin += offsetShift;
+      oldOrigin += offsetShift;
+      newCapacity += offsetShift;
+      oldCapacity += offsetShift;
+    }
+
+    var oldTailOffset = getTailOffset(oldCapacity);
+    var newTailOffset = getTailOffset(newCapacity);
+
+    // New size might require creating a higher root.
+    while (newTailOffset >= 1 << (newLevel + SHIFT)) {
+      newRoot = new VNode(newRoot && newRoot.array.length ? [newRoot] : [], owner);
+      newLevel += SHIFT;
+    }
+
+    // Locate or create the new tail.
+    var oldTail = list._tail;
+    var newTail = newTailOffset < oldTailOffset ?
+      listNodeFor(list, newCapacity - 1) :
+      newTailOffset > oldTailOffset ? new VNode([], owner) : oldTail;
+
+    // Merge Tail into tree.
+    if (oldTail && newTailOffset > oldTailOffset && newOrigin < oldCapacity && oldTail.array.length) {
+      newRoot = editableVNode(newRoot, owner);
+      var node = newRoot;
+      for (var level = newLevel; level > SHIFT; level -= SHIFT) {
+        var idx = (oldTailOffset >>> level) & MASK;
+        node = node.array[idx] = editableVNode(node.array[idx], owner);
+      }
+      node.array[(oldTailOffset >>> SHIFT) & MASK] = oldTail;
+    }
+
+    // If the size has been reduced, there's a chance the tail needs to be trimmed.
+    if (newCapacity < oldCapacity) {
+      newTail = newTail && newTail.removeAfter(owner, 0, newCapacity);
+    }
+
+    // If the new origin is within the tail, then we do not need a root.
+    if (newOrigin >= newTailOffset) {
+      newOrigin -= newTailOffset;
+      newCapacity -= newTailOffset;
+      newLevel = SHIFT;
+      newRoot = null;
+      newTail = newTail && newTail.removeBefore(owner, 0, newOrigin);
+
+    // Otherwise, if the root has been trimmed, garbage collect.
+    } else if (newOrigin > oldOrigin || newTailOffset < oldTailOffset) {
+      offsetShift = 0;
+
+      // Identify the new top root node of the subtree of the old root.
+      while (newRoot) {
+        var beginIndex = (newOrigin >>> newLevel) & MASK;
+        if (beginIndex !== (newTailOffset >>> newLevel) & MASK) {
+          break;
+        }
+        if (beginIndex) {
+          offsetShift += (1 << newLevel) * beginIndex;
+        }
+        newLevel -= SHIFT;
+        newRoot = newRoot.array[beginIndex];
+      }
+
+      // Trim the new sides of the new root.
+      if (newRoot && newOrigin > oldOrigin) {
+        newRoot = newRoot.removeBefore(owner, newLevel, newOrigin - offsetShift);
+      }
+      if (newRoot && newTailOffset < oldTailOffset) {
+        newRoot = newRoot.removeAfter(owner, newLevel, newTailOffset - offsetShift);
+      }
+      if (offsetShift) {
+        newOrigin -= offsetShift;
+        newCapacity -= offsetShift;
+      }
+    }
+
+    if (list.__ownerID) {
+      list.size = newCapacity - newOrigin;
+      list._origin = newOrigin;
+      list._capacity = newCapacity;
+      list._level = newLevel;
+      list._root = newRoot;
+      list._tail = newTail;
+      list.__hash = undefined;
+      list.__altered = true;
+      return list;
+    }
+    return makeList(newOrigin, newCapacity, newLevel, newRoot, newTail);
+  }
+
+  function mergeIntoListWith(list, merger, iterables) {
+    var iters = [];
+    var maxSize = 0;
+    for (var ii = 0; ii < iterables.length; ii++) {
+      var value = iterables[ii];
+      var iter = IndexedIterable(value);
+      if (iter.size > maxSize) {
+        maxSize = iter.size;
+      }
+      if (!isIterable(value)) {
+        iter = iter.map(function(v ) {return fromJS(v)});
+      }
+      iters.push(iter);
+    }
+    if (maxSize > list.size) {
+      list = list.setSize(maxSize);
+    }
+    return mergeIntoCollectionWith(list, merger, iters);
+  }
+
+  function getTailOffset(size) {
+    return size < SIZE ? 0 : (((size - 1) >>> SHIFT) << SHIFT);
+  }
+
+  createClass(OrderedMap, Map);
+
+    // @pragma Construction
+
+    function OrderedMap(value) {
+      return value === null || value === undefined ? emptyOrderedMap() :
+        isOrderedMap(value) ? value :
+        emptyOrderedMap().withMutations(function(map ) {
+          var iter = KeyedIterable(value);
+          assertNotInfinite(iter.size);
+          iter.forEach(function(v, k)  {return map.set(k, v)});
+        });
+    }
+
+    OrderedMap.of = function(/*...values*/) {
+      return this(arguments);
+    };
+
+    OrderedMap.prototype.toString = function() {
+      return this.__toString('OrderedMap {', '}');
+    };
+
+    // @pragma Access
+
+    OrderedMap.prototype.get = function(k, notSetValue) {
+      var index = this._map.get(k);
+      return index !== undefined ? this._list.get(index)[1] : notSetValue;
+    };
+
+    // @pragma Modification
+
+    OrderedMap.prototype.clear = function() {
+      if (this.size === 0) {
+        return this;
+      }
+      if (this.__ownerID) {
+        this.size = 0;
+        this._map.clear();
+        this._list.clear();
+        return this;
+      }
+      return emptyOrderedMap();
+    };
+
+    OrderedMap.prototype.set = function(k, v) {
+      return updateOrderedMap(this, k, v);
+    };
+
+    OrderedMap.prototype.remove = function(k) {
+      return updateOrderedMap(this, k, NOT_SET);
+    };
+
+    OrderedMap.prototype.wasAltered = function() {
+      return this._map.wasAltered() || this._list.wasAltered();
+    };
+
+    OrderedMap.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      return this._list.__iterate(
+        function(entry ) {return entry && fn(entry[1], entry[0], this$0)},
+        reverse
+      );
+    };
+
+    OrderedMap.prototype.__iterator = function(type, reverse) {
+      return this._list.fromEntrySeq().__iterator(type, reverse);
+    };
+
+    OrderedMap.prototype.__ensureOwner = function(ownerID) {
+      if (ownerID === this.__ownerID) {
+        return this;
+      }
+      var newMap = this._map.__ensureOwner(ownerID);
+      var newList = this._list.__ensureOwner(ownerID);
+      if (!ownerID) {
+        this.__ownerID = ownerID;
+        this._map = newMap;
+        this._list = newList;
+        return this;
+      }
+      return makeOrderedMap(newMap, newList, ownerID, this.__hash);
+    };
+
+
+  function isOrderedMap(maybeOrderedMap) {
+    return isMap(maybeOrderedMap) && isOrdered(maybeOrderedMap);
+  }
+
+  OrderedMap.isOrderedMap = isOrderedMap;
+
+  OrderedMap.prototype[IS_ORDERED_SENTINEL] = true;
+  OrderedMap.prototype[DELETE] = OrderedMap.prototype.remove;
+
+
+
+  function makeOrderedMap(map, list, ownerID, hash) {
+    var omap = Object.create(OrderedMap.prototype);
+    omap.size = map ? map.size : 0;
+    omap._map = map;
+    omap._list = list;
+    omap.__ownerID = ownerID;
+    omap.__hash = hash;
+    return omap;
+  }
+
+  var EMPTY_ORDERED_MAP;
+  function emptyOrderedMap() {
+    return EMPTY_ORDERED_MAP || (EMPTY_ORDERED_MAP = makeOrderedMap(emptyMap(), emptyList()));
+  }
+
+  function updateOrderedMap(omap, k, v) {
+    var map = omap._map;
+    var list = omap._list;
+    var i = map.get(k);
+    var has = i !== undefined;
+    var newMap;
+    var newList;
+    if (v === NOT_SET) { // removed
+      if (!has) {
+        return omap;
+      }
+      if (list.size >= SIZE && list.size >= map.size * 2) {
+        newList = list.filter(function(entry, idx)  {return entry !== undefined && i !== idx});
+        newMap = newList.toKeyedSeq().map(function(entry ) {return entry[0]}).flip().toMap();
+        if (omap.__ownerID) {
+          newMap.__ownerID = newList.__ownerID = omap.__ownerID;
+        }
+      } else {
+        newMap = map.remove(k);
+        newList = i === list.size - 1 ? list.pop() : list.set(i, undefined);
+      }
+    } else {
+      if (has) {
+        if (v === list.get(i)[1]) {
+          return omap;
+        }
+        newMap = map;
+        newList = list.set(i, [k, v]);
+      } else {
+        newMap = map.set(k, list.size);
+        newList = list.set(list.size, [k, v]);
+      }
+    }
+    if (omap.__ownerID) {
+      omap.size = newMap.size;
+      omap._map = newMap;
+      omap._list = newList;
+      omap.__hash = undefined;
+      return omap;
+    }
+    return makeOrderedMap(newMap, newList);
+  }
+
+  createClass(Stack, IndexedCollection);
+
+    // @pragma Construction
+
+    function Stack(value) {
+      return value === null || value === undefined ? emptyStack() :
+        isStack(value) ? value :
+        emptyStack().unshiftAll(value);
+    }
+
+    Stack.of = function(/*...values*/) {
+      return this(arguments);
+    };
+
+    Stack.prototype.toString = function() {
+      return this.__toString('Stack [', ']');
+    };
+
+    // @pragma Access
+
+    Stack.prototype.get = function(index, notSetValue) {
+      var head = this._head;
+      while (head && index--) {
+        head = head.next;
+      }
+      return head ? head.value : notSetValue;
+    };
+
+    Stack.prototype.peek = function() {
+      return this._head && this._head.value;
+    };
+
+    // @pragma Modification
+
+    Stack.prototype.push = function(/*...values*/) {
+      if (arguments.length === 0) {
+        return this;
+      }
+      var newSize = this.size + arguments.length;
+      var head = this._head;
+      for (var ii = arguments.length - 1; ii >= 0; ii--) {
+        head = {
+          value: arguments[ii],
+          next: head
+        };
+      }
+      if (this.__ownerID) {
+        this.size = newSize;
+        this._head = head;
+        this.__hash = undefined;
+        this.__altered = true;
+        return this;
+      }
+      return makeStack(newSize, head);
+    };
+
+    Stack.prototype.pushAll = function(iter) {
+      iter = IndexedIterable(iter);
+      if (iter.size === 0) {
+        return this;
+      }
+      assertNotInfinite(iter.size);
+      var newSize = this.size;
+      var head = this._head;
+      iter.reverse().forEach(function(value ) {
+        newSize++;
+        head = {
+          value: value,
+          next: head
+        };
+      });
+      if (this.__ownerID) {
+        this.size = newSize;
+        this._head = head;
+        this.__hash = undefined;
+        this.__altered = true;
+        return this;
+      }
+      return makeStack(newSize, head);
+    };
+
+    Stack.prototype.pop = function() {
+      return this.slice(1);
+    };
+
+    Stack.prototype.unshift = function(/*...values*/) {
+      return this.push.apply(this, arguments);
+    };
+
+    Stack.prototype.unshiftAll = function(iter) {
+      return this.pushAll(iter);
+    };
+
+    Stack.prototype.shift = function() {
+      return this.pop.apply(this, arguments);
+    };
+
+    Stack.prototype.clear = function() {
+      if (this.size === 0) {
+        return this;
+      }
+      if (this.__ownerID) {
+        this.size = 0;
+        this._head = undefined;
+        this.__hash = undefined;
+        this.__altered = true;
+        return this;
+      }
+      return emptyStack();
+    };
+
+    Stack.prototype.slice = function(begin, end) {
+      if (wholeSlice(begin, end, this.size)) {
+        return this;
+      }
+      var resolvedBegin = resolveBegin(begin, this.size);
+      var resolvedEnd = resolveEnd(end, this.size);
+      if (resolvedEnd !== this.size) {
+        // super.slice(begin, end);
+        return IndexedCollection.prototype.slice.call(this, begin, end);
+      }
+      var newSize = this.size - resolvedBegin;
+      var head = this._head;
+      while (resolvedBegin--) {
+        head = head.next;
+      }
+      if (this.__ownerID) {
+        this.size = newSize;
+        this._head = head;
+        this.__hash = undefined;
+        this.__altered = true;
+        return this;
+      }
+      return makeStack(newSize, head);
+    };
+
+    // @pragma Mutability
+
+    Stack.prototype.__ensureOwner = function(ownerID) {
+      if (ownerID === this.__ownerID) {
+        return this;
+      }
+      if (!ownerID) {
+        this.__ownerID = ownerID;
+        this.__altered = false;
+        return this;
+      }
+      return makeStack(this.size, this._head, ownerID, this.__hash);
+    };
+
+    // @pragma Iteration
+
+    Stack.prototype.__iterate = function(fn, reverse) {
+      if (reverse) {
+        return this.toSeq().cacheResult.__iterate(fn, reverse);
+      }
+      var iterations = 0;
+      var node = this._head;
+      while (node) {
+        if (fn(node.value, iterations++, this) === false) {
+          break;
+        }
+        node = node.next;
+      }
+      return iterations;
+    };
+
+    Stack.prototype.__iterator = function(type, reverse) {
+      if (reverse) {
+        return this.toSeq().cacheResult().__iterator(type, reverse);
+      }
+      var iterations = 0;
+      var node = this._head;
+      return new Iterator(function()  {
+        if (node) {
+          var value = node.value;
+          node = node.next;
+          return iteratorValue(type, iterations++, value);
+        }
+        return iteratorDone();
+      });
+    };
+
+
+  function isStack(maybeStack) {
+    return !!(maybeStack && maybeStack[IS_STACK_SENTINEL]);
+  }
+
+  Stack.isStack = isStack;
+
+  var IS_STACK_SENTINEL = '@@__IMMUTABLE_STACK__@@';
+
+  var StackPrototype = Stack.prototype;
+  StackPrototype[IS_STACK_SENTINEL] = true;
+  StackPrototype.withMutations = MapPrototype.withMutations;
+  StackPrototype.asMutable = MapPrototype.asMutable;
+  StackPrototype.asImmutable = MapPrototype.asImmutable;
+  StackPrototype.wasAltered = MapPrototype.wasAltered;
+
+
+  function makeStack(size, head, ownerID, hash) {
+    var map = Object.create(StackPrototype);
+    map.size = size;
+    map._head = head;
+    map.__ownerID = ownerID;
+    map.__hash = hash;
+    map.__altered = false;
+    return map;
+  }
+
+  var EMPTY_STACK;
+  function emptyStack() {
+    return EMPTY_STACK || (EMPTY_STACK = makeStack(0));
+  }
+
+  createClass(Set, SetCollection);
+
+    // @pragma Construction
+
+    function Set(value) {
+      return value === null || value === undefined ? emptySet() :
+        isSet(value) ? value :
+        emptySet().withMutations(function(set ) {
+          var iter = SetIterable(value);
+          assertNotInfinite(iter.size);
+          iter.forEach(function(v ) {return set.add(v)});
+        });
+    }
+
+    Set.of = function(/*...values*/) {
+      return this(arguments);
+    };
+
+    Set.fromKeys = function(value) {
+      return this(KeyedIterable(value).keySeq());
+    };
+
+    Set.prototype.toString = function() {
+      return this.__toString('Set {', '}');
+    };
+
+    // @pragma Access
+
+    Set.prototype.has = function(value) {
+      return this._map.has(value);
+    };
+
+    // @pragma Modification
+
+    Set.prototype.add = function(value) {
+      return updateSet(this, this._map.set(value, true));
+    };
+
+    Set.prototype.remove = function(value) {
+      return updateSet(this, this._map.remove(value));
+    };
+
+    Set.prototype.clear = function() {
+      return updateSet(this, this._map.clear());
+    };
+
+    // @pragma Composition
+
+    Set.prototype.union = function() {var iters = SLICE$0.call(arguments, 0);
+      iters = iters.filter(function(x ) {return x.size !== 0});
+      if (iters.length === 0) {
+        return this;
+      }
+      if (this.size === 0 && iters.length === 1) {
+        return this.constructor(iters[0]);
+      }
+      return this.withMutations(function(set ) {
+        for (var ii = 0; ii < iters.length; ii++) {
+          SetIterable(iters[ii]).forEach(function(value ) {return set.add(value)});
+        }
+      });
+    };
+
+    Set.prototype.intersect = function() {var iters = SLICE$0.call(arguments, 0);
+      if (iters.length === 0) {
+        return this;
+      }
+      iters = iters.map(function(iter ) {return SetIterable(iter)});
+      var originalSet = this;
+      return this.withMutations(function(set ) {
+        originalSet.forEach(function(value ) {
+          if (!iters.every(function(iter ) {return iter.contains(value)})) {
+            set.remove(value);
+          }
+        });
+      });
+    };
+
+    Set.prototype.subtract = function() {var iters = SLICE$0.call(arguments, 0);
+      if (iters.length === 0) {
+        return this;
+      }
+      iters = iters.map(function(iter ) {return SetIterable(iter)});
+      var originalSet = this;
+      return this.withMutations(function(set ) {
+        originalSet.forEach(function(value ) {
+          if (iters.some(function(iter ) {return iter.contains(value)})) {
+            set.remove(value);
+          }
+        });
+      });
+    };
+
+    Set.prototype.merge = function() {
+      return this.union.apply(this, arguments);
+    };
+
+    Set.prototype.mergeWith = function(merger) {var iters = SLICE$0.call(arguments, 1);
+      return this.union.apply(this, iters);
+    };
+
+    Set.prototype.sort = function(comparator) {
+      // Late binding
+      return OrderedSet(sortFactory(this, comparator));
+    };
+
+    Set.prototype.sortBy = function(mapper, comparator) {
+      // Late binding
+      return OrderedSet(sortFactory(this, comparator, mapper));
+    };
+
+    Set.prototype.wasAltered = function() {
+      return this._map.wasAltered();
+    };
+
+    Set.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      return this._map.__iterate(function(_, k)  {return fn(k, k, this$0)}, reverse);
+    };
+
+    Set.prototype.__iterator = function(type, reverse) {
+      return this._map.map(function(_, k)  {return k}).__iterator(type, reverse);
+    };
+
+    Set.prototype.__ensureOwner = function(ownerID) {
+      if (ownerID === this.__ownerID) {
+        return this;
+      }
+      var newMap = this._map.__ensureOwner(ownerID);
+      if (!ownerID) {
+        this.__ownerID = ownerID;
+        this._map = newMap;
+        return this;
+      }
+      return this.__make(newMap, ownerID);
+    };
+
+
+  function isSet(maybeSet) {
+    return !!(maybeSet && maybeSet[IS_SET_SENTINEL]);
+  }
+
+  Set.isSet = isSet;
+
+  var IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
+
+  var SetPrototype = Set.prototype;
+  SetPrototype[IS_SET_SENTINEL] = true;
+  SetPrototype[DELETE] = SetPrototype.remove;
+  SetPrototype.mergeDeep = SetPrototype.merge;
+  SetPrototype.mergeDeepWith = SetPrototype.mergeWith;
+  SetPrototype.withMutations = MapPrototype.withMutations;
+  SetPrototype.asMutable = MapPrototype.asMutable;
+  SetPrototype.asImmutable = MapPrototype.asImmutable;
+
+  SetPrototype.__empty = emptySet;
+  SetPrototype.__make = makeSet;
+
+  function updateSet(set, newMap) {
+    if (set.__ownerID) {
+      set.size = newMap.size;
+      set._map = newMap;
+      return set;
+    }
+    return newMap === set._map ? set :
+      newMap.size === 0 ? set.__empty() :
+      set.__make(newMap);
+  }
+
+  function makeSet(map, ownerID) {
+    var set = Object.create(SetPrototype);
+    set.size = map ? map.size : 0;
+    set._map = map;
+    set.__ownerID = ownerID;
+    return set;
+  }
+
+  var EMPTY_SET;
+  function emptySet() {
+    return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
+  }
+
+  createClass(OrderedSet, Set);
+
+    // @pragma Construction
+
+    function OrderedSet(value) {
+      return value === null || value === undefined ? emptyOrderedSet() :
+        isOrderedSet(value) ? value :
+        emptyOrderedSet().withMutations(function(set ) {
+          var iter = SetIterable(value);
+          assertNotInfinite(iter.size);
+          iter.forEach(function(v ) {return set.add(v)});
+        });
+    }
+
+    OrderedSet.of = function(/*...values*/) {
+      return this(arguments);
+    };
+
+    OrderedSet.fromKeys = function(value) {
+      return this(KeyedIterable(value).keySeq());
+    };
+
+    OrderedSet.prototype.toString = function() {
+      return this.__toString('OrderedSet {', '}');
+    };
+
+
+  function isOrderedSet(maybeOrderedSet) {
+    return isSet(maybeOrderedSet) && isOrdered(maybeOrderedSet);
+  }
+
+  OrderedSet.isOrderedSet = isOrderedSet;
+
+  var OrderedSetPrototype = OrderedSet.prototype;
+  OrderedSetPrototype[IS_ORDERED_SENTINEL] = true;
+
+  OrderedSetPrototype.__empty = emptyOrderedSet;
+  OrderedSetPrototype.__make = makeOrderedSet;
+
+  function makeOrderedSet(map, ownerID) {
+    var set = Object.create(OrderedSetPrototype);
+    set.size = map ? map.size : 0;
+    set._map = map;
+    set.__ownerID = ownerID;
+    return set;
+  }
+
+  var EMPTY_ORDERED_SET;
+  function emptyOrderedSet() {
+    return EMPTY_ORDERED_SET || (EMPTY_ORDERED_SET = makeOrderedSet(emptyOrderedMap()));
+  }
+
+  createClass(Record, KeyedCollection);
+
+    function Record(defaultValues, name) {
+      var RecordType = function Record(values) {
+        if (!(this instanceof RecordType)) {
+          return new RecordType(values);
+        }
+        this._map = Map(values);
+      };
+
+      var keys = Object.keys(defaultValues);
+
+      var RecordTypePrototype = RecordType.prototype = Object.create(RecordPrototype);
+      RecordTypePrototype.constructor = RecordType;
+      name && (RecordTypePrototype._name = name);
+      RecordTypePrototype._defaultValues = defaultValues;
+      RecordTypePrototype._keys = keys;
+      RecordTypePrototype.size = keys.length;
+
+      try {
+        keys.forEach(function(key ) {
+          Object.defineProperty(RecordType.prototype, key, {
+            get: function() {
+              return this.get(key);
+            },
+            set: function(value) {
+              invariant(this.__ownerID, 'Cannot set on an immutable record.');
+              this.set(key, value);
+            }
+          });
+        });
+      } catch (error) {
+        // Object.defineProperty failed. Probably IE8.
+      }
+
+      return RecordType;
+    }
+
+    Record.prototype.toString = function() {
+      return this.__toString(recordName(this) + ' {', '}');
+    };
+
+    // @pragma Access
+
+    Record.prototype.has = function(k) {
+      return this._defaultValues.hasOwnProperty(k);
+    };
+
+    Record.prototype.get = function(k, notSetValue) {
+      if (!this.has(k)) {
+        return notSetValue;
+      }
+      var defaultVal = this._defaultValues[k];
+      return this._map ? this._map.get(k, defaultVal) : defaultVal;
+    };
+
+    // @pragma Modification
+
+    Record.prototype.clear = function() {
+      if (this.__ownerID) {
+        this._map && this._map.clear();
+        return this;
+      }
+      var SuperRecord = Object.getPrototypeOf(this).constructor;
+      return SuperRecord._empty || (SuperRecord._empty = makeRecord(this, emptyMap()));
+    };
+
+    Record.prototype.set = function(k, v) {
+      if (!this.has(k)) {
+        throw new Error('Cannot set unknown key "' + k + '" on ' + recordName(this));
+      }
+      var newMap = this._map && this._map.set(k, v);
+      if (this.__ownerID || newMap === this._map) {
+        return this;
+      }
+      return makeRecord(this, newMap);
+    };
+
+    Record.prototype.remove = function(k) {
+      if (!this.has(k)) {
+        return this;
+      }
+      var newMap = this._map && this._map.remove(k);
+      if (this.__ownerID || newMap === this._map) {
+        return this;
+      }
+      return makeRecord(this, newMap);
+    };
+
+    Record.prototype.wasAltered = function() {
+      return this._map.wasAltered();
+    };
+
+    Record.prototype.__iterator = function(type, reverse) {var this$0 = this;
+      return KeyedIterable(this._defaultValues).map(function(_, k)  {return this$0.get(k)}).__iterator(type, reverse);
+    };
+
+    Record.prototype.__iterate = function(fn, reverse) {var this$0 = this;
+      return KeyedIterable(this._defaultValues).map(function(_, k)  {return this$0.get(k)}).__iterate(fn, reverse);
+    };
+
+    Record.prototype.__ensureOwner = function(ownerID) {
+      if (ownerID === this.__ownerID) {
+        return this;
+      }
+      var newMap = this._map && this._map.__ensureOwner(ownerID);
+      if (!ownerID) {
+        this.__ownerID = ownerID;
+        this._map = newMap;
+        return this;
+      }
+      return makeRecord(this, newMap, ownerID);
+    };
+
+
+  var RecordPrototype = Record.prototype;
+  RecordPrototype[DELETE] = RecordPrototype.remove;
+  RecordPrototype.deleteIn =
+  RecordPrototype.removeIn = MapPrototype.removeIn;
+  RecordPrototype.merge = MapPrototype.merge;
+  RecordPrototype.mergeWith = MapPrototype.mergeWith;
+  RecordPrototype.mergeIn = MapPrototype.mergeIn;
+  RecordPrototype.mergeDeep = MapPrototype.mergeDeep;
+  RecordPrototype.mergeDeepWith = MapPrototype.mergeDeepWith;
+  RecordPrototype.mergeDeepIn = MapPrototype.mergeDeepIn;
+  RecordPrototype.setIn = MapPrototype.setIn;
+  RecordPrototype.update = MapPrototype.update;
+  RecordPrototype.updateIn = MapPrototype.updateIn;
+  RecordPrototype.withMutations = MapPrototype.withMutations;
+  RecordPrototype.asMutable = MapPrototype.asMutable;
+  RecordPrototype.asImmutable = MapPrototype.asImmutable;
+
+
+  function makeRecord(likeRecord, map, ownerID) {
+    var record = Object.create(Object.getPrototypeOf(likeRecord));
+    record._map = map;
+    record.__ownerID = ownerID;
+    return record;
+  }
+
+  function recordName(record) {
+    return record._name || record.constructor.name;
+  }
+
+  function deepEqual(a, b) {
+    if (a === b) {
+      return true;
+    }
+
+    if (
+      !isIterable(b) ||
+      a.size !== undefined && b.size !== undefined && a.size !== b.size ||
+      a.__hash !== undefined && b.__hash !== undefined && a.__hash !== b.__hash ||
+      isKeyed(a) !== isKeyed(b) ||
+      isIndexed(a) !== isIndexed(b) ||
+      isOrdered(a) !== isOrdered(b)
+    ) {
+      return false;
+    }
+
+    if (a.size === 0 && b.size === 0) {
+      return true;
+    }
+
+    var notAssociative = !isAssociative(a);
+
+    if (isOrdered(a)) {
+      var entries = a.entries();
+      return b.every(function(v, k)  {
+        var entry = entries.next().value;
+        return entry && is(entry[1], v) && (notAssociative || is(entry[0], k));
+      }) && entries.next().done;
+    }
+
+    var flipped = false;
+
+    if (a.size === undefined) {
+      if (b.size === undefined) {
+        a.cacheResult();
+      } else {
+        flipped = true;
+        var _ = a;
+        a = b;
+        b = _;
+      }
+    }
+
+    var allEqual = true;
+    var bSize = b.__iterate(function(v, k)  {
+      if (notAssociative ? !a.has(v) :
+          flipped ? !is(v, a.get(k, NOT_SET)) : !is(a.get(k, NOT_SET), v)) {
+        allEqual = false;
+        return false;
+      }
+    });
+
+    return allEqual && a.size === bSize;
+  }
+
+  createClass(Range, IndexedSeq);
+
+    function Range(start, end, step) {
+      if (!(this instanceof Range)) {
+        return new Range(start, end, step);
+      }
+      invariant(step !== 0, 'Cannot step a Range by 0');
+      start = start || 0;
+      if (end === undefined) {
+        end = Infinity;
+      }
+      step = step === undefined ? 1 : Math.abs(step);
+      if (end < start) {
+        step = -step;
+      }
+      this._start = start;
+      this._end = end;
+      this._step = step;
+      this.size = Math.max(0, Math.ceil((end - start) / step - 1) + 1);
+      if (this.size === 0) {
+        if (EMPTY_RANGE) {
+          return EMPTY_RANGE;
+        }
+        EMPTY_RANGE = this;
+      }
+    }
+
+    Range.prototype.toString = function() {
+      if (this.size === 0) {
+        return 'Range []';
+      }
+      return 'Range [ ' +
+        this._start + '...' + this._end +
+        (this._step > 1 ? ' by ' + this._step : '') +
+      ' ]';
+    };
+
+    Range.prototype.get = function(index, notSetValue) {
+      return this.has(index) ?
+        this._start + wrapIndex(this, index) * this._step :
+        notSetValue;
+    };
+
+    Range.prototype.contains = function(searchValue) {
+      var possibleIndex = (searchValue - this._start) / this._step;
+      return possibleIndex >= 0 &&
+        possibleIndex < this.size &&
+        possibleIndex === Math.floor(possibleIndex);
+    };
+
+    Range.prototype.slice = function(begin, end) {
+      if (wholeSlice(begin, end, this.size)) {
+        return this;
+      }
+      begin = resolveBegin(begin, this.size);
+      end = resolveEnd(end, this.size);
+      if (end <= begin) {
+        return new Range(0, 0);
+      }
+      return new Range(this.get(begin, this._end), this.get(end, this._end), this._step);
+    };
+
+    Range.prototype.indexOf = function(searchValue) {
+      var offsetValue = searchValue - this._start;
+      if (offsetValue % this._step === 0) {
+        var index = offsetValue / this._step;
+        if (index >= 0 && index < this.size) {
+          return index
+        }
+      }
+      return -1;
+    };
+
+    Range.prototype.lastIndexOf = function(searchValue) {
+      return this.indexOf(searchValue);
+    };
+
+    Range.prototype.__iterate = function(fn, reverse) {
+      var maxIndex = this.size - 1;
+      var step = this._step;
+      var value = reverse ? this._start + maxIndex * step : this._start;
+      for (var ii = 0; ii <= maxIndex; ii++) {
+        if (fn(value, ii, this) === false) {
+          return ii + 1;
+        }
+        value += reverse ? -step : step;
+      }
+      return ii;
+    };
+
+    Range.prototype.__iterator = function(type, reverse) {
+      var maxIndex = this.size - 1;
+      var step = this._step;
+      var value = reverse ? this._start + maxIndex * step : this._start;
+      var ii = 0;
+      return new Iterator(function()  {
+        var v = value;
+        value += reverse ? -step : step;
+        return ii > maxIndex ? iteratorDone() : iteratorValue(type, ii++, v);
+      });
+    };
+
+    Range.prototype.equals = function(other) {
+      return other instanceof Range ?
+        this._start === other._start &&
+        this._end === other._end &&
+        this._step === other._step :
+        deepEqual(this, other);
+    };
+
+
+  var EMPTY_RANGE;
+
+  createClass(Repeat, IndexedSeq);
+
+    function Repeat(value, times) {
+      if (!(this instanceof Repeat)) {
+        return new Repeat(value, times);
+      }
+      this._value = value;
+      this.size = times === undefined ? Infinity : Math.max(0, times);
+      if (this.size === 0) {
+        if (EMPTY_REPEAT) {
+          return EMPTY_REPEAT;
+        }
+        EMPTY_REPEAT = this;
+      }
+    }
+
+    Repeat.prototype.toString = function() {
+      if (this.size === 0) {
+        return 'Repeat []';
+      }
+      return 'Repeat [ ' + this._value + ' ' + this.size + ' times ]';
+    };
+
+    Repeat.prototype.get = function(index, notSetValue) {
+      return this.has(index) ? this._value : notSetValue;
+    };
+
+    Repeat.prototype.contains = function(searchValue) {
+      return is(this._value, searchValue);
+    };
+
+    Repeat.prototype.slice = function(begin, end) {
+      var size = this.size;
+      return wholeSlice(begin, end, size) ? this :
+        new Repeat(this._value, resolveEnd(end, size) - resolveBegin(begin, size));
+    };
+
+    Repeat.prototype.reverse = function() {
+      return this;
+    };
+
+    Repeat.prototype.indexOf = function(searchValue) {
+      if (is(this._value, searchValue)) {
+        return 0;
+      }
+      return -1;
+    };
+
+    Repeat.prototype.lastIndexOf = function(searchValue) {
+      if (is(this._value, searchValue)) {
+        return this.size;
+      }
+      return -1;
+    };
+
+    Repeat.prototype.__iterate = function(fn, reverse) {
+      for (var ii = 0; ii < this.size; ii++) {
+        if (fn(this._value, ii, this) === false) {
+          return ii + 1;
+        }
+      }
+      return ii;
+    };
+
+    Repeat.prototype.__iterator = function(type, reverse) {var this$0 = this;
+      var ii = 0;
+      return new Iterator(function() 
+        {return ii < this$0.size ? iteratorValue(type, ii++, this$0._value) : iteratorDone()}
+      );
+    };
+
+    Repeat.prototype.equals = function(other) {
+      return other instanceof Repeat ?
+        is(this._value, other._value) :
+        deepEqual(other);
+    };
+
+
+  var EMPTY_REPEAT;
+
+  /**
+   * Contributes additional methods to a constructor
+   */
+  function mixin(ctor, methods) {
+    var keyCopier = function(key ) { ctor.prototype[key] = methods[key]; };
+    Object.keys(methods).forEach(keyCopier);
+    Object.getOwnPropertySymbols &&
+      Object.getOwnPropertySymbols(methods).forEach(keyCopier);
+    return ctor;
+  }
+
+  Iterable.Iterator = Iterator;
+
+  mixin(Iterable, {
+
+    // ### Conversion to other types
+
+    toArray: function() {
+      assertNotInfinite(this.size);
+      var array = new Array(this.size || 0);
+      this.valueSeq().__iterate(function(v, i)  { array[i] = v; });
+      return array;
+    },
+
+    toIndexedSeq: function() {
+      return new ToIndexedSequence(this);
+    },
+
+    toJS: function() {
+      return this.toSeq().map(
+        function(value ) {return value && typeof value.toJS === 'function' ? value.toJS() : value}
+      ).__toJS();
+    },
+
+    toJSON: function() {
+      return this.toSeq().map(
+        function(value ) {return value && typeof value.toJSON === 'function' ? value.toJSON() : value}
+      ).__toJS();
+    },
+
+    toKeyedSeq: function() {
+      return new ToKeyedSequence(this, true);
+    },
+
+    toMap: function() {
+      // Use Late Binding here to solve the circular dependency.
+      return Map(this.toKeyedSeq());
+    },
+
+    toObject: function() {
+      assertNotInfinite(this.size);
+      var object = {};
+      this.__iterate(function(v, k)  { object[k] = v; });
+      return object;
+    },
+
+    toOrderedMap: function() {
+      // Use Late Binding here to solve the circular dependency.
+      return OrderedMap(this.toKeyedSeq());
+    },
+
+    toOrderedSet: function() {
+      // Use Late Binding here to solve the circular dependency.
+      return OrderedSet(isKeyed(this) ? this.valueSeq() : this);
+    },
+
+    toSet: function() {
+      // Use Late Binding here to solve the circular dependency.
+      return Set(isKeyed(this) ? this.valueSeq() : this);
+    },
+
+    toSetSeq: function() {
+      return new ToSetSequence(this);
+    },
+
+    toSeq: function() {
+      return isIndexed(this) ? this.toIndexedSeq() :
+        isKeyed(this) ? this.toKeyedSeq() :
+        this.toSetSeq();
+    },
+
+    toStack: function() {
+      // Use Late Binding here to solve the circular dependency.
+      return Stack(isKeyed(this) ? this.valueSeq() : this);
+    },
+
+    toList: function() {
+      // Use Late Binding here to solve the circular dependency.
+      return List(isKeyed(this) ? this.valueSeq() : this);
+    },
+
+
+    // ### Common JavaScript methods and properties
+
+    toString: function() {
+      return '[Iterable]';
+    },
+
+    __toString: function(head, tail) {
+      if (this.size === 0) {
+        return head + tail;
+      }
+      return head + ' ' + this.toSeq().map(this.__toStringMapper).join(', ') + ' ' + tail;
+    },
+
+
+    // ### ES6 Collection methods (ES6 Array and Map)
+
+    concat: function() {var values = SLICE$0.call(arguments, 0);
+      return reify(this, concatFactory(this, values));
+    },
+
+    contains: function(searchValue) {
+      return this.some(function(value ) {return is(value, searchValue)});
+    },
+
+    entries: function() {
+      return this.__iterator(ITERATE_ENTRIES);
+    },
+
+    every: function(predicate, context) {
+      assertNotInfinite(this.size);
+      var returnValue = true;
+      this.__iterate(function(v, k, c)  {
+        if (!predicate.call(context, v, k, c)) {
+          returnValue = false;
+          return false;
+        }
+      });
+      return returnValue;
+    },
+
+    filter: function(predicate, context) {
+      return reify(this, filterFactory(this, predicate, context, true));
+    },
+
+    find: function(predicate, context, notSetValue) {
+      var entry = this.findEntry(predicate, context);
+      return entry ? entry[1] : notSetValue;
+    },
+
+    findEntry: function(predicate, context) {
+      var found;
+      this.__iterate(function(v, k, c)  {
+        if (predicate.call(context, v, k, c)) {
+          found = [k, v];
+          return false;
+        }
+      });
+      return found;
+    },
+
+    findLastEntry: function(predicate, context) {
+      return this.toSeq().reverse().findEntry(predicate, context);
+    },
+
+    forEach: function(sideEffect, context) {
+      assertNotInfinite(this.size);
+      return this.__iterate(context ? sideEffect.bind(context) : sideEffect);
+    },
+
+    join: function(separator) {
+      assertNotInfinite(this.size);
+      separator = separator !== undefined ? '' + separator : ',';
+      var joined = '';
+      var isFirst = true;
+      this.__iterate(function(v ) {
+        isFirst ? (isFirst = false) : (joined += separator);
+        joined += v !== null && v !== undefined ? v : '';
+      });
+      return joined;
+    },
+
+    keys: function() {
+      return this.__iterator(ITERATE_KEYS);
+    },
+
+    map: function(mapper, context) {
+      return reify(this, mapFactory(this, mapper, context));
+    },
+
+    reduce: function(reducer, initialReduction, context) {
+      assertNotInfinite(this.size);
+      var reduction;
+      var useFirst;
+      if (arguments.length < 2) {
+        useFirst = true;
+      } else {
+        reduction = initialReduction;
+      }
+      this.__iterate(function(v, k, c)  {
+        if (useFirst) {
+          useFirst = false;
+          reduction = v;
+        } else {
+          reduction = reducer.call(context, reduction, v, k, c);
+        }
+      });
+      return reduction;
+    },
+
+    reduceRight: function(reducer, initialReduction, context) {
+      var reversed = this.toKeyedSeq().reverse();
+      return reversed.reduce.apply(reversed, arguments);
+    },
+
+    reverse: function() {
+      return reify(this, reverseFactory(this, true));
+    },
+
+    slice: function(begin, end) {
+      return reify(this, sliceFactory(this, begin, end, true));
+    },
+
+    some: function(predicate, context) {
+      return !this.every(not(predicate), context);
+    },
+
+    sort: function(comparator) {
+      return reify(this, sortFactory(this, comparator));
+    },
+
+    values: function() {
+      return this.__iterator(ITERATE_VALUES);
+    },
+
+
+    // ### More sequential methods
+
+    butLast: function() {
+      return this.slice(0, -1);
+    },
+
+    isEmpty: function() {
+      return this.size !== undefined ? this.size === 0 : !this.some(function()  {return true});
+    },
+
+    count: function(predicate, context) {
+      return ensureSize(
+        predicate ? this.toSeq().filter(predicate, context) : this
+      );
+    },
+
+    countBy: function(grouper, context) {
+      return countByFactory(this, grouper, context);
+    },
+
+    equals: function(other) {
+      return deepEqual(this, other);
+    },
+
+    entrySeq: function() {
+      var iterable = this;
+      if (iterable._cache) {
+        // We cache as an entries array, so we can just return the cache!
+        return new ArraySeq(iterable._cache);
+      }
+      var entriesSequence = iterable.toSeq().map(entryMapper).toIndexedSeq();
+      entriesSequence.fromEntrySeq = function()  {return iterable.toSeq()};
+      return entriesSequence;
+    },
+
+    filterNot: function(predicate, context) {
+      return this.filter(not(predicate), context);
+    },
+
+    findLast: function(predicate, context, notSetValue) {
+      return this.toKeyedSeq().reverse().find(predicate, context, notSetValue);
+    },
+
+    first: function() {
+      return this.find(returnTrue);
+    },
+
+    flatMap: function(mapper, context) {
+      return reify(this, flatMapFactory(this, mapper, context));
+    },
+
+    flatten: function(depth) {
+      return reify(this, flattenFactory(this, depth, true));
+    },
+
+    fromEntrySeq: function() {
+      return new FromEntriesSequence(this);
+    },
+
+    get: function(searchKey, notSetValue) {
+      return this.find(function(_, key)  {return is(key, searchKey)}, undefined, notSetValue);
+    },
+
+    getIn: function(searchKeyPath, notSetValue) {
+      var nested = this;
+      // Note: in an ES6 environment, we would prefer:
+      // for (var key of searchKeyPath) {
+      var iter = forceIterator(searchKeyPath);
       var step;
       while (!(step = iter.next()).done) {
         var key = step.value;
@@ -840,3409 +4737,461 @@ var $Iterable = Iterable;
           return notSetValue;
         }
       }
-    }
-    return nested;
-  },
-  groupBy: function(grouper, context) {
-    return groupByFactory(this, grouper, context);
-  },
-  has: function(searchKey) {
-    return this.get(searchKey, NOT_SET) !== NOT_SET;
-  },
-  isSubset: function(iter) {
-    iter = typeof iter.contains === 'function' ? iter : $Iterable(iter);
-    return this.every((function(value) {
-      return iter.contains(value);
-    }));
-  },
-  isSuperset: function(iter) {
-    return iter.isSubset(this);
-  },
-  keySeq: function() {
-    return this.toSeq().map(keyMapper).toIndexedSeq();
-  },
-  last: function() {
-    return this.toSeq().reverse().first();
-  },
-  max: function(comparator) {
-    return maxFactory(this, comparator);
-  },
-  maxBy: function(mapper, comparator) {
-    return maxFactory(this, comparator, mapper);
-  },
-  min: function(comparator) {
-    return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator);
-  },
-  minBy: function(mapper, comparator) {
-    return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator, mapper);
-  },
-  rest: function() {
-    return this.slice(1);
-  },
-  skip: function(amount) {
-    return reify(this, skipFactory(this, amount, true));
-  },
-  skipLast: function(amount) {
-    return reify(this, this.toSeq().reverse().skip(amount).reverse());
-  },
-  skipWhile: function(predicate, context) {
-    return reify(this, skipWhileFactory(this, predicate, context, true));
-  },
-  skipUntil: function(predicate, context) {
-    return this.skipWhile(not(predicate), context);
-  },
-  sortBy: function(mapper, comparator) {
-    return reify(this, sortFactory(this, comparator, mapper));
-  },
-  take: function(amount) {
-    return reify(this, takeFactory(this, amount));
-  },
-  takeLast: function(amount) {
-    return reify(this, this.toSeq().reverse().take(amount).reverse());
-  },
-  takeWhile: function(predicate, context) {
-    return reify(this, takeWhileFactory(this, predicate, context));
-  },
-  takeUntil: function(predicate, context) {
-    return this.takeWhile(not(predicate), context);
-  },
-  valueSeq: function() {
-    return this.toIndexedSeq();
-  },
-  hashCode: function() {
-    return this.__hash || (this.__hash = hashIterable(this));
-  }
-}, {});
-var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
-var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
-var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
-var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
-var IterablePrototype = Iterable.prototype;
-IterablePrototype[IS_ITERABLE_SENTINEL] = true;
-IterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.values;
-IterablePrototype.toJSON = IterablePrototype.toJS;
-IterablePrototype.__toJS = IterablePrototype.toArray;
-IterablePrototype.__toStringMapper = quoteString;
-IterablePrototype.inspect = IterablePrototype.toSource = function() {
-  return this.toString();
-};
-IterablePrototype.chain = IterablePrototype.flatMap;
-(function() {
-  try {
-    Object.defineProperty(IterablePrototype, 'length', {get: function() {
-        if (!Iterable.noLengthWarning) {
-          var stack;
-          try {
-            throw new Error();
-          } catch (error) {
-            stack = error.stack;
-          }
-          if (stack.indexOf('_wrapObject') === -1) {
-            console && console.warn && console.warn('iterable.length has been deprecated, ' + 'use iterable.size or iterable.count(). ' + 'This warning will become a silent error in a future version. ' + stack);
-            return this.size;
-          }
-        }
-      }});
-  } catch (e) {}
-})();
-var KeyedIterable = function KeyedIterable(value) {
-  return isKeyed(value) ? value : KeyedSeq(value);
-};
-($traceurRuntime.createClass)(KeyedIterable, {
-  flip: function() {
-    return reify(this, flipFactory(this));
-  },
-  findKey: function(predicate, context) {
-    var foundKey;
-    this.__iterate((function(v, k, c) {
-      if (predicate.call(context, v, k, c)) {
-        foundKey = k;
-        return false;
-      }
-    }));
-    return foundKey;
-  },
-  findLastKey: function(predicate, context) {
-    return this.toSeq().reverse().findKey(predicate, context);
-  },
-  keyOf: function(searchValue) {
-    return this.findKey((function(value) {
-      return is(value, searchValue);
-    }));
-  },
-  lastKeyOf: function(searchValue) {
-    return this.toSeq().reverse().keyOf(searchValue);
-  },
-  mapEntries: function(mapper, context) {
-    var $__0 = this;
-    var iterations = 0;
-    return reify(this, this.toSeq().map((function(v, k) {
-      return mapper.call(context, [k, v], iterations++, $__0);
-    })).fromEntrySeq());
-  },
-  mapKeys: function(mapper, context) {
-    var $__0 = this;
-    return reify(this, this.toSeq().flip().map((function(k, v) {
-      return mapper.call(context, k, v, $__0);
-    })).flip());
-  }
-}, {}, Iterable);
-var KeyedIterablePrototype = KeyedIterable.prototype;
-KeyedIterablePrototype[IS_KEYED_SENTINEL] = true;
-KeyedIterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.entries;
-KeyedIterablePrototype.__toJS = IterablePrototype.toObject;
-KeyedIterablePrototype.__toStringMapper = (function(v, k) {
-  return k + ': ' + quoteString(v);
-});
-var IndexedIterable = function IndexedIterable(value) {
-  return isIndexed(value) ? value : IndexedSeq(value);
-};
-($traceurRuntime.createClass)(IndexedIterable, {
-  toKeyedSeq: function() {
-    return new ToKeyedSequence(this, false);
-  },
-  filter: function(predicate, context) {
-    return reify(this, filterFactory(this, predicate, context, false));
-  },
-  findIndex: function(predicate, context) {
-    var key = this.toKeyedSeq().findKey(predicate, context);
-    return key === undefined ? -1 : key;
-  },
-  indexOf: function(searchValue) {
-    var key = this.toKeyedSeq().keyOf(searchValue);
-    return key === undefined ? -1 : key;
-  },
-  lastIndexOf: function(searchValue) {
-    var key = this.toKeyedSeq().lastKeyOf(searchValue);
-    return key === undefined ? -1 : key;
-  },
-  reverse: function() {
-    return reify(this, reverseFactory(this, false));
-  },
-  splice: function(index, removeNum) {
-    var numArgs = arguments.length;
-    removeNum = Math.max(removeNum | 0, 0);
-    if (numArgs === 0 || (numArgs === 2 && !removeNum)) {
-      return this;
-    }
-    index = resolveBegin(index, this.size);
-    var spliced = this.slice(0, index);
-    return reify(this, numArgs === 1 ? spliced : spliced.concat(arrCopy(arguments, 2), this.slice(index + removeNum)));
-  },
-  findLastIndex: function(predicate, context) {
-    var key = this.toKeyedSeq().findLastKey(predicate, context);
-    return key === undefined ? -1 : key;
-  },
-  first: function() {
-    return this.get(0);
-  },
-  flatten: function(depth) {
-    return reify(this, flattenFactory(this, depth, false));
-  },
-  get: function(index, notSetValue) {
-    index = wrapIndex(this, index);
-    return (index < 0 || (this.size === Infinity || (this.size !== undefined && index > this.size))) ? notSetValue : this.find((function(_, key) {
-      return key === index;
-    }), undefined, notSetValue);
-  },
-  has: function(index) {
-    index = wrapIndex(this, index);
-    return index >= 0 && (this.size !== undefined ? this.size === Infinity || index < this.size : this.indexOf(index) !== -1);
-  },
-  interpose: function(separator) {
-    return reify(this, interposeFactory(this, separator));
-  },
-  last: function() {
-    return this.get(-1);
-  },
-  skip: function(amount) {
-    var iter = this;
-    var skipSeq = skipFactory(iter, amount, false);
-    if (isSeq(iter) && skipSeq !== iter) {
-      skipSeq.get = function(index, notSetValue) {
-        index = wrapIndex(this, index);
-        return index >= 0 ? iter.get(index + amount, notSetValue) : notSetValue;
-      };
-    }
-    return reify(this, skipSeq);
-  },
-  skipWhile: function(predicate, context) {
-    return reify(this, skipWhileFactory(this, predicate, context, false));
-  },
-  take: function(amount) {
-    var iter = this;
-    var takeSeq = takeFactory(iter, amount);
-    if (isSeq(iter) && takeSeq !== iter) {
-      takeSeq.get = function(index, notSetValue) {
-        index = wrapIndex(this, index);
-        return index >= 0 && index < amount ? iter.get(index, notSetValue) : notSetValue;
-      };
-    }
-    return reify(this, takeSeq);
-  }
-}, {}, Iterable);
-IndexedIterable.prototype[IS_INDEXED_SENTINEL] = true;
-IndexedIterable.prototype[IS_ORDERED_SENTINEL] = true;
-var SetIterable = function SetIterable(value) {
-  return isIterable(value) && !isAssociative(value) ? value : SetSeq(value);
-};
-($traceurRuntime.createClass)(SetIterable, {
-  get: function(value, notSetValue) {
-    return this.has(value) ? value : notSetValue;
-  },
-  contains: function(value) {
-    return this.has(value);
-  },
-  keySeq: function() {
-    return this.valueSeq();
-  }
-}, {}, Iterable);
-SetIterable.prototype.has = IterablePrototype.contains;
-function isIterable(maybeIterable) {
-  return !!(maybeIterable && maybeIterable[IS_ITERABLE_SENTINEL]);
-}
-function isKeyed(maybeKeyed) {
-  return !!(maybeKeyed && maybeKeyed[IS_KEYED_SENTINEL]);
-}
-function isIndexed(maybeIndexed) {
-  return !!(maybeIndexed && maybeIndexed[IS_INDEXED_SENTINEL]);
-}
-function isAssociative(maybeAssociative) {
-  return isKeyed(maybeAssociative) || isIndexed(maybeAssociative);
-}
-function isOrdered(maybeOrdered) {
-  return !!(maybeOrdered && maybeOrdered[IS_ORDERED_SENTINEL]);
-}
-Iterable.isIterable = isIterable;
-Iterable.isKeyed = isKeyed;
-Iterable.isIndexed = isIndexed;
-Iterable.isAssociative = isAssociative;
-Iterable.isOrdered = isOrdered;
-Iterable.Keyed = KeyedIterable;
-Iterable.Indexed = IndexedIterable;
-Iterable.Set = SetIterable;
-Iterable.Iterator = Iterator;
-function keyMapper(v, k) {
-  return k;
-}
-function entryMapper(v, k) {
-  return [k, v];
-}
-function not(predicate) {
-  return function() {
-    return !predicate.apply(this, arguments);
-  };
-}
-function neg(predicate) {
-  return function() {
-    return -predicate.apply(this, arguments);
-  };
-}
-function quoteString(value) {
-  return typeof value === 'string' ? JSON.stringify(value) : value;
-}
-function defaultNegComparator(a, b) {
-  return a > b ? -1 : a < b ? 1 : 0;
-}
-function deepEqual(a, b) {
-  if (a === b) {
-    return true;
-  }
-  if (!isIterable(b) || a.size !== undefined && b.size !== undefined && a.size !== b.size || a.__hash !== undefined && b.__hash !== undefined && a.__hash !== b.__hash || isKeyed(a) !== isKeyed(b) || isIndexed(a) !== isIndexed(b) || isOrdered(a) !== isOrdered(b)) {
-    return false;
-  }
-  if (a.size === 0 && b.size === 0) {
-    return true;
-  }
-  var notAssociative = !isAssociative(a);
-  if (isOrdered(a)) {
-    var entries = a.entries();
-    return b.every((function(v, k) {
-      var entry = entries.next().value;
-      return entry && is(entry[1], v) && (notAssociative || is(entry[0], k));
-    })) && entries.next().done;
-  }
-  var flipped = false;
-  if (a.size === undefined) {
-    if (b.size === undefined) {
-      a.cacheResult();
-    } else {
-      flipped = true;
-      var _ = a;
-      a = b;
-      b = _;
-    }
-  }
-  var allEqual = true;
-  var bSize = b.__iterate((function(v, k) {
-    if (notAssociative ? !a.has(v) : flipped ? !is(v, a.get(k, NOT_SET)) : !is(a.get(k, NOT_SET), v)) {
-      allEqual = false;
-      return false;
-    }
-  }));
-  return allEqual && a.size === bSize;
-}
-function hashIterable(iterable) {
-  if (iterable.size === Infinity) {
-    return 0;
-  }
-  var ordered = isOrdered(iterable);
-  var keyed = isKeyed(iterable);
-  var h = ordered ? 1 : 0;
-  var size = iterable.__iterate(keyed ? ordered ? (function(v, k) {
-    h = 31 * h + hashMerge(hash(v), hash(k)) | 0;
-  }) : (function(v, k) {
-    h = h + hashMerge(hash(v), hash(k)) | 0;
-  }) : ordered ? (function(v) {
-    h = 31 * h + hash(v) | 0;
-  }) : (function(v) {
-    h = h + hash(v) | 0;
-  }));
-  return murmurHashOfSize(size, h);
-}
-function murmurHashOfSize(size, h) {
-  h = imul(h, 0xCC9E2D51);
-  h = imul(h << 15 | h >>> -15, 0x1B873593);
-  h = imul(h << 13 | h >>> -13, 5);
-  h = (h + 0xE6546B64 | 0) ^ size;
-  h = imul(h ^ h >>> 16, 0x85EBCA6B);
-  h = imul(h ^ h >>> 13, 0xC2B2AE35);
-  h = smi(h ^ h >>> 16);
-  return h;
-}
-function hashMerge(a, b) {
-  return a ^ b + 0x9E3779B9 + (a << 6) + (a >> 2) | 0;
-}
-function mixin(ctor, methods) {
-  var proto = ctor.prototype;
-  var keyCopier = (function(key) {
-    proto[key] = methods[key];
+      return nested;
+    },
+
+    groupBy: function(grouper, context) {
+      return groupByFactory(this, grouper, context);
+    },
+
+    has: function(searchKey) {
+      return this.get(searchKey, NOT_SET) !== NOT_SET;
+    },
+
+    hasIn: function(searchKeyPath) {
+      return this.getIn(searchKeyPath, NOT_SET) !== NOT_SET;
+    },
+
+    isSubset: function(iter) {
+      iter = typeof iter.contains === 'function' ? iter : Iterable(iter);
+      return this.every(function(value ) {return iter.contains(value)});
+    },
+
+    isSuperset: function(iter) {
+      return iter.isSubset(this);
+    },
+
+    keySeq: function() {
+      return this.toSeq().map(keyMapper).toIndexedSeq();
+    },
+
+    last: function() {
+      return this.toSeq().reverse().first();
+    },
+
+    max: function(comparator) {
+      return maxFactory(this, comparator);
+    },
+
+    maxBy: function(mapper, comparator) {
+      return maxFactory(this, comparator, mapper);
+    },
+
+    min: function(comparator) {
+      return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator);
+    },
+
+    minBy: function(mapper, comparator) {
+      return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator, mapper);
+    },
+
+    rest: function() {
+      return this.slice(1);
+    },
+
+    skip: function(amount) {
+      return this.slice(Math.max(0, amount));
+    },
+
+    skipLast: function(amount) {
+      return reify(this, this.toSeq().reverse().skip(amount).reverse());
+    },
+
+    skipWhile: function(predicate, context) {
+      return reify(this, skipWhileFactory(this, predicate, context, true));
+    },
+
+    skipUntil: function(predicate, context) {
+      return this.skipWhile(not(predicate), context);
+    },
+
+    sortBy: function(mapper, comparator) {
+      return reify(this, sortFactory(this, comparator, mapper));
+    },
+
+    take: function(amount) {
+      return this.slice(0, Math.max(0, amount));
+    },
+
+    takeLast: function(amount) {
+      return reify(this, this.toSeq().reverse().take(amount).reverse());
+    },
+
+    takeWhile: function(predicate, context) {
+      return reify(this, takeWhileFactory(this, predicate, context));
+    },
+
+    takeUntil: function(predicate, context) {
+      return this.takeWhile(not(predicate), context);
+    },
+
+    valueSeq: function() {
+      return this.toIndexedSeq();
+    },
+
+
+    // ### Hashable Object
+
+    hashCode: function() {
+      return this.__hash || (this.__hash = hashIterable(this));
+    },
+
+
+    // ### Internal
+
+    // abstract __iterate(fn, reverse)
+
+    // abstract __iterator(type, reverse)
   });
-  Object.keys(methods).forEach(keyCopier);
-  Object.getOwnPropertySymbols && Object.getOwnPropertySymbols(methods).forEach(keyCopier);
-  return ctor;
-}
-var Seq = function Seq(value) {
-  return value === null || value === undefined ? emptySequence() : isIterable(value) ? value.toSeq() : seqFromValue(value);
-};
-var $Seq = Seq;
-($traceurRuntime.createClass)(Seq, {
-  toSeq: function() {
-    return this;
-  },
-  toString: function() {
-    return this.__toString('Seq {', '}');
-  },
-  cacheResult: function() {
-    if (!this._cache && this.__iterateUncached) {
-      this._cache = this.entrySeq().toArray();
-      this.size = this._cache.length;
-    }
-    return this;
-  },
-  __iterate: function(fn, reverse) {
-    return seqIterate(this, fn, reverse, true);
-  },
-  __iterator: function(type, reverse) {
-    return seqIterator(this, type, reverse, true);
-  }
-}, {of: function() {
-    return $Seq(arguments);
-  }}, Iterable);
-var KeyedSeq = function KeyedSeq(value) {
-  return value === null || value === undefined ? emptySequence().toKeyedSeq() : isIterable(value) ? (isKeyed(value) ? value.toSeq() : value.fromEntrySeq()) : keyedSeqFromValue(value);
-};
-var $KeyedSeq = KeyedSeq;
-($traceurRuntime.createClass)(KeyedSeq, {
-  toKeyedSeq: function() {
-    return this;
-  },
-  toSeq: function() {
-    return this;
-  }
-}, {of: function() {
-    return $KeyedSeq(arguments);
-  }}, Seq);
-mixin(KeyedSeq, KeyedIterable.prototype);
-var IndexedSeq = function IndexedSeq(value) {
-  return value === null || value === undefined ? emptySequence() : !isIterable(value) ? indexedSeqFromValue(value) : isKeyed(value) ? value.entrySeq() : value.toIndexedSeq();
-};
-var $IndexedSeq = IndexedSeq;
-($traceurRuntime.createClass)(IndexedSeq, {
-  toIndexedSeq: function() {
-    return this;
-  },
-  toString: function() {
-    return this.__toString('Seq [', ']');
-  },
-  __iterate: function(fn, reverse) {
-    return seqIterate(this, fn, reverse, false);
-  },
-  __iterator: function(type, reverse) {
-    return seqIterator(this, type, reverse, false);
-  }
-}, {of: function() {
-    return $IndexedSeq(arguments);
-  }}, Seq);
-mixin(IndexedSeq, IndexedIterable.prototype);
-var SetSeq = function SetSeq(value) {
-  return (value === null || value === undefined ? emptySequence() : !isIterable(value) ? indexedSeqFromValue(value) : isKeyed(value) ? value.entrySeq() : value).toSetSeq();
-};
-var $SetSeq = SetSeq;
-($traceurRuntime.createClass)(SetSeq, {toSetSeq: function() {
-    return this;
-  }}, {of: function() {
-    return $SetSeq(arguments);
-  }}, Seq);
-mixin(SetSeq, SetIterable.prototype);
-Seq.isSeq = isSeq;
-Seq.Keyed = KeyedSeq;
-Seq.Set = SetSeq;
-Seq.Indexed = IndexedSeq;
-var IS_SEQ_SENTINEL = '@@__IMMUTABLE_SEQ__@@';
-Seq.prototype[IS_SEQ_SENTINEL] = true;
-var ArraySeq = function ArraySeq(array) {
-  this._array = array;
-  this.size = array.length;
-};
-($traceurRuntime.createClass)(ArraySeq, {
-  get: function(index, notSetValue) {
-    return this.has(index) ? this._array[wrapIndex(this, index)] : notSetValue;
-  },
-  __iterate: function(fn, reverse) {
-    var array = this._array;
-    var maxIndex = array.length - 1;
-    for (var ii = 0; ii <= maxIndex; ii++) {
-      if (fn(array[reverse ? maxIndex - ii : ii], ii, this) === false) {
-        return ii + 1;
-      }
-    }
-    return ii;
-  },
-  __iterator: function(type, reverse) {
-    var array = this._array;
-    var maxIndex = array.length - 1;
-    var ii = 0;
-    return new Iterator((function() {
-      return ii > maxIndex ? iteratorDone() : iteratorValue(type, ii, array[reverse ? maxIndex - ii++ : ii++]);
-    }));
-  }
-}, {}, IndexedSeq);
-var ObjectSeq = function ObjectSeq(object) {
-  var keys = Object.keys(object);
-  this._object = object;
-  this._keys = keys;
-  this.size = keys.length;
-};
-($traceurRuntime.createClass)(ObjectSeq, {
-  get: function(key, notSetValue) {
-    if (notSetValue !== undefined && !this.has(key)) {
-      return notSetValue;
-    }
-    return this._object[key];
-  },
-  has: function(key) {
-    return this._object.hasOwnProperty(key);
-  },
-  __iterate: function(fn, reverse) {
-    var object = this._object;
-    var keys = this._keys;
-    var maxIndex = keys.length - 1;
-    for (var ii = 0; ii <= maxIndex; ii++) {
-      var key = keys[reverse ? maxIndex - ii : ii];
-      if (fn(object[key], key, this) === false) {
-        return ii + 1;
-      }
-    }
-    return ii;
-  },
-  __iterator: function(type, reverse) {
-    var object = this._object;
-    var keys = this._keys;
-    var maxIndex = keys.length - 1;
-    var ii = 0;
-    return new Iterator((function() {
-      var key = keys[reverse ? maxIndex - ii : ii];
-      return ii++ > maxIndex ? iteratorDone() : iteratorValue(type, key, object[key]);
-    }));
-  }
-}, {}, KeyedSeq);
-ObjectSeq.prototype[IS_ORDERED_SENTINEL] = true;
-var IterableSeq = function IterableSeq(iterable) {
-  this._iterable = iterable;
-  this.size = iterable.length || iterable.size;
-};
-($traceurRuntime.createClass)(IterableSeq, {
-  __iterateUncached: function(fn, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var iterable = this._iterable;
-    var iterator = getIterator(iterable);
-    var iterations = 0;
-    if (isIterator(iterator)) {
-      var step;
-      while (!(step = iterator.next()).done) {
-        if (fn(step.value, iterations++, this) === false) {
-          break;
-        }
-      }
-    }
-    return iterations;
-  },
-  __iteratorUncached: function(type, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterable = this._iterable;
-    var iterator = getIterator(iterable);
-    if (!isIterator(iterator)) {
-      return new Iterator(iteratorDone);
-    }
-    var iterations = 0;
-    return new Iterator((function() {
-      var step = iterator.next();
-      return step.done ? step : iteratorValue(type, iterations++, step.value);
-    }));
-  }
-}, {}, IndexedSeq);
-var IteratorSeq = function IteratorSeq(iterator) {
-  this._iterator = iterator;
-  this._iteratorCache = [];
-};
-($traceurRuntime.createClass)(IteratorSeq, {
-  __iterateUncached: function(fn, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var iterator = this._iterator;
-    var cache = this._iteratorCache;
-    var iterations = 0;
-    while (iterations < cache.length) {
-      if (fn(cache[iterations], iterations++, this) === false) {
-        return iterations;
-      }
-    }
-    var step;
-    while (!(step = iterator.next()).done) {
-      var val = step.value;
-      cache[iterations] = val;
-      if (fn(val, iterations++, this) === false) {
-        break;
-      }
-    }
-    return iterations;
-  },
-  __iteratorUncached: function(type, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterator = this._iterator;
-    var cache = this._iteratorCache;
-    var iterations = 0;
-    return new Iterator((function() {
-      if (iterations >= cache.length) {
-        var step = iterator.next();
-        if (step.done) {
-          return step;
-        }
-        cache[iterations] = step.value;
-      }
-      return iteratorValue(type, iterations, cache[iterations++]);
-    }));
-  }
-}, {}, IndexedSeq);
-function isSeq(maybeSeq) {
-  return !!(maybeSeq && maybeSeq[IS_SEQ_SENTINEL]);
-}
-var EMPTY_SEQ;
-function emptySequence() {
-  return EMPTY_SEQ || (EMPTY_SEQ = new ArraySeq([]));
-}
-function keyedSeqFromValue(value) {
-  var seq = Array.isArray(value) ? new ArraySeq(value).fromEntrySeq() : isIterator(value) ? new IteratorSeq(value).fromEntrySeq() : hasIterator(value) ? new IterableSeq(value).fromEntrySeq() : typeof value === 'object' ? new ObjectSeq(value) : undefined;
-  if (!seq) {
-    throw new TypeError('Expected Array or iterable object of [k, v] entries, ' + 'or keyed object: ' + value);
-  }
-  return seq;
-}
-function indexedSeqFromValue(value) {
-  var seq = maybeIndexedSeqFromValue(value);
-  if (!seq) {
-    throw new TypeError('Expected Array or iterable object of values: ' + value);
-  }
-  return seq;
-}
-function seqFromValue(value) {
-  var seq = maybeIndexedSeqFromValue(value) || (typeof value === 'object' && new ObjectSeq(value));
-  if (!seq) {
-    throw new TypeError('Expected Array or iterable object of values, or keyed object: ' + value);
-  }
-  return seq;
-}
-function maybeIndexedSeqFromValue(value) {
-  return (isArrayLike(value) ? new ArraySeq(value) : isIterator(value) ? new IteratorSeq(value) : hasIterator(value) ? new IterableSeq(value) : undefined);
-}
-function isArrayLike(value) {
-  return value && typeof value.length === 'number';
-}
-function seqIterate(seq, fn, reverse, useKeys) {
-  assertNotInfinite(seq.size);
-  var cache = seq._cache;
-  if (cache) {
-    var maxIndex = cache.length - 1;
-    for (var ii = 0; ii <= maxIndex; ii++) {
-      var entry = cache[reverse ? maxIndex - ii : ii];
-      if (fn(entry[1], useKeys ? entry[0] : ii, seq) === false) {
-        return ii + 1;
-      }
-    }
-    return ii;
-  }
-  return seq.__iterateUncached(fn, reverse);
-}
-function seqIterator(seq, type, reverse, useKeys) {
-  var cache = seq._cache;
-  if (cache) {
-    var maxIndex = cache.length - 1;
-    var ii = 0;
-    return new Iterator((function() {
-      var entry = cache[reverse ? maxIndex - ii : ii];
-      return ii++ > maxIndex ? iteratorDone() : iteratorValue(type, useKeys ? entry[0] : ii - 1, entry[1]);
-    }));
-  }
-  return seq.__iteratorUncached(type, reverse);
-}
-function fromJS(json, converter) {
-  return converter ? _fromJSWith(converter, json, '', {'': json}) : _fromJSDefault(json);
-}
-function _fromJSWith(converter, json, key, parentJSON) {
-  if (Array.isArray(json)) {
-    return converter.call(parentJSON, key, IndexedSeq(json).map((function(v, k) {
-      return _fromJSWith(converter, v, k, json);
-    })));
-  }
-  if (isPlainObj(json)) {
-    return converter.call(parentJSON, key, KeyedSeq(json).map((function(v, k) {
-      return _fromJSWith(converter, v, k, json);
-    })));
-  }
-  return json;
-}
-function _fromJSDefault(json) {
-  if (Array.isArray(json)) {
-    return IndexedSeq(json).map(_fromJSDefault).toList();
-  }
-  if (isPlainObj(json)) {
-    return KeyedSeq(json).map(_fromJSDefault).toMap();
-  }
-  return json;
-}
-function isPlainObj(value) {
-  return value && value.constructor === Object;
-}
-var Collection = function Collection() {
-  throw TypeError('Abstract');
-};
-($traceurRuntime.createClass)(Collection, {}, {}, Iterable);
-var KeyedCollection = function KeyedCollection() {
-  $traceurRuntime.defaultSuperCall(this, $KeyedCollection.prototype, arguments);
-};
-var $KeyedCollection = KeyedCollection;
-($traceurRuntime.createClass)(KeyedCollection, {}, {}, Collection);
-mixin(KeyedCollection, KeyedIterable.prototype);
-var IndexedCollection = function IndexedCollection() {
-  $traceurRuntime.defaultSuperCall(this, $IndexedCollection.prototype, arguments);
-};
-var $IndexedCollection = IndexedCollection;
-($traceurRuntime.createClass)(IndexedCollection, {}, {}, Collection);
-mixin(IndexedCollection, IndexedIterable.prototype);
-var SetCollection = function SetCollection() {
-  $traceurRuntime.defaultSuperCall(this, $SetCollection.prototype, arguments);
-};
-var $SetCollection = SetCollection;
-($traceurRuntime.createClass)(SetCollection, {}, {}, Collection);
-mixin(SetCollection, SetIterable.prototype);
-Collection.Keyed = KeyedCollection;
-Collection.Indexed = IndexedCollection;
-Collection.Set = SetCollection;
-var Map = function Map(value) {
-  return value === null || value === undefined ? emptyMap() : isMap(value) ? value : emptyMap().withMutations((function(map) {
-    KeyedIterable(value).forEach((function(v, k) {
-      return map.set(k, v);
-    }));
-  }));
-};
-($traceurRuntime.createClass)(Map, {
-  toString: function() {
-    return this.__toString('Map {', '}');
-  },
-  get: function(k, notSetValue) {
-    return this._root ? this._root.get(0, undefined, k, notSetValue) : notSetValue;
-  },
-  set: function(k, v) {
-    return updateMap(this, k, v);
-  },
-  setIn: function(keyPath, v) {
-    return this.updateIn(keyPath, (function() {
-      return v;
-    }));
-  },
-  remove: function(k) {
-    return updateMap(this, k, NOT_SET);
-  },
-  removeIn: function(keyPath) {
-    return this.updateIn(keyPath, (function() {
-      return NOT_SET;
-    }));
-  },
-  update: function(k, notSetValue, updater) {
-    return arguments.length === 1 ? k(this) : this.updateIn([k], notSetValue, updater);
-  },
-  updateIn: function(keyPath, notSetValue, updater) {
-    if (!updater) {
-      updater = notSetValue;
-      notSetValue = undefined;
-    }
-    var updatedValue = updateInDeepMap(this, getIterator(keyPath) || getIterator(Iterable(keyPath)), notSetValue, updater);
-    return updatedValue === NOT_SET ? undefined : updatedValue;
-  },
-  clear: function() {
-    if (this.size === 0) {
-      return this;
-    }
-    if (this.__ownerID) {
-      this.size = 0;
-      this._root = null;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return emptyMap();
-  },
-  merge: function() {
-    return mergeIntoMapWith(this, undefined, arguments);
-  },
-  mergeWith: function(merger) {
-    for (var iters = [],
-        $__3 = 1; $__3 < arguments.length; $__3++)
-      iters[$__3 - 1] = arguments[$__3];
-    return mergeIntoMapWith(this, merger, iters);
-  },
-  mergeIn: function(keyPath) {
-    for (var iters = [],
-        $__4 = 1; $__4 < arguments.length; $__4++)
-      iters[$__4 - 1] = arguments[$__4];
-    return this.updateIn(keyPath, emptyMap(), (function(m) {
-      return m.merge.apply(m, iters);
-    }));
-  },
-  mergeDeep: function() {
-    return mergeIntoMapWith(this, deepMerger(undefined), arguments);
-  },
-  mergeDeepWith: function(merger) {
-    for (var iters = [],
-        $__5 = 1; $__5 < arguments.length; $__5++)
-      iters[$__5 - 1] = arguments[$__5];
-    return mergeIntoMapWith(this, deepMerger(merger), iters);
-  },
-  mergeDeepIn: function(keyPath) {
-    for (var iters = [],
-        $__6 = 1; $__6 < arguments.length; $__6++)
-      iters[$__6 - 1] = arguments[$__6];
-    return this.updateIn(keyPath, emptyMap(), (function(m) {
-      return m.mergeDeep.apply(m, iters);
-    }));
-  },
-  sort: function(comparator) {
-    return OrderedMap(sortFactory(this, comparator));
-  },
-  sortBy: function(mapper, comparator) {
-    return OrderedMap(sortFactory(this, comparator, mapper));
-  },
-  withMutations: function(fn) {
-    var mutable = this.asMutable();
-    fn(mutable);
-    return mutable.wasAltered() ? mutable.__ensureOwner(this.__ownerID) : this;
-  },
-  asMutable: function() {
-    return this.__ownerID ? this : this.__ensureOwner(new OwnerID());
-  },
-  asImmutable: function() {
-    return this.__ensureOwner();
-  },
-  wasAltered: function() {
-    return this.__altered;
-  },
-  __iterator: function(type, reverse) {
-    return new MapIterator(this, type, reverse);
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    var iterations = 0;
-    this._root && this._root.iterate((function(entry) {
-      iterations++;
-      return fn(entry[1], entry[0], $__0);
-    }), reverse);
-    return iterations;
-  },
-  __ensureOwner: function(ownerID) {
-    if (ownerID === this.__ownerID) {
-      return this;
-    }
-    if (!ownerID) {
-      this.__ownerID = ownerID;
-      this.__altered = false;
-      return this;
-    }
-    return makeMap(this.size, this._root, ownerID, this.__hash);
-  }
-}, {}, KeyedCollection);
-function isMap(maybeMap) {
-  return !!(maybeMap && maybeMap[IS_MAP_SENTINEL]);
-}
-Map.isMap = isMap;
-var IS_MAP_SENTINEL = '@@__IMMUTABLE_MAP__@@';
-var MapPrototype = Map.prototype;
-MapPrototype[IS_MAP_SENTINEL] = true;
-MapPrototype[DELETE] = MapPrototype.remove;
-var ArrayMapNode = function ArrayMapNode(ownerID, entries) {
-  this.ownerID = ownerID;
-  this.entries = entries;
-};
-var $ArrayMapNode = ArrayMapNode;
-($traceurRuntime.createClass)(ArrayMapNode, {
-  get: function(shift, keyHash, key, notSetValue) {
-    var entries = this.entries;
-    for (var ii = 0,
-        len = entries.length; ii < len; ii++) {
-      if (is(key, entries[ii][0])) {
-        return entries[ii][1];
-      }
-    }
-    return notSetValue;
-  },
-  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    var removed = value === NOT_SET;
-    var entries = this.entries;
-    var idx = 0;
-    for (var len = entries.length; idx < len; idx++) {
-      if (is(key, entries[idx][0])) {
-        break;
-      }
-    }
-    var exists = idx < len;
-    if (exists ? entries[idx][1] === value : removed) {
-      return this;
-    }
-    SetRef(didAlter);
-    (removed || !exists) && SetRef(didChangeSize);
-    if (removed && entries.length === 1) {
-      return;
-    }
-    if (!exists && !removed && entries.length >= MAX_ARRAY_MAP_SIZE) {
-      return createNodes(ownerID, entries, key, value);
-    }
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newEntries = isEditable ? entries : arrCopy(entries);
-    if (exists) {
-      if (removed) {
-        idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
-      } else {
-        newEntries[idx] = [key, value];
-      }
-    } else {
-      newEntries.push([key, value]);
-    }
-    if (isEditable) {
-      this.entries = newEntries;
-      return this;
-    }
-    return new $ArrayMapNode(ownerID, newEntries);
-  }
-}, {});
-var BitmapIndexedNode = function BitmapIndexedNode(ownerID, bitmap, nodes) {
-  this.ownerID = ownerID;
-  this.bitmap = bitmap;
-  this.nodes = nodes;
-};
-var $BitmapIndexedNode = BitmapIndexedNode;
-($traceurRuntime.createClass)(BitmapIndexedNode, {
-  get: function(shift, keyHash, key, notSetValue) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
-    var bit = (1 << ((shift === 0 ? keyHash : keyHash >>> shift) & MASK));
-    var bitmap = this.bitmap;
-    return (bitmap & bit) === 0 ? notSetValue : this.nodes[popCount(bitmap & (bit - 1))].get(shift + SHIFT, keyHash, key, notSetValue);
-  },
-  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
-    var keyHashFrag = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-    var bit = 1 << keyHashFrag;
-    var bitmap = this.bitmap;
-    var exists = (bitmap & bit) !== 0;
-    if (!exists && value === NOT_SET) {
-      return this;
-    }
-    var idx = popCount(bitmap & (bit - 1));
-    var nodes = this.nodes;
-    var node = exists ? nodes[idx] : undefined;
-    var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
-    if (newNode === node) {
-      return this;
-    }
-    if (!exists && newNode && nodes.length >= MAX_BITMAP_INDEXED_SIZE) {
-      return expandNodes(ownerID, nodes, bitmap, keyHashFrag, newNode);
-    }
-    if (exists && !newNode && nodes.length === 2 && isLeafNode(nodes[idx ^ 1])) {
-      return nodes[idx ^ 1];
-    }
-    if (exists && newNode && nodes.length === 1 && isLeafNode(newNode)) {
-      return newNode;
-    }
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newBitmap = exists ? newNode ? bitmap : bitmap ^ bit : bitmap | bit;
-    var newNodes = exists ? newNode ? setIn(nodes, idx, newNode, isEditable) : spliceOut(nodes, idx, isEditable) : spliceIn(nodes, idx, newNode, isEditable);
-    if (isEditable) {
-      this.bitmap = newBitmap;
-      this.nodes = newNodes;
-      return this;
-    }
-    return new $BitmapIndexedNode(ownerID, newBitmap, newNodes);
-  }
-}, {});
-var HashArrayMapNode = function HashArrayMapNode(ownerID, count, nodes) {
-  this.ownerID = ownerID;
-  this.count = count;
-  this.nodes = nodes;
-};
-var $HashArrayMapNode = HashArrayMapNode;
-($traceurRuntime.createClass)(HashArrayMapNode, {
-  get: function(shift, keyHash, key, notSetValue) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
-    var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-    var node = this.nodes[idx];
-    return node ? node.get(shift + SHIFT, keyHash, key, notSetValue) : notSetValue;
-  },
-  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
-    var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-    var removed = value === NOT_SET;
-    var nodes = this.nodes;
-    var node = nodes[idx];
-    if (removed && !node) {
-      return this;
-    }
-    var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
-    if (newNode === node) {
-      return this;
-    }
-    var newCount = this.count;
-    if (!node) {
-      newCount++;
-    } else if (!newNode) {
-      newCount--;
-      if (newCount < MIN_HASH_ARRAY_MAP_SIZE) {
-        return packNodes(ownerID, nodes, newCount, idx);
-      }
-    }
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newNodes = setIn(nodes, idx, newNode, isEditable);
-    if (isEditable) {
-      this.count = newCount;
-      this.nodes = newNodes;
-      return this;
-    }
-    return new $HashArrayMapNode(ownerID, newCount, newNodes);
-  }
-}, {});
-var HashCollisionNode = function HashCollisionNode(ownerID, keyHash, entries) {
-  this.ownerID = ownerID;
-  this.keyHash = keyHash;
-  this.entries = entries;
-};
-var $HashCollisionNode = HashCollisionNode;
-($traceurRuntime.createClass)(HashCollisionNode, {
-  get: function(shift, keyHash, key, notSetValue) {
-    var entries = this.entries;
-    for (var ii = 0,
-        len = entries.length; ii < len; ii++) {
-      if (is(key, entries[ii][0])) {
-        return entries[ii][1];
-      }
-    }
-    return notSetValue;
-  },
-  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    if (keyHash === undefined) {
-      keyHash = hash(key);
-    }
-    var removed = value === NOT_SET;
-    if (keyHash !== this.keyHash) {
-      if (removed) {
-        return this;
-      }
-      SetRef(didAlter);
-      SetRef(didChangeSize);
-      return mergeIntoNode(this, ownerID, shift, keyHash, [key, value]);
-    }
-    var entries = this.entries;
-    var idx = 0;
-    for (var len = entries.length; idx < len; idx++) {
-      if (is(key, entries[idx][0])) {
-        break;
-      }
-    }
-    var exists = idx < len;
-    if (exists ? entries[idx][1] === value : removed) {
-      return this;
-    }
-    SetRef(didAlter);
-    (removed || !exists) && SetRef(didChangeSize);
-    if (removed && len === 2) {
-      return new ValueNode(ownerID, this.keyHash, entries[idx ^ 1]);
-    }
-    var isEditable = ownerID && ownerID === this.ownerID;
-    var newEntries = isEditable ? entries : arrCopy(entries);
-    if (exists) {
-      if (removed) {
-        idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
-      } else {
-        newEntries[idx] = [key, value];
-      }
-    } else {
-      newEntries.push([key, value]);
-    }
-    if (isEditable) {
-      this.entries = newEntries;
-      return this;
-    }
-    return new $HashCollisionNode(ownerID, this.keyHash, newEntries);
-  }
-}, {});
-var ValueNode = function ValueNode(ownerID, keyHash, entry) {
-  this.ownerID = ownerID;
-  this.keyHash = keyHash;
-  this.entry = entry;
-};
-var $ValueNode = ValueNode;
-($traceurRuntime.createClass)(ValueNode, {
-  get: function(shift, keyHash, key, notSetValue) {
-    return is(key, this.entry[0]) ? this.entry[1] : notSetValue;
-  },
-  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-    var removed = value === NOT_SET;
-    var keyMatch = is(key, this.entry[0]);
-    if (keyMatch ? value === this.entry[1] : removed) {
-      return this;
-    }
-    SetRef(didAlter);
-    if (removed) {
-      SetRef(didChangeSize);
-      return;
-    }
-    if (keyMatch) {
-      if (ownerID && ownerID === this.ownerID) {
-        this.entry[1] = value;
-        return this;
-      }
-      return new $ValueNode(ownerID, this.keyHash, [key, value]);
-    }
-    SetRef(didChangeSize);
-    return mergeIntoNode(this, ownerID, shift, hash(key), [key, value]);
-  }
-}, {});
-ArrayMapNode.prototype.iterate = HashCollisionNode.prototype.iterate = function(fn, reverse) {
-  var entries = this.entries;
-  for (var ii = 0,
-      maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
-    if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
-      return false;
-    }
-  }
-};
-BitmapIndexedNode.prototype.iterate = HashArrayMapNode.prototype.iterate = function(fn, reverse) {
-  var nodes = this.nodes;
-  for (var ii = 0,
-      maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
-    var node = nodes[reverse ? maxIndex - ii : ii];
-    if (node && node.iterate(fn, reverse) === false) {
-      return false;
-    }
-  }
-};
-ValueNode.prototype.iterate = function(fn, reverse) {
-  return fn(this.entry);
-};
-var MapIterator = function MapIterator(map, type, reverse) {
-  this._type = type;
-  this._reverse = reverse;
-  this._stack = map._root && mapIteratorFrame(map._root);
-};
-($traceurRuntime.createClass)(MapIterator, {next: function() {
-    var type = this._type;
-    var stack = this._stack;
-    while (stack) {
-      var node = stack.node;
-      var index = stack.index++;
-      var maxIndex;
-      if (node.entry) {
-        if (index === 0) {
-          return mapIteratorValue(type, node.entry);
-        }
-      } else if (node.entries) {
-        maxIndex = node.entries.length - 1;
-        if (index <= maxIndex) {
-          return mapIteratorValue(type, node.entries[this._reverse ? maxIndex - index : index]);
-        }
-      } else {
-        maxIndex = node.nodes.length - 1;
-        if (index <= maxIndex) {
-          var subNode = node.nodes[this._reverse ? maxIndex - index : index];
-          if (subNode) {
-            if (subNode.entry) {
-              return mapIteratorValue(type, subNode.entry);
+
+  // var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
+  // var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
+  // var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
+  // var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
+
+  var IterablePrototype = Iterable.prototype;
+  IterablePrototype[IS_ITERABLE_SENTINEL] = true;
+  IterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.values;
+  IterablePrototype.__toJS = IterablePrototype.toArray;
+  IterablePrototype.__toStringMapper = quoteString;
+  IterablePrototype.inspect =
+  IterablePrototype.toSource = function() { return this.toString(); };
+  IterablePrototype.chain = IterablePrototype.flatMap;
+
+  // Temporary warning about using length
+  (function () {
+    try {
+      Object.defineProperty(IterablePrototype, 'length', {
+        get: function () {
+          if (!Iterable.noLengthWarning) {
+            var stack;
+            try {
+              throw new Error();
+            } catch (error) {
+              stack = error.stack;
             }
-            stack = this._stack = mapIteratorFrame(subNode, stack);
-          }
-          continue;
-        }
-      }
-      stack = this._stack = this._stack.__prev;
-    }
-    return iteratorDone();
-  }}, {}, Iterator);
-function mapIteratorValue(type, entry) {
-  return iteratorValue(type, entry[0], entry[1]);
-}
-function mapIteratorFrame(node, prev) {
-  return {
-    node: node,
-    index: 0,
-    __prev: prev
-  };
-}
-function makeMap(size, root, ownerID, hash) {
-  var map = Object.create(MapPrototype);
-  map.size = size;
-  map._root = root;
-  map.__ownerID = ownerID;
-  map.__hash = hash;
-  map.__altered = false;
-  return map;
-}
-var EMPTY_MAP;
-function emptyMap() {
-  return EMPTY_MAP || (EMPTY_MAP = makeMap(0));
-}
-function updateMap(map, k, v) {
-  var newRoot;
-  var newSize;
-  if (!map._root) {
-    if (v === NOT_SET) {
-      return map;
-    }
-    newSize = 1;
-    newRoot = new ArrayMapNode(map.__ownerID, [[k, v]]);
-  } else {
-    var didChangeSize = MakeRef(CHANGE_LENGTH);
-    var didAlter = MakeRef(DID_ALTER);
-    newRoot = updateNode(map._root, map.__ownerID, 0, undefined, k, v, didChangeSize, didAlter);
-    if (!didAlter.value) {
-      return map;
-    }
-    newSize = map.size + (didChangeSize.value ? v === NOT_SET ? -1 : 1 : 0);
-  }
-  if (map.__ownerID) {
-    map.size = newSize;
-    map._root = newRoot;
-    map.__hash = undefined;
-    map.__altered = true;
-    return map;
-  }
-  return newRoot ? makeMap(newSize, newRoot) : emptyMap();
-}
-function updateNode(node, ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
-  if (!node) {
-    if (value === NOT_SET) {
-      return node;
-    }
-    SetRef(didAlter);
-    SetRef(didChangeSize);
-    return new ValueNode(ownerID, keyHash, [key, value]);
-  }
-  return node.update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter);
-}
-function isLeafNode(node) {
-  return node.constructor === ValueNode || node.constructor === HashCollisionNode;
-}
-function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
-  if (node.keyHash === keyHash) {
-    return new HashCollisionNode(ownerID, keyHash, [node.entry, entry]);
-  }
-  var idx1 = (shift === 0 ? node.keyHash : node.keyHash >>> shift) & MASK;
-  var idx2 = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
-  var newNode;
-  var nodes = idx1 === idx2 ? [mergeIntoNode(node, ownerID, shift + SHIFT, keyHash, entry)] : ((newNode = new ValueNode(ownerID, keyHash, entry)), idx1 < idx2 ? [node, newNode] : [newNode, node]);
-  return new BitmapIndexedNode(ownerID, (1 << idx1) | (1 << idx2), nodes);
-}
-function createNodes(ownerID, entries, key, value) {
-  if (!ownerID) {
-    ownerID = new OwnerID();
-  }
-  var node = new ValueNode(ownerID, hash(key), [key, value]);
-  for (var ii = 0; ii < entries.length; ii++) {
-    var entry = entries[ii];
-    node = node.update(ownerID, 0, undefined, entry[0], entry[1]);
-  }
-  return node;
-}
-function packNodes(ownerID, nodes, count, excluding) {
-  var bitmap = 0;
-  var packedII = 0;
-  var packedNodes = new Array(count);
-  for (var ii = 0,
-      bit = 1,
-      len = nodes.length; ii < len; ii++, bit <<= 1) {
-    var node = nodes[ii];
-    if (node !== undefined && ii !== excluding) {
-      bitmap |= bit;
-      packedNodes[packedII++] = node;
-    }
-  }
-  return new BitmapIndexedNode(ownerID, bitmap, packedNodes);
-}
-function expandNodes(ownerID, nodes, bitmap, including, node) {
-  var count = 0;
-  var expandedNodes = new Array(SIZE);
-  for (var ii = 0; bitmap !== 0; ii++, bitmap >>>= 1) {
-    expandedNodes[ii] = bitmap & 1 ? nodes[count++] : undefined;
-  }
-  expandedNodes[including] = node;
-  return new HashArrayMapNode(ownerID, count + 1, expandedNodes);
-}
-function mergeIntoMapWith(map, merger, iterables) {
-  var iters = [];
-  for (var ii = 0; ii < iterables.length; ii++) {
-    var value = iterables[ii];
-    var iter = KeyedIterable(value);
-    if (!isIterable(value)) {
-      iter = iter.map((function(v) {
-        return fromJS(v);
-      }));
-    }
-    iters.push(iter);
-  }
-  return mergeIntoCollectionWith(map, merger, iters);
-}
-function deepMerger(merger) {
-  return (function(existing, value) {
-    return existing && existing.mergeDeepWith && isIterable(value) ? existing.mergeDeepWith(merger, value) : merger ? merger(existing, value) : value;
-  });
-}
-function mergeIntoCollectionWith(collection, merger, iters) {
-  iters = iters.filter((function(x) {
-    return x.size !== 0;
-  }));
-  if (iters.length === 0) {
-    return collection;
-  }
-  if (collection.size === 0 && iters.length === 1) {
-    return collection.constructor(iters[0]);
-  }
-  return collection.withMutations((function(collection) {
-    var mergeIntoMap = merger ? (function(value, key) {
-      collection.update(key, NOT_SET, (function(existing) {
-        return existing === NOT_SET ? value : merger(existing, value);
-      }));
-    }) : (function(value, key) {
-      collection.set(key, value);
-    });
-    for (var ii = 0; ii < iters.length; ii++) {
-      iters[ii].forEach(mergeIntoMap);
-    }
-  }));
-}
-function updateInDeepMap(existing, keyPathIter, notSetValue, updater) {
-  var isNotSet = existing === NOT_SET;
-  var step = keyPathIter.next();
-  if (step.done) {
-    var existingValue = isNotSet ? notSetValue : existing;
-    var newValue = updater(existingValue);
-    return newValue === existingValue ? existing : newValue;
-  }
-  invariant(isNotSet || (existing && existing.set), 'invalid keyPath');
-  var key = step.value;
-  var nextExisting = isNotSet ? NOT_SET : existing.get(key, NOT_SET);
-  var nextUpdated = updateInDeepMap(nextExisting, keyPathIter, notSetValue, updater);
-  return nextUpdated === nextExisting ? existing : nextUpdated === NOT_SET ? existing.remove(key) : (isNotSet ? emptyMap() : existing).set(key, nextUpdated);
-}
-function popCount(x) {
-  x = x - ((x >> 1) & 0x55555555);
-  x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-  x = (x + (x >> 4)) & 0x0f0f0f0f;
-  x = x + (x >> 8);
-  x = x + (x >> 16);
-  return x & 0x7f;
-}
-function setIn(array, idx, val, canEdit) {
-  var newArray = canEdit ? array : arrCopy(array);
-  newArray[idx] = val;
-  return newArray;
-}
-function spliceIn(array, idx, val, canEdit) {
-  var newLen = array.length + 1;
-  if (canEdit && idx + 1 === newLen) {
-    array[idx] = val;
-    return array;
-  }
-  var newArray = new Array(newLen);
-  var after = 0;
-  for (var ii = 0; ii < newLen; ii++) {
-    if (ii === idx) {
-      newArray[ii] = val;
-      after = -1;
-    } else {
-      newArray[ii] = array[ii + after];
-    }
-  }
-  return newArray;
-}
-function spliceOut(array, idx, canEdit) {
-  var newLen = array.length - 1;
-  if (canEdit && idx === newLen) {
-    array.pop();
-    return array;
-  }
-  var newArray = new Array(newLen);
-  var after = 0;
-  for (var ii = 0; ii < newLen; ii++) {
-    if (ii === idx) {
-      after = 1;
-    }
-    newArray[ii] = array[ii + after];
-  }
-  return newArray;
-}
-var MAX_ARRAY_MAP_SIZE = SIZE / 4;
-var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
-var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
-var ToKeyedSequence = function ToKeyedSequence(indexed, useKeys) {
-  this._iter = indexed;
-  this._useKeys = useKeys;
-  this.size = indexed.size;
-};
-($traceurRuntime.createClass)(ToKeyedSequence, {
-  get: function(key, notSetValue) {
-    return this._iter.get(key, notSetValue);
-  },
-  has: function(key) {
-    return this._iter.has(key);
-  },
-  valueSeq: function() {
-    return this._iter.valueSeq();
-  },
-  reverse: function() {
-    var $__0 = this;
-    var reversedSequence = reverseFactory(this, true);
-    if (!this._useKeys) {
-      reversedSequence.valueSeq = (function() {
-        return $__0._iter.toSeq().reverse();
-      });
-    }
-    return reversedSequence;
-  },
-  map: function(mapper, context) {
-    var $__0 = this;
-    var mappedSequence = mapFactory(this, mapper, context);
-    if (!this._useKeys) {
-      mappedSequence.valueSeq = (function() {
-        return $__0._iter.toSeq().map(mapper, context);
-      });
-    }
-    return mappedSequence;
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    var ii;
-    return this._iter.__iterate(this._useKeys ? (function(v, k) {
-      return fn(v, k, $__0);
-    }) : ((ii = reverse ? resolveSize(this) : 0), (function(v) {
-      return fn(v, reverse ? --ii : ii++, $__0);
-    })), reverse);
-  },
-  __iterator: function(type, reverse) {
-    if (this._useKeys) {
-      return this._iter.__iterator(type, reverse);
-    }
-    var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    var ii = reverse ? resolveSize(this) : 0;
-    return new Iterator((function() {
-      var step = iterator.next();
-      return step.done ? step : iteratorValue(type, reverse ? --ii : ii++, step.value, step);
-    }));
-  }
-}, {}, KeyedSeq);
-ToKeyedSequence.prototype[IS_ORDERED_SENTINEL] = true;
-var ToIndexedSequence = function ToIndexedSequence(iter) {
-  this._iter = iter;
-  this.size = iter.size;
-};
-($traceurRuntime.createClass)(ToIndexedSequence, {
-  contains: function(value) {
-    return this._iter.contains(value);
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    var iterations = 0;
-    return this._iter.__iterate((function(v) {
-      return fn(v, iterations++, $__0);
-    }), reverse);
-  },
-  __iterator: function(type, reverse) {
-    var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    var iterations = 0;
-    return new Iterator((function() {
-      var step = iterator.next();
-      return step.done ? step : iteratorValue(type, iterations++, step.value, step);
-    }));
-  }
-}, {}, IndexedSeq);
-var ToSetSequence = function ToSetSequence(iter) {
-  this._iter = iter;
-  this.size = iter.size;
-};
-($traceurRuntime.createClass)(ToSetSequence, {
-  has: function(key) {
-    return this._iter.contains(key);
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    return this._iter.__iterate((function(v) {
-      return fn(v, v, $__0);
-    }), reverse);
-  },
-  __iterator: function(type, reverse) {
-    var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    return new Iterator((function() {
-      var step = iterator.next();
-      return step.done ? step : iteratorValue(type, step.value, step.value, step);
-    }));
-  }
-}, {}, SetSeq);
-var FromEntriesSequence = function FromEntriesSequence(entries) {
-  this._iter = entries;
-  this.size = entries.size;
-};
-($traceurRuntime.createClass)(FromEntriesSequence, {
-  entrySeq: function() {
-    return this._iter.toSeq();
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    return this._iter.__iterate((function(entry) {
-      if (entry) {
-        validateEntry(entry);
-        return fn(entry[1], entry[0], $__0);
-      }
-    }), reverse);
-  },
-  __iterator: function(type, reverse) {
-    var iterator = this._iter.__iterator(ITERATE_VALUES, reverse);
-    return new Iterator((function() {
-      while (true) {
-        var step = iterator.next();
-        if (step.done) {
-          return step;
-        }
-        var entry = step.value;
-        if (entry) {
-          validateEntry(entry);
-          return type === ITERATE_ENTRIES ? step : iteratorValue(type, entry[0], entry[1], step);
-        }
-      }
-    }));
-  }
-}, {}, KeyedSeq);
-ToIndexedSequence.prototype.cacheResult = ToKeyedSequence.prototype.cacheResult = ToSetSequence.prototype.cacheResult = FromEntriesSequence.prototype.cacheResult = cacheResultThrough;
-function flipFactory(iterable) {
-  var flipSequence = makeSequence(iterable);
-  flipSequence._iter = iterable;
-  flipSequence.size = iterable.size;
-  flipSequence.flip = (function() {
-    return iterable;
-  });
-  flipSequence.reverse = function() {
-    var reversedSequence = iterable.reverse.apply(this);
-    reversedSequence.flip = (function() {
-      return iterable.reverse();
-    });
-    return reversedSequence;
-  };
-  flipSequence.has = (function(key) {
-    return iterable.contains(key);
-  });
-  flipSequence.contains = (function(key) {
-    return iterable.has(key);
-  });
-  flipSequence.cacheResult = cacheResultThrough;
-  flipSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    return iterable.__iterate((function(v, k) {
-      return fn(k, v, $__0) !== false;
-    }), reverse);
-  };
-  flipSequence.__iteratorUncached = function(type, reverse) {
-    if (type === ITERATE_ENTRIES) {
-      var iterator = iterable.__iterator(type, reverse);
-      return new Iterator((function() {
-        var step = iterator.next();
-        if (!step.done) {
-          var k = step.value[0];
-          step.value[0] = step.value[1];
-          step.value[1] = k;
-        }
-        return step;
-      }));
-    }
-    return iterable.__iterator(type === ITERATE_VALUES ? ITERATE_KEYS : ITERATE_VALUES, reverse);
-  };
-  return flipSequence;
-}
-function mapFactory(iterable, mapper, context) {
-  var mappedSequence = makeSequence(iterable);
-  mappedSequence.size = iterable.size;
-  mappedSequence.has = (function(key) {
-    return iterable.has(key);
-  });
-  mappedSequence.get = (function(key, notSetValue) {
-    var v = iterable.get(key, NOT_SET);
-    return v === NOT_SET ? notSetValue : mapper.call(context, v, key, iterable);
-  });
-  mappedSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    return iterable.__iterate((function(v, k, c) {
-      return fn(mapper.call(context, v, k, c), k, $__0) !== false;
-    }), reverse);
-  };
-  mappedSequence.__iteratorUncached = function(type, reverse) {
-    var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
-    return new Iterator((function() {
-      var step = iterator.next();
-      if (step.done) {
-        return step;
-      }
-      var entry = step.value;
-      var key = entry[0];
-      return iteratorValue(type, key, mapper.call(context, entry[1], key, iterable), step);
-    }));
-  };
-  return mappedSequence;
-}
-function reverseFactory(iterable, useKeys) {
-  var reversedSequence = makeSequence(iterable);
-  reversedSequence._iter = iterable;
-  reversedSequence.size = iterable.size;
-  reversedSequence.reverse = (function() {
-    return iterable;
-  });
-  if (iterable.flip) {
-    reversedSequence.flip = function() {
-      var flipSequence = flipFactory(iterable);
-      flipSequence.reverse = (function() {
-        return iterable.flip();
-      });
-      return flipSequence;
-    };
-  }
-  reversedSequence.get = (function(key, notSetValue) {
-    return iterable.get(useKeys ? key : -1 - key, notSetValue);
-  });
-  reversedSequence.has = (function(key) {
-    return iterable.has(useKeys ? key : -1 - key);
-  });
-  reversedSequence.contains = (function(value) {
-    return iterable.contains(value);
-  });
-  reversedSequence.cacheResult = cacheResultThrough;
-  reversedSequence.__iterate = function(fn, reverse) {
-    var $__0 = this;
-    return iterable.__iterate((function(v, k) {
-      return fn(v, k, $__0);
-    }), !reverse);
-  };
-  reversedSequence.__iterator = (function(type, reverse) {
-    return iterable.__iterator(type, !reverse);
-  });
-  return reversedSequence;
-}
-function filterFactory(iterable, predicate, context, useKeys) {
-  var filterSequence = makeSequence(iterable);
-  if (useKeys) {
-    filterSequence.has = (function(key) {
-      var v = iterable.get(key, NOT_SET);
-      return v !== NOT_SET && !!predicate.call(context, v, key, iterable);
-    });
-    filterSequence.get = (function(key, notSetValue) {
-      var v = iterable.get(key, NOT_SET);
-      return v !== NOT_SET && predicate.call(context, v, key, iterable) ? v : notSetValue;
-    });
-  }
-  filterSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    var iterations = 0;
-    iterable.__iterate((function(v, k, c) {
-      if (predicate.call(context, v, k, c)) {
-        iterations++;
-        return fn(v, useKeys ? k : iterations - 1, $__0);
-      }
-    }), reverse);
-    return iterations;
-  };
-  filterSequence.__iteratorUncached = function(type, reverse) {
-    var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
-    var iterations = 0;
-    return new Iterator((function() {
-      while (true) {
-        var step = iterator.next();
-        if (step.done) {
-          return step;
-        }
-        var entry = step.value;
-        var key = entry[0];
-        var value = entry[1];
-        if (predicate.call(context, value, key, iterable)) {
-          return iteratorValue(type, useKeys ? key : iterations++, value, step);
-        }
-      }
-    }));
-  };
-  return filterSequence;
-}
-function countByFactory(iterable, grouper, context) {
-  var groups = Map().asMutable();
-  iterable.__iterate((function(v, k) {
-    groups.update(grouper.call(context, v, k, iterable), 0, (function(a) {
-      return a + 1;
-    }));
-  }));
-  return groups.asImmutable();
-}
-function groupByFactory(iterable, grouper, context) {
-  var isKeyedIter = isKeyed(iterable);
-  var groups = Map().asMutable();
-  iterable.__iterate((function(v, k) {
-    groups.update(grouper.call(context, v, k, iterable), (function(a) {
-      return (a = a || [], a.push(isKeyedIter ? [k, v] : v), a);
-    }));
-  }));
-  var coerce = iterableClass(iterable);
-  return groups.map((function(arr) {
-    return reify(iterable, coerce(arr));
-  }));
-}
-function takeFactory(iterable, amount) {
-  if (amount > iterable.size) {
-    return iterable;
-  }
-  if (amount < 0) {
-    amount = 0;
-  }
-  var takeSequence = makeSequence(iterable);
-  takeSequence.size = iterable.size && Math.min(iterable.size, amount);
-  takeSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    if (amount === 0) {
-      return 0;
-    }
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var iterations = 0;
-    iterable.__iterate((function(v, k) {
-      return ++iterations && fn(v, k, $__0) !== false && iterations < amount;
-    }));
-    return iterations;
-  };
-  takeSequence.__iteratorUncached = function(type, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterator = amount && iterable.__iterator(type, reverse);
-    var iterations = 0;
-    return new Iterator((function() {
-      if (iterations++ > amount) {
-        return iteratorDone();
-      }
-      return iterator.next();
-    }));
-  };
-  return takeSequence;
-}
-function takeWhileFactory(iterable, predicate, context) {
-  var takeSequence = makeSequence(iterable);
-  takeSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var iterations = 0;
-    iterable.__iterate((function(v, k, c) {
-      return predicate.call(context, v, k, c) && ++iterations && fn(v, k, $__0);
-    }));
-    return iterations;
-  };
-  takeSequence.__iteratorUncached = function(type, reverse) {
-    var $__0 = this;
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
-    var iterating = true;
-    return new Iterator((function() {
-      if (!iterating) {
-        return iteratorDone();
-      }
-      var step = iterator.next();
-      if (step.done) {
-        return step;
-      }
-      var entry = step.value;
-      var k = entry[0];
-      var v = entry[1];
-      if (!predicate.call(context, v, k, $__0)) {
-        iterating = false;
-        return iteratorDone();
-      }
-      return type === ITERATE_ENTRIES ? step : iteratorValue(type, k, v, step);
-    }));
-  };
-  return takeSequence;
-}
-function skipFactory(iterable, amount, useKeys) {
-  if (amount <= 0) {
-    return iterable;
-  }
-  var skipSequence = makeSequence(iterable);
-  skipSequence.size = iterable.size && Math.max(0, iterable.size - amount);
-  skipSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var skipped = 0;
-    var isSkipping = true;
-    var iterations = 0;
-    iterable.__iterate((function(v, k) {
-      if (!(isSkipping && (isSkipping = skipped++ < amount))) {
-        iterations++;
-        return fn(v, useKeys ? k : iterations - 1, $__0);
-      }
-    }));
-    return iterations;
-  };
-  skipSequence.__iteratorUncached = function(type, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterator = amount && iterable.__iterator(type, reverse);
-    var skipped = 0;
-    var iterations = 0;
-    return new Iterator((function() {
-      while (skipped < amount) {
-        skipped++;
-        iterator.next();
-      }
-      var step = iterator.next();
-      if (useKeys || type === ITERATE_VALUES) {
-        return step;
-      } else if (type === ITERATE_KEYS) {
-        return iteratorValue(type, iterations++, undefined, step);
-      } else {
-        return iteratorValue(type, iterations++, step.value[1], step);
-      }
-    }));
-  };
-  return skipSequence;
-}
-function skipWhileFactory(iterable, predicate, context, useKeys) {
-  var skipSequence = makeSequence(iterable);
-  skipSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var isSkipping = true;
-    var iterations = 0;
-    iterable.__iterate((function(v, k, c) {
-      if (!(isSkipping && (isSkipping = predicate.call(context, v, k, c)))) {
-        iterations++;
-        return fn(v, useKeys ? k : iterations - 1, $__0);
-      }
-    }));
-    return iterations;
-  };
-  skipSequence.__iteratorUncached = function(type, reverse) {
-    var $__0 = this;
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterator = iterable.__iterator(ITERATE_ENTRIES, reverse);
-    var skipping = true;
-    var iterations = 0;
-    return new Iterator((function() {
-      var step,
-          k,
-          v;
-      do {
-        step = iterator.next();
-        if (step.done) {
-          if (useKeys || type === ITERATE_VALUES) {
-            return step;
-          } else if (type === ITERATE_KEYS) {
-            return iteratorValue(type, iterations++, undefined, step);
-          } else {
-            return iteratorValue(type, iterations++, step.value[1], step);
-          }
-        }
-        var entry = step.value;
-        k = entry[0];
-        v = entry[1];
-        skipping && (skipping = predicate.call(context, v, k, $__0));
-      } while (skipping);
-      return type === ITERATE_ENTRIES ? step : iteratorValue(type, k, v, step);
-    }));
-  };
-  return skipSequence;
-}
-function concatFactory(iterable, values) {
-  var isKeyedIterable = isKeyed(iterable);
-  var iters = [iterable].concat(values).map((function(v) {
-    if (!isIterable(v)) {
-      v = isKeyedIterable ? keyedSeqFromValue(v) : indexedSeqFromValue(Array.isArray(v) ? v : [v]);
-    } else if (isKeyedIterable) {
-      v = KeyedIterable(v);
-    }
-    return v;
-  })).filter((function(v) {
-    return v.size !== 0;
-  }));
-  if (iters.length === 0) {
-    return iterable;
-  }
-  if (iters.length === 1) {
-    var singleton = iters[0];
-    if (singleton === iterable || isKeyedIterable && isKeyed(singleton) || isIndexed(iterable) && isIndexed(singleton)) {
-      return singleton;
-    }
-  }
-  var concatSeq = new ArraySeq(iters);
-  if (isKeyedIterable) {
-    concatSeq = concatSeq.toKeyedSeq();
-  } else if (!isIndexed(iterable)) {
-    concatSeq = concatSeq.toSetSeq();
-  }
-  concatSeq = concatSeq.flatten(true);
-  concatSeq.size = iters.reduce((function(sum, seq) {
-    if (sum !== undefined) {
-      var size = seq.size;
-      if (size !== undefined) {
-        return sum + size;
-      }
-    }
-  }), 0);
-  return concatSeq;
-}
-function flattenFactory(iterable, depth, useKeys) {
-  var flatSequence = makeSequence(iterable);
-  flatSequence.__iterateUncached = function(fn, reverse) {
-    var iterations = 0;
-    var stopped = false;
-    function flatDeep(iter, currentDepth) {
-      var $__0 = this;
-      iter.__iterate((function(v, k) {
-        if ((!depth || currentDepth < depth) && isIterable(v)) {
-          flatDeep(v, currentDepth + 1);
-        } else if (fn(v, useKeys ? k : iterations++, $__0) === false) {
-          stopped = true;
-        }
-        return !stopped;
-      }), reverse);
-    }
-    flatDeep(iterable, 0);
-    return iterations;
-  };
-  flatSequence.__iteratorUncached = function(type, reverse) {
-    var iterator = iterable.__iterator(type, reverse);
-    var stack = [];
-    var iterations = 0;
-    return new Iterator((function() {
-      while (iterator) {
-        var step = iterator.next();
-        if (step.done !== false) {
-          iterator = stack.pop();
-          continue;
-        }
-        var v = step.value;
-        if (type === ITERATE_ENTRIES) {
-          v = v[1];
-        }
-        if ((!depth || stack.length < depth) && isIterable(v)) {
-          stack.push(iterator);
-          iterator = v.__iterator(type, reverse);
-        } else {
-          return useKeys ? step : iteratorValue(type, iterations++, v, step);
-        }
-      }
-      return iteratorDone();
-    }));
-  };
-  return flatSequence;
-}
-function flatMapFactory(iterable, mapper, context) {
-  var coerce = iterableClass(iterable);
-  return iterable.toSeq().map((function(v, k) {
-    return coerce(mapper.call(context, v, k, iterable));
-  })).flatten(true);
-}
-function interposeFactory(iterable, separator) {
-  var interposedSequence = makeSequence(iterable);
-  interposedSequence.size = iterable.size && iterable.size * 2 - 1;
-  interposedSequence.__iterateUncached = function(fn, reverse) {
-    var $__0 = this;
-    var iterations = 0;
-    iterable.__iterate((function(v, k) {
-      return (!iterations || fn(separator, iterations++, $__0) !== false) && fn(v, iterations++, $__0) !== false;
-    }), reverse);
-    return iterations;
-  };
-  interposedSequence.__iteratorUncached = function(type, reverse) {
-    var iterator = iterable.__iterator(ITERATE_VALUES, reverse);
-    var iterations = 0;
-    var step;
-    return new Iterator((function() {
-      if (!step || iterations % 2) {
-        step = iterator.next();
-        if (step.done) {
-          return step;
-        }
-      }
-      return iterations % 2 ? iteratorValue(type, iterations++, separator) : iteratorValue(type, iterations++, step.value, step);
-    }));
-  };
-  return interposedSequence;
-}
-function sortFactory(iterable, comparator, mapper) {
-  if (!comparator) {
-    comparator = defaultComparator;
-  }
-  var isKeyedIterable = isKeyed(iterable);
-  var index = 0;
-  var entries = iterable.toSeq().map((function(v, k) {
-    return [k, v, index++, mapper ? mapper(v, k, iterable) : v];
-  })).toArray();
-  entries.sort((function(a, b) {
-    return comparator(a[3], b[3]) || a[2] - b[2];
-  })).forEach(isKeyedIterable ? (function(v, i) {
-    entries[i].length = 2;
-  }) : (function(v, i) {
-    entries[i] = v[1];
-  }));
-  return isKeyedIterable ? KeyedSeq(entries) : isIndexed(iterable) ? IndexedSeq(entries) : SetSeq(entries);
-}
-function maxFactory(iterable, comparator, mapper) {
-  if (!comparator) {
-    comparator = defaultComparator;
-  }
-  if (mapper) {
-    var entry = iterable.toSeq().map((function(v, k) {
-      return [v, mapper(v, k, iterable)];
-    })).reduce((function(max, next) {
-      return comparator(next[1], max[1]) > 0 ? next : max;
-    }));
-    return entry && entry[0];
-  } else {
-    return iterable.reduce((function(max, next) {
-      return comparator(next, max) > 0 ? next : max;
-    }));
-  }
-}
-function reify(iter, seq) {
-  return isSeq(iter) ? seq : iter.constructor(seq);
-}
-function validateEntry(entry) {
-  if (entry !== Object(entry)) {
-    throw new TypeError('Expected [K, V] tuple: ' + entry);
-  }
-}
-function resolveSize(iter) {
-  assertNotInfinite(iter.size);
-  return ensureSize(iter);
-}
-function iterableClass(iterable) {
-  return isKeyed(iterable) ? KeyedIterable : isIndexed(iterable) ? IndexedIterable : SetIterable;
-}
-function makeSequence(iterable) {
-  return Object.create((isKeyed(iterable) ? KeyedSeq : isIndexed(iterable) ? IndexedSeq : SetSeq).prototype);
-}
-function cacheResultThrough() {
-  if (this._iter.cacheResult) {
-    this._iter.cacheResult();
-    this.size = this._iter.size;
-    return this;
-  } else {
-    return Seq.prototype.cacheResult.call(this);
-  }
-}
-function defaultComparator(a, b) {
-  return a > b ? 1 : a < b ? -1 : 0;
-}
-var List = function List(value) {
-  var empty = emptyList();
-  if (value === null || value === undefined) {
-    return empty;
-  }
-  if (isList(value)) {
-    return value;
-  }
-  value = IndexedIterable(value);
-  var size = value.size;
-  if (size === 0) {
-    return empty;
-  }
-  if (size > 0 && size < SIZE) {
-    return makeList(0, size, SHIFT, null, new VNode(value.toArray()));
-  }
-  return empty.withMutations((function(list) {
-    list.setSize(size);
-    value.forEach((function(v, i) {
-      return list.set(i, v);
-    }));
-  }));
-};
-($traceurRuntime.createClass)(List, {
-  toString: function() {
-    return this.__toString('List [', ']');
-  },
-  get: function(index, notSetValue) {
-    index = wrapIndex(this, index);
-    if (index < 0 || index >= this.size) {
-      return notSetValue;
-    }
-    index += this._origin;
-    var node = listNodeFor(this, index);
-    return node && node.array[index & MASK];
-  },
-  set: function(index, value) {
-    return updateList(this, index, value);
-  },
-  remove: function(index) {
-    return !this.has(index) ? this : index === 0 ? this.shift() : index === this.size - 1 ? this.pop() : this.splice(index, 1);
-  },
-  clear: function() {
-    if (this.size === 0) {
-      return this;
-    }
-    if (this.__ownerID) {
-      this.size = this._origin = this._capacity = 0;
-      this._level = SHIFT;
-      this._root = this._tail = null;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return emptyList();
-  },
-  push: function() {
-    var values = arguments;
-    var oldSize = this.size;
-    return this.withMutations((function(list) {
-      setListBounds(list, 0, oldSize + values.length);
-      for (var ii = 0; ii < values.length; ii++) {
-        list.set(oldSize + ii, values[ii]);
-      }
-    }));
-  },
-  pop: function() {
-    return setListBounds(this, 0, -1);
-  },
-  unshift: function() {
-    var values = arguments;
-    return this.withMutations((function(list) {
-      setListBounds(list, -values.length);
-      for (var ii = 0; ii < values.length; ii++) {
-        list.set(ii, values[ii]);
-      }
-    }));
-  },
-  shift: function() {
-    return setListBounds(this, 1);
-  },
-  merge: function() {
-    return mergeIntoListWith(this, undefined, arguments);
-  },
-  mergeWith: function(merger) {
-    for (var iters = [],
-        $__7 = 1; $__7 < arguments.length; $__7++)
-      iters[$__7 - 1] = arguments[$__7];
-    return mergeIntoListWith(this, merger, iters);
-  },
-  mergeDeep: function() {
-    return mergeIntoListWith(this, deepMerger(undefined), arguments);
-  },
-  mergeDeepWith: function(merger) {
-    for (var iters = [],
-        $__8 = 1; $__8 < arguments.length; $__8++)
-      iters[$__8 - 1] = arguments[$__8];
-    return mergeIntoListWith(this, deepMerger(merger), iters);
-  },
-  setSize: function(size) {
-    return setListBounds(this, 0, size);
-  },
-  slice: function(begin, end) {
-    var size = this.size;
-    if (wholeSlice(begin, end, size)) {
-      return this;
-    }
-    return setListBounds(this, resolveBegin(begin, size), resolveEnd(end, size));
-  },
-  __iterator: function(type, reverse) {
-    return new ListIterator(this, type, reverse);
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    var iterations = 0;
-    var eachFn = (function(v) {
-      return fn(v, iterations++, $__0);
-    });
-    var tailOffset = getTailOffset(this._capacity);
-    if (reverse) {
-      iterateVNode(this._tail, 0, tailOffset - this._origin, this._capacity - this._origin, eachFn, reverse) && iterateVNode(this._root, this._level, -this._origin, tailOffset - this._origin, eachFn, reverse);
-    } else {
-      iterateVNode(this._root, this._level, -this._origin, tailOffset - this._origin, eachFn, reverse) && iterateVNode(this._tail, 0, tailOffset - this._origin, this._capacity - this._origin, eachFn, reverse);
-    }
-    return iterations;
-  },
-  __ensureOwner: function(ownerID) {
-    if (ownerID === this.__ownerID) {
-      return this;
-    }
-    if (!ownerID) {
-      this.__ownerID = ownerID;
-      return this;
-    }
-    return makeList(this._origin, this._capacity, this._level, this._root, this._tail, ownerID, this.__hash);
-  }
-}, {of: function() {
-    return this(arguments);
-  }}, IndexedCollection);
-function isList(maybeList) {
-  return !!(maybeList && maybeList[IS_LIST_SENTINEL]);
-}
-List.isList = isList;
-var IS_LIST_SENTINEL = '@@__IMMUTABLE_LIST__@@';
-var ListPrototype = List.prototype;
-ListPrototype[IS_LIST_SENTINEL] = true;
-ListPrototype[DELETE] = ListPrototype.remove;
-ListPrototype.setIn = MapPrototype.setIn;
-ListPrototype.removeIn = MapPrototype.removeIn;
-ListPrototype.update = MapPrototype.update;
-ListPrototype.updateIn = MapPrototype.updateIn;
-ListPrototype.mergeIn = MapPrototype.mergeIn;
-ListPrototype.mergeDeepIn = MapPrototype.mergeDeepIn;
-ListPrototype.withMutations = MapPrototype.withMutations;
-ListPrototype.asMutable = MapPrototype.asMutable;
-ListPrototype.asImmutable = MapPrototype.asImmutable;
-ListPrototype.wasAltered = MapPrototype.wasAltered;
-var VNode = function VNode(array, ownerID) {
-  this.array = array;
-  this.ownerID = ownerID;
-};
-var $VNode = VNode;
-($traceurRuntime.createClass)(VNode, {
-  removeBefore: function(ownerID, level, index) {
-    if (index === level ? 1 << level : 0 || this.array.length === 0) {
-      return this;
-    }
-    var originIndex = (index >>> level) & MASK;
-    if (originIndex >= this.array.length) {
-      return new $VNode([], ownerID);
-    }
-    var removingFirst = originIndex === 0;
-    var newChild;
-    if (level > 0) {
-      var oldChild = this.array[originIndex];
-      newChild = oldChild && oldChild.removeBefore(ownerID, level - SHIFT, index);
-      if (newChild === oldChild && removingFirst) {
-        return this;
-      }
-    }
-    if (removingFirst && !newChild) {
-      return this;
-    }
-    var editable = editableVNode(this, ownerID);
-    if (!removingFirst) {
-      for (var ii = 0; ii < originIndex; ii++) {
-        editable.array[ii] = undefined;
-      }
-    }
-    if (newChild) {
-      editable.array[originIndex] = newChild;
-    }
-    return editable;
-  },
-  removeAfter: function(ownerID, level, index) {
-    if (index === level ? 1 << level : 0 || this.array.length === 0) {
-      return this;
-    }
-    var sizeIndex = ((index - 1) >>> level) & MASK;
-    if (sizeIndex >= this.array.length) {
-      return this;
-    }
-    var removingLast = sizeIndex === this.array.length - 1;
-    var newChild;
-    if (level > 0) {
-      var oldChild = this.array[sizeIndex];
-      newChild = oldChild && oldChild.removeAfter(ownerID, level - SHIFT, index);
-      if (newChild === oldChild && removingLast) {
-        return this;
-      }
-    }
-    if (removingLast && !newChild) {
-      return this;
-    }
-    var editable = editableVNode(this, ownerID);
-    if (!removingLast) {
-      editable.array.pop();
-    }
-    if (newChild) {
-      editable.array[sizeIndex] = newChild;
-    }
-    return editable;
-  }
-}, {});
-function iterateVNode(node, level, offset, max, fn, reverse) {
-  var ii;
-  var array = node && node.array;
-  if (level === 0) {
-    var from = offset < 0 ? -offset : 0;
-    var to = max - offset;
-    if (to > SIZE) {
-      to = SIZE;
-    }
-    for (ii = from; ii < to; ii++) {
-      if (fn(array && array[reverse ? from + to - 1 - ii : ii]) === false) {
-        return false;
-      }
-    }
-  } else {
-    var step = 1 << level;
-    var newLevel = level - SHIFT;
-    for (ii = 0; ii <= MASK; ii++) {
-      var levelIndex = reverse ? MASK - ii : ii;
-      var newOffset = offset + (levelIndex << level);
-      if (newOffset < max && newOffset + step > 0) {
-        var nextNode = array && array[levelIndex];
-        if (!iterateVNode(nextNode, newLevel, newOffset, max, fn, reverse)) {
-          return false;
-        }
-      }
-    }
-  }
-  return true;
-}
-var ListIterator = function ListIterator(list, type, reverse) {
-  this._type = type;
-  this._reverse = !!reverse;
-  this._maxIndex = list.size - 1;
-  var tailOffset = getTailOffset(list._capacity);
-  var rootStack = listIteratorFrame(list._root && list._root.array, list._level, -list._origin, tailOffset - list._origin - 1);
-  var tailStack = listIteratorFrame(list._tail && list._tail.array, 0, tailOffset - list._origin, list._capacity - list._origin - 1);
-  this._stack = reverse ? tailStack : rootStack;
-  this._stack.__prev = reverse ? rootStack : tailStack;
-};
-($traceurRuntime.createClass)(ListIterator, {next: function() {
-    var stack = this._stack;
-    while (stack) {
-      var array = stack.array;
-      var rawIndex = stack.index++;
-      if (this._reverse) {
-        rawIndex = MASK - rawIndex;
-        if (rawIndex > stack.rawMax) {
-          rawIndex = stack.rawMax;
-          stack.index = SIZE - rawIndex;
-        }
-      }
-      if (rawIndex >= 0 && rawIndex < SIZE && rawIndex <= stack.rawMax) {
-        var value = array && array[rawIndex];
-        if (stack.level === 0) {
-          var type = this._type;
-          var index;
-          if (type !== 1) {
-            index = stack.offset + (rawIndex << stack.level);
-            if (this._reverse) {
-              index = this._maxIndex - index;
+            if (stack.indexOf('_wrapObject') === -1) {
+              console && console.warn && console.warn(
+                'iterable.length has been deprecated, '+
+                'use iterable.size or iterable.count(). '+
+                'This warning will become a silent error in a future version. ' +
+                stack
+              );
+              return this.size;
             }
           }
-          return iteratorValue(type, index, value);
-        } else {
-          this._stack = stack = listIteratorFrame(value && value.array, stack.level - SHIFT, stack.offset + (rawIndex << stack.level), stack.max, stack);
-        }
-        continue;
-      }
-      stack = this._stack = this._stack.__prev;
-    }
-    return iteratorDone();
-  }}, {}, Iterator);
-function listIteratorFrame(array, level, offset, max, prevFrame) {
-  return {
-    array: array,
-    level: level,
-    offset: offset,
-    max: max,
-    rawMax: ((max - offset) >> level),
-    index: 0,
-    __prev: prevFrame
-  };
-}
-function makeList(origin, capacity, level, root, tail, ownerID, hash) {
-  var list = Object.create(ListPrototype);
-  list.size = capacity - origin;
-  list._origin = origin;
-  list._capacity = capacity;
-  list._level = level;
-  list._root = root;
-  list._tail = tail;
-  list.__ownerID = ownerID;
-  list.__hash = hash;
-  list.__altered = false;
-  return list;
-}
-var EMPTY_LIST;
-function emptyList() {
-  return EMPTY_LIST || (EMPTY_LIST = makeList(0, 0, SHIFT));
-}
-function updateList(list, index, value) {
-  index = wrapIndex(list, index);
-  if (index >= list.size || index < 0) {
-    return list.withMutations((function(list) {
-      index < 0 ? setListBounds(list, index).set(0, value) : setListBounds(list, 0, index + 1).set(index, value);
-    }));
-  }
-  index += list._origin;
-  var newTail = list._tail;
-  var newRoot = list._root;
-  var didAlter = MakeRef(DID_ALTER);
-  if (index >= getTailOffset(list._capacity)) {
-    newTail = updateVNode(newTail, list.__ownerID, 0, index, value, didAlter);
-  } else {
-    newRoot = updateVNode(newRoot, list.__ownerID, list._level, index, value, didAlter);
-  }
-  if (!didAlter.value) {
-    return list;
-  }
-  if (list.__ownerID) {
-    list._root = newRoot;
-    list._tail = newTail;
-    list.__hash = undefined;
-    list.__altered = true;
-    return list;
-  }
-  return makeList(list._origin, list._capacity, list._level, newRoot, newTail);
-}
-function updateVNode(node, ownerID, level, index, value, didAlter) {
-  var idx = (index >>> level) & MASK;
-  var nodeHas = node && idx < node.array.length;
-  if (!nodeHas && value === undefined) {
-    return node;
-  }
-  var newNode;
-  if (level > 0) {
-    var lowerNode = node && node.array[idx];
-    var newLowerNode = updateVNode(lowerNode, ownerID, level - SHIFT, index, value, didAlter);
-    if (newLowerNode === lowerNode) {
-      return node;
-    }
-    newNode = editableVNode(node, ownerID);
-    newNode.array[idx] = newLowerNode;
-    return newNode;
-  }
-  if (nodeHas && node.array[idx] === value) {
-    return node;
-  }
-  SetRef(didAlter);
-  newNode = editableVNode(node, ownerID);
-  if (value === undefined && idx === newNode.array.length - 1) {
-    newNode.array.pop();
-  } else {
-    newNode.array[idx] = value;
-  }
-  return newNode;
-}
-function editableVNode(node, ownerID) {
-  if (ownerID && node && ownerID === node.ownerID) {
-    return node;
-  }
-  return new VNode(node ? node.array.slice() : [], ownerID);
-}
-function listNodeFor(list, rawIndex) {
-  if (rawIndex >= getTailOffset(list._capacity)) {
-    return list._tail;
-  }
-  if (rawIndex < 1 << (list._level + SHIFT)) {
-    var node = list._root;
-    var level = list._level;
-    while (node && level > 0) {
-      node = node.array[(rawIndex >>> level) & MASK];
-      level -= SHIFT;
-    }
-    return node;
-  }
-}
-function setListBounds(list, begin, end) {
-  var owner = list.__ownerID || new OwnerID();
-  var oldOrigin = list._origin;
-  var oldCapacity = list._capacity;
-  var newOrigin = oldOrigin + begin;
-  var newCapacity = end === undefined ? oldCapacity : end < 0 ? oldCapacity + end : oldOrigin + end;
-  if (newOrigin === oldOrigin && newCapacity === oldCapacity) {
-    return list;
-  }
-  if (newOrigin >= newCapacity) {
-    return list.clear();
-  }
-  var newLevel = list._level;
-  var newRoot = list._root;
-  var offsetShift = 0;
-  while (newOrigin + offsetShift < 0) {
-    newRoot = new VNode(newRoot && newRoot.array.length ? [undefined, newRoot] : [], owner);
-    newLevel += SHIFT;
-    offsetShift += 1 << newLevel;
-  }
-  if (offsetShift) {
-    newOrigin += offsetShift;
-    oldOrigin += offsetShift;
-    newCapacity += offsetShift;
-    oldCapacity += offsetShift;
-  }
-  var oldTailOffset = getTailOffset(oldCapacity);
-  var newTailOffset = getTailOffset(newCapacity);
-  while (newTailOffset >= 1 << (newLevel + SHIFT)) {
-    newRoot = new VNode(newRoot && newRoot.array.length ? [newRoot] : [], owner);
-    newLevel += SHIFT;
-  }
-  var oldTail = list._tail;
-  var newTail = newTailOffset < oldTailOffset ? listNodeFor(list, newCapacity - 1) : newTailOffset > oldTailOffset ? new VNode([], owner) : oldTail;
-  if (oldTail && newTailOffset > oldTailOffset && newOrigin < oldCapacity && oldTail.array.length) {
-    newRoot = editableVNode(newRoot, owner);
-    var node = newRoot;
-    for (var level = newLevel; level > SHIFT; level -= SHIFT) {
-      var idx = (oldTailOffset >>> level) & MASK;
-      node = node.array[idx] = editableVNode(node.array[idx], owner);
-    }
-    node.array[(oldTailOffset >>> SHIFT) & MASK] = oldTail;
-  }
-  if (newCapacity < oldCapacity) {
-    newTail = newTail && newTail.removeAfter(owner, 0, newCapacity);
-  }
-  if (newOrigin >= newTailOffset) {
-    newOrigin -= newTailOffset;
-    newCapacity -= newTailOffset;
-    newLevel = SHIFT;
-    newRoot = null;
-    newTail = newTail && newTail.removeBefore(owner, 0, newOrigin);
-  } else if (newOrigin > oldOrigin || newTailOffset < oldTailOffset) {
-    offsetShift = 0;
-    while (newRoot) {
-      var beginIndex = (newOrigin >>> newLevel) & MASK;
-      if (beginIndex !== (newTailOffset >>> newLevel) & MASK) {
-        break;
-      }
-      if (beginIndex) {
-        offsetShift += (1 << newLevel) * beginIndex;
-      }
-      newLevel -= SHIFT;
-      newRoot = newRoot.array[beginIndex];
-    }
-    if (newRoot && newOrigin > oldOrigin) {
-      newRoot = newRoot.removeBefore(owner, newLevel, newOrigin - offsetShift);
-    }
-    if (newRoot && newTailOffset < oldTailOffset) {
-      newRoot = newRoot.removeAfter(owner, newLevel, newTailOffset - offsetShift);
-    }
-    if (offsetShift) {
-      newOrigin -= offsetShift;
-      newCapacity -= offsetShift;
-    }
-  }
-  if (list.__ownerID) {
-    list.size = newCapacity - newOrigin;
-    list._origin = newOrigin;
-    list._capacity = newCapacity;
-    list._level = newLevel;
-    list._root = newRoot;
-    list._tail = newTail;
-    list.__hash = undefined;
-    list.__altered = true;
-    return list;
-  }
-  return makeList(newOrigin, newCapacity, newLevel, newRoot, newTail);
-}
-function mergeIntoListWith(list, merger, iterables) {
-  var iters = [];
-  var maxSize = 0;
-  for (var ii = 0; ii < iterables.length; ii++) {
-    var value = iterables[ii];
-    var iter = IndexedIterable(value);
-    if (iter.size > maxSize) {
-      maxSize = iter.size;
-    }
-    if (!isIterable(value)) {
-      iter = iter.map((function(v) {
-        return fromJS(v);
-      }));
-    }
-    iters.push(iter);
-  }
-  if (maxSize > list.size) {
-    list = list.setSize(maxSize);
-  }
-  return mergeIntoCollectionWith(list, merger, iters);
-}
-function getTailOffset(size) {
-  return size < SIZE ? 0 : (((size - 1) >>> SHIFT) << SHIFT);
-}
-var OrderedMap = function OrderedMap(value) {
-  return value === null || value === undefined ? emptyOrderedMap() : isOrderedMap(value) ? value : emptyOrderedMap().withMutations((function(map) {
-    KeyedIterable(value).forEach((function(v, k) {
-      return map.set(k, v);
-    }));
-  }));
-};
-($traceurRuntime.createClass)(OrderedMap, {
-  toString: function() {
-    return this.__toString('OrderedMap {', '}');
-  },
-  get: function(k, notSetValue) {
-    var index = this._map.get(k);
-    return index !== undefined ? this._list.get(index)[1] : notSetValue;
-  },
-  clear: function() {
-    if (this.size === 0) {
-      return this;
-    }
-    if (this.__ownerID) {
-      this.size = 0;
-      this._map.clear();
-      this._list.clear();
-      return this;
-    }
-    return emptyOrderedMap();
-  },
-  set: function(k, v) {
-    return updateOrderedMap(this, k, v);
-  },
-  remove: function(k) {
-    return updateOrderedMap(this, k, NOT_SET);
-  },
-  wasAltered: function() {
-    return this._map.wasAltered() || this._list.wasAltered();
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    return this._list.__iterate((function(entry) {
-      return entry && fn(entry[1], entry[0], $__0);
-    }), reverse);
-  },
-  __iterator: function(type, reverse) {
-    return this._list.fromEntrySeq().__iterator(type, reverse);
-  },
-  __ensureOwner: function(ownerID) {
-    if (ownerID === this.__ownerID) {
-      return this;
-    }
-    var newMap = this._map.__ensureOwner(ownerID);
-    var newList = this._list.__ensureOwner(ownerID);
-    if (!ownerID) {
-      this.__ownerID = ownerID;
-      this._map = newMap;
-      this._list = newList;
-      return this;
-    }
-    return makeOrderedMap(newMap, newList, ownerID, this.__hash);
-  }
-}, {of: function() {
-    return this(arguments);
-  }}, Map);
-function isOrderedMap(maybeOrderedMap) {
-  return isMap(maybeOrderedMap) && isOrdered(maybeOrderedMap);
-}
-OrderedMap.isOrderedMap = isOrderedMap;
-OrderedMap.prototype[IS_ORDERED_SENTINEL] = true;
-OrderedMap.prototype[DELETE] = OrderedMap.prototype.remove;
-function makeOrderedMap(map, list, ownerID, hash) {
-  var omap = Object.create(OrderedMap.prototype);
-  omap.size = map ? map.size : 0;
-  omap._map = map;
-  omap._list = list;
-  omap.__ownerID = ownerID;
-  omap.__hash = hash;
-  return omap;
-}
-var EMPTY_ORDERED_MAP;
-function emptyOrderedMap() {
-  return EMPTY_ORDERED_MAP || (EMPTY_ORDERED_MAP = makeOrderedMap(emptyMap(), emptyList()));
-}
-function updateOrderedMap(omap, k, v) {
-  var map = omap._map;
-  var list = omap._list;
-  var i = map.get(k);
-  var has = i !== undefined;
-  var newMap;
-  var newList;
-  if (v === NOT_SET) {
-    if (!has) {
-      return omap;
-    }
-    if (list.size >= SIZE && list.size >= map.size * 2) {
-      newList = list.filter((function(entry, idx) {
-        return entry !== undefined && i !== idx;
-      }));
-      newMap = newList.toKeyedSeq().map((function(entry) {
-        return entry[0];
-      })).flip().toMap();
-      if (omap.__ownerID) {
-        newMap.__ownerID = newList.__ownerID = omap.__ownerID;
-      }
-    } else {
-      newMap = map.remove(k);
-      newList = i === list.size - 1 ? list.pop() : list.set(i, undefined);
-    }
-  } else {
-    if (has) {
-      if (v === list.get(i)[1]) {
-        return omap;
-      }
-      newMap = map;
-      newList = list.set(i, [k, v]);
-    } else {
-      newMap = map.set(k, list.size);
-      newList = list.set(list.size, [k, v]);
-    }
-  }
-  if (omap.__ownerID) {
-    omap.size = newMap.size;
-    omap._map = newMap;
-    omap._list = newList;
-    omap.__hash = undefined;
-    return omap;
-  }
-  return makeOrderedMap(newMap, newList);
-}
-var Stack = function Stack(value) {
-  return value === null || value === undefined ? emptyStack() : isStack(value) ? value : emptyStack().unshiftAll(value);
-};
-var $Stack = Stack;
-($traceurRuntime.createClass)(Stack, {
-  toString: function() {
-    return this.__toString('Stack [', ']');
-  },
-  get: function(index, notSetValue) {
-    var head = this._head;
-    while (head && index--) {
-      head = head.next;
-    }
-    return head ? head.value : notSetValue;
-  },
-  peek: function() {
-    return this._head && this._head.value;
-  },
-  push: function() {
-    if (arguments.length === 0) {
-      return this;
-    }
-    var newSize = this.size + arguments.length;
-    var head = this._head;
-    for (var ii = arguments.length - 1; ii >= 0; ii--) {
-      head = {
-        value: arguments[ii],
-        next: head
-      };
-    }
-    if (this.__ownerID) {
-      this.size = newSize;
-      this._head = head;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return makeStack(newSize, head);
-  },
-  pushAll: function(iter) {
-    iter = IndexedIterable(iter);
-    if (iter.size === 0) {
-      return this;
-    }
-    var newSize = this.size;
-    var head = this._head;
-    iter.reverse().forEach((function(value) {
-      newSize++;
-      head = {
-        value: value,
-        next: head
-      };
-    }));
-    if (this.__ownerID) {
-      this.size = newSize;
-      this._head = head;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return makeStack(newSize, head);
-  },
-  pop: function() {
-    return this.slice(1);
-  },
-  unshift: function() {
-    return this.push.apply(this, arguments);
-  },
-  unshiftAll: function(iter) {
-    return this.pushAll(iter);
-  },
-  shift: function() {
-    return this.pop.apply(this, arguments);
-  },
-  clear: function() {
-    if (this.size === 0) {
-      return this;
-    }
-    if (this.__ownerID) {
-      this.size = 0;
-      this._head = undefined;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return emptyStack();
-  },
-  slice: function(begin, end) {
-    if (wholeSlice(begin, end, this.size)) {
-      return this;
-    }
-    var resolvedBegin = resolveBegin(begin, this.size);
-    var resolvedEnd = resolveEnd(end, this.size);
-    if (resolvedEnd !== this.size) {
-      return $traceurRuntime.superCall(this, $Stack.prototype, "slice", [begin, end]);
-    }
-    var newSize = this.size - resolvedBegin;
-    var head = this._head;
-    while (resolvedBegin--) {
-      head = head.next;
-    }
-    if (this.__ownerID) {
-      this.size = newSize;
-      this._head = head;
-      this.__hash = undefined;
-      this.__altered = true;
-      return this;
-    }
-    return makeStack(newSize, head);
-  },
-  __ensureOwner: function(ownerID) {
-    if (ownerID === this.__ownerID) {
-      return this;
-    }
-    if (!ownerID) {
-      this.__ownerID = ownerID;
-      this.__altered = false;
-      return this;
-    }
-    return makeStack(this.size, this._head, ownerID, this.__hash);
-  },
-  __iterate: function(fn, reverse) {
-    if (reverse) {
-      return this.toSeq().cacheResult.__iterate(fn, reverse);
-    }
-    var iterations = 0;
-    var node = this._head;
-    while (node) {
-      if (fn(node.value, iterations++, this) === false) {
-        break;
-      }
-      node = node.next;
-    }
-    return iterations;
-  },
-  __iterator: function(type, reverse) {
-    if (reverse) {
-      return this.toSeq().cacheResult().__iterator(type, reverse);
-    }
-    var iterations = 0;
-    var node = this._head;
-    return new Iterator((function() {
-      if (node) {
-        var value = node.value;
-        node = node.next;
-        return iteratorValue(type, iterations++, value);
-      }
-      return iteratorDone();
-    }));
-  }
-}, {of: function() {
-    return this(arguments);
-  }}, IndexedCollection);
-function isStack(maybeStack) {
-  return !!(maybeStack && maybeStack[IS_STACK_SENTINEL]);
-}
-Stack.isStack = isStack;
-var IS_STACK_SENTINEL = '@@__IMMUTABLE_STACK__@@';
-var StackPrototype = Stack.prototype;
-StackPrototype[IS_STACK_SENTINEL] = true;
-StackPrototype.withMutations = MapPrototype.withMutations;
-StackPrototype.asMutable = MapPrototype.asMutable;
-StackPrototype.asImmutable = MapPrototype.asImmutable;
-StackPrototype.wasAltered = MapPrototype.wasAltered;
-function makeStack(size, head, ownerID, hash) {
-  var map = Object.create(StackPrototype);
-  map.size = size;
-  map._head = head;
-  map.__ownerID = ownerID;
-  map.__hash = hash;
-  map.__altered = false;
-  return map;
-}
-var EMPTY_STACK;
-function emptyStack() {
-  return EMPTY_STACK || (EMPTY_STACK = makeStack(0));
-}
-var Set = function Set(value) {
-  return value === null || value === undefined ? emptySet() : isSet(value) ? value : emptySet().withMutations((function(set) {
-    SetIterable(value).forEach((function(v) {
-      return set.add(v);
-    }));
-  }));
-};
-($traceurRuntime.createClass)(Set, {
-  toString: function() {
-    return this.__toString('Set {', '}');
-  },
-  has: function(value) {
-    return this._map.has(value);
-  },
-  add: function(value) {
-    return updateSet(this, this._map.set(value, true));
-  },
-  remove: function(value) {
-    return updateSet(this, this._map.remove(value));
-  },
-  clear: function() {
-    return updateSet(this, this._map.clear());
-  },
-  union: function() {
-    for (var iters = [],
-        $__9 = 0; $__9 < arguments.length; $__9++)
-      iters[$__9] = arguments[$__9];
-    iters = iters.filter((function(x) {
-      return x.size !== 0;
-    }));
-    if (iters.length === 0) {
-      return this;
-    }
-    if (this.size === 0 && iters.length === 1) {
-      return this.constructor(iters[0]);
-    }
-    return this.withMutations((function(set) {
-      for (var ii = 0; ii < iters.length; ii++) {
-        SetIterable(iters[ii]).forEach((function(value) {
-          return set.add(value);
-        }));
-      }
-    }));
-  },
-  intersect: function() {
-    for (var iters = [],
-        $__10 = 0; $__10 < arguments.length; $__10++)
-      iters[$__10] = arguments[$__10];
-    if (iters.length === 0) {
-      return this;
-    }
-    iters = iters.map((function(iter) {
-      return SetIterable(iter);
-    }));
-    var originalSet = this;
-    return this.withMutations((function(set) {
-      originalSet.forEach((function(value) {
-        if (!iters.every((function(iter) {
-          return iter.contains(value);
-        }))) {
-          set.remove(value);
-        }
-      }));
-    }));
-  },
-  subtract: function() {
-    for (var iters = [],
-        $__11 = 0; $__11 < arguments.length; $__11++)
-      iters[$__11] = arguments[$__11];
-    if (iters.length === 0) {
-      return this;
-    }
-    iters = iters.map((function(iter) {
-      return SetIterable(iter);
-    }));
-    var originalSet = this;
-    return this.withMutations((function(set) {
-      originalSet.forEach((function(value) {
-        if (iters.some((function(iter) {
-          return iter.contains(value);
-        }))) {
-          set.remove(value);
-        }
-      }));
-    }));
-  },
-  merge: function() {
-    return this.union.apply(this, arguments);
-  },
-  mergeWith: function(merger) {
-    for (var iters = [],
-        $__12 = 1; $__12 < arguments.length; $__12++)
-      iters[$__12 - 1] = arguments[$__12];
-    return this.union.apply(this, iters);
-  },
-  sort: function(comparator) {
-    return OrderedSet(sortFactory(this, comparator));
-  },
-  sortBy: function(mapper, comparator) {
-    return OrderedSet(sortFactory(this, comparator, mapper));
-  },
-  wasAltered: function() {
-    return this._map.wasAltered();
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    return this._map.__iterate((function(_, k) {
-      return fn(k, k, $__0);
-    }), reverse);
-  },
-  __iterator: function(type, reverse) {
-    return this._map.map((function(_, k) {
-      return k;
-    })).__iterator(type, reverse);
-  },
-  __ensureOwner: function(ownerID) {
-    if (ownerID === this.__ownerID) {
-      return this;
-    }
-    var newMap = this._map.__ensureOwner(ownerID);
-    if (!ownerID) {
-      this.__ownerID = ownerID;
-      this._map = newMap;
-      return this;
-    }
-    return this.__make(newMap, ownerID);
-  }
-}, {
-  of: function() {
-    return this(arguments);
-  },
-  fromKeys: function(value) {
-    return this(KeyedIterable(value).keySeq());
-  }
-}, SetCollection);
-function isSet(maybeSet) {
-  return !!(maybeSet && maybeSet[IS_SET_SENTINEL]);
-}
-Set.isSet = isSet;
-var IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
-var SetPrototype = Set.prototype;
-SetPrototype[IS_SET_SENTINEL] = true;
-SetPrototype[DELETE] = SetPrototype.remove;
-SetPrototype.mergeDeep = SetPrototype.merge;
-SetPrototype.mergeDeepWith = SetPrototype.mergeWith;
-SetPrototype.withMutations = MapPrototype.withMutations;
-SetPrototype.asMutable = MapPrototype.asMutable;
-SetPrototype.asImmutable = MapPrototype.asImmutable;
-SetPrototype.__empty = emptySet;
-SetPrototype.__make = makeSet;
-function updateSet(set, newMap) {
-  if (set.__ownerID) {
-    set.size = newMap.size;
-    set._map = newMap;
-    return set;
-  }
-  return newMap === set._map ? set : newMap.size === 0 ? set.__empty() : set.__make(newMap);
-}
-function makeSet(map, ownerID) {
-  var set = Object.create(SetPrototype);
-  set.size = map ? map.size : 0;
-  set._map = map;
-  set.__ownerID = ownerID;
-  return set;
-}
-var EMPTY_SET;
-function emptySet() {
-  return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
-}
-var OrderedSet = function OrderedSet(value) {
-  return value === null || value === undefined ? emptyOrderedSet() : isOrderedSet(value) ? value : emptyOrderedSet().withMutations((function(set) {
-    SetIterable(value).forEach((function(v) {
-      return set.add(v);
-    }));
-  }));
-};
-($traceurRuntime.createClass)(OrderedSet, {toString: function() {
-    return this.__toString('OrderedSet {', '}');
-  }}, {
-  of: function() {
-    return this(arguments);
-  },
-  fromKeys: function(value) {
-    return this(KeyedIterable(value).keySeq());
-  }
-}, Set);
-function isOrderedSet(maybeOrderedSet) {
-  return isSet(maybeOrderedSet) && isOrdered(maybeOrderedSet);
-}
-OrderedSet.isOrderedSet = isOrderedSet;
-var OrderedSetPrototype = OrderedSet.prototype;
-OrderedSetPrototype[IS_ORDERED_SENTINEL] = true;
-OrderedSetPrototype.__empty = emptyOrderedSet;
-OrderedSetPrototype.__make = makeOrderedSet;
-function makeOrderedSet(map, ownerID) {
-  var set = Object.create(OrderedSetPrototype);
-  set.size = map ? map.size : 0;
-  set._map = map;
-  set.__ownerID = ownerID;
-  return set;
-}
-var EMPTY_ORDERED_SET;
-function emptyOrderedSet() {
-  return EMPTY_ORDERED_SET || (EMPTY_ORDERED_SET = makeOrderedSet(emptyOrderedMap()));
-}
-var Record = function Record(defaultValues, name) {
-  var RecordType = function Record(values) {
-    if (!(this instanceof RecordType)) {
-      return new RecordType(values);
-    }
-    this._map = Map(values);
-  };
-  var keys = Object.keys(defaultValues);
-  var RecordTypePrototype = RecordType.prototype = Object.create(RecordPrototype);
-  RecordTypePrototype.constructor = RecordType;
-  name && (RecordTypePrototype._name = name);
-  RecordTypePrototype._defaultValues = defaultValues;
-  RecordTypePrototype._keys = keys;
-  RecordTypePrototype.size = keys.length;
-  try {
-    keys.forEach((function(key) {
-      Object.defineProperty(RecordType.prototype, key, {
-        get: function() {
-          return this.get(key);
-        },
-        set: function(value) {
-          invariant(this.__ownerID, 'Cannot set on an immutable record.');
-          this.set(key, value);
         }
       });
-    }));
-  } catch (error) {}
-  return RecordType;
-};
-($traceurRuntime.createClass)(Record, {
-  toString: function() {
-    return this.__toString(recordName(this) + ' {', '}');
-  },
-  has: function(k) {
-    return this._defaultValues.hasOwnProperty(k);
-  },
-  get: function(k, notSetValue) {
-    if (!this.has(k)) {
-      return notSetValue;
-    }
-    var defaultVal = this._defaultValues[k];
-    return this._map ? this._map.get(k, defaultVal) : defaultVal;
-  },
-  clear: function() {
-    if (this.__ownerID) {
-      this._map && this._map.clear();
-      return this;
-    }
-    var SuperRecord = Object.getPrototypeOf(this).constructor;
-    return SuperRecord._empty || (SuperRecord._empty = makeRecord(this, emptyMap()));
-  },
-  set: function(k, v) {
-    if (!this.has(k)) {
-      throw new Error('Cannot set unknown key "' + k + '" on ' + recordName(this));
-    }
-    var newMap = this._map && this._map.set(k, v);
-    if (this.__ownerID || newMap === this._map) {
-      return this;
-    }
-    return makeRecord(this, newMap);
-  },
-  remove: function(k) {
-    if (!this.has(k)) {
-      return this;
-    }
-    var newMap = this._map && this._map.remove(k);
-    if (this.__ownerID || newMap === this._map) {
-      return this;
-    }
-    return makeRecord(this, newMap);
-  },
-  wasAltered: function() {
-    return this._map.wasAltered();
-  },
-  __iterator: function(type, reverse) {
-    var $__0 = this;
-    return KeyedIterable(this._defaultValues).map((function(_, k) {
-      return $__0.get(k);
-    })).__iterator(type, reverse);
-  },
-  __iterate: function(fn, reverse) {
-    var $__0 = this;
-    return KeyedIterable(this._defaultValues).map((function(_, k) {
-      return $__0.get(k);
-    })).__iterate(fn, reverse);
-  },
-  __ensureOwner: function(ownerID) {
-    if (ownerID === this.__ownerID) {
-      return this;
-    }
-    var newMap = this._map && this._map.__ensureOwner(ownerID);
-    if (!ownerID) {
-      this.__ownerID = ownerID;
-      this._map = newMap;
-      return this;
-    }
-    return makeRecord(this, newMap, ownerID);
-  }
-}, {}, KeyedCollection);
-var RecordPrototype = Record.prototype;
-RecordPrototype[DELETE] = RecordPrototype.remove;
-RecordPrototype.merge = MapPrototype.merge;
-RecordPrototype.mergeWith = MapPrototype.mergeWith;
-RecordPrototype.mergeIn = MapPrototype.mergeIn;
-RecordPrototype.mergeDeep = MapPrototype.mergeDeep;
-RecordPrototype.mergeDeepWith = MapPrototype.mergeDeepWith;
-RecordPrototype.mergeDeepIn = MapPrototype.mergeDeepIn;
-RecordPrototype.setIn = MapPrototype.setIn;
-RecordPrototype.update = MapPrototype.update;
-RecordPrototype.updateIn = MapPrototype.updateIn;
-RecordPrototype.withMutations = MapPrototype.withMutations;
-RecordPrototype.asMutable = MapPrototype.asMutable;
-RecordPrototype.asImmutable = MapPrototype.asImmutable;
-function makeRecord(likeRecord, map, ownerID) {
-  var record = Object.create(Object.getPrototypeOf(likeRecord));
-  record._map = map;
-  record.__ownerID = ownerID;
-  return record;
-}
-function recordName(record) {
-  return record._name || record.constructor.name;
-}
-var Range = function Range(start, end, step) {
-  if (!(this instanceof $Range)) {
-    return new $Range(start, end, step);
-  }
-  invariant(step !== 0, 'Cannot step a Range by 0');
-  start = start || 0;
-  if (end === undefined) {
-    end = Infinity;
-  }
-  if (start === end && __EMPTY_RANGE) {
-    return __EMPTY_RANGE;
-  }
-  step = step === undefined ? 1 : Math.abs(step);
-  if (end < start) {
-    step = -step;
-  }
-  this._start = start;
-  this._end = end;
-  this._step = step;
-  this.size = Math.max(0, Math.ceil((end - start) / step - 1) + 1);
-};
-var $Range = Range;
-($traceurRuntime.createClass)(Range, {
-  toString: function() {
-    if (this.size === 0) {
-      return 'Range []';
-    }
-    return 'Range [ ' + this._start + '...' + this._end + (this._step > 1 ? ' by ' + this._step : '') + ' ]';
-  },
-  get: function(index, notSetValue) {
-    return this.has(index) ? this._start + wrapIndex(this, index) * this._step : notSetValue;
-  },
-  contains: function(searchValue) {
-    var possibleIndex = (searchValue - this._start) / this._step;
-    return possibleIndex >= 0 && possibleIndex < this.size && possibleIndex === Math.floor(possibleIndex);
-  },
-  slice: function(begin, end) {
-    if (wholeSlice(begin, end, this.size)) {
-      return this;
-    }
-    begin = resolveBegin(begin, this.size);
-    end = resolveEnd(end, this.size);
-    if (end <= begin) {
-      return __EMPTY_RANGE;
-    }
-    return new $Range(this.get(begin, this._end), this.get(end, this._end), this._step);
-  },
-  indexOf: function(searchValue) {
-    var offsetValue = searchValue - this._start;
-    if (offsetValue % this._step === 0) {
-      var index = offsetValue / this._step;
-      if (index >= 0 && index < this.size) {
-        return index;
+    } catch (e) {}
+  })();
+
+
+
+  mixin(KeyedIterable, {
+
+    // ### More sequential methods
+
+    flip: function() {
+      return reify(this, flipFactory(this));
+    },
+
+    findKey: function(predicate, context) {
+      var entry = this.findEntry(predicate, context);
+      return entry && entry[0];
+    },
+
+    findLastKey: function(predicate, context) {
+      return this.toSeq().reverse().findKey(predicate, context);
+    },
+
+    keyOf: function(searchValue) {
+      return this.findKey(function(value ) {return is(value, searchValue)});
+    },
+
+    lastKeyOf: function(searchValue) {
+      return this.findLastKey(function(value ) {return is(value, searchValue)});
+    },
+
+    mapEntries: function(mapper, context) {var this$0 = this;
+      var iterations = 0;
+      return reify(this,
+        this.toSeq().map(
+          function(v, k)  {return mapper.call(context, [k, v], iterations++, this$0)}
+        ).fromEntrySeq()
+      );
+    },
+
+    mapKeys: function(mapper, context) {var this$0 = this;
+      return reify(this,
+        this.toSeq().flip().map(
+          function(k, v)  {return mapper.call(context, k, v, this$0)}
+        ).flip()
+      );
+    },
+
+  });
+
+  var KeyedIterablePrototype = KeyedIterable.prototype;
+  KeyedIterablePrototype[IS_KEYED_SENTINEL] = true;
+  KeyedIterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.entries;
+  KeyedIterablePrototype.__toJS = IterablePrototype.toObject;
+  KeyedIterablePrototype.__toStringMapper = function(v, k)  {return k + ': ' + quoteString(v)};
+
+
+
+  mixin(IndexedIterable, {
+
+    // ### Conversion to other types
+
+    toKeyedSeq: function() {
+      return new ToKeyedSequence(this, false);
+    },
+
+
+    // ### ES6 Collection methods (ES6 Array and Map)
+
+    filter: function(predicate, context) {
+      return reify(this, filterFactory(this, predicate, context, false));
+    },
+
+    findIndex: function(predicate, context) {
+      var entry = this.findEntry(predicate, context);
+      return entry ? entry[0] : -1;
+    },
+
+    indexOf: function(searchValue) {
+      var key = this.toKeyedSeq().keyOf(searchValue);
+      return key === undefined ? -1 : key;
+    },
+
+    lastIndexOf: function(searchValue) {
+      return this.toSeq().reverse().indexOf(searchValue);
+    },
+
+    reverse: function() {
+      return reify(this, reverseFactory(this, false));
+    },
+
+    slice: function(begin, end) {
+      return reify(this, sliceFactory(this, begin, end, false));
+    },
+
+    splice: function(index, removeNum /*, ...values*/) {
+      var numArgs = arguments.length;
+      removeNum = Math.max(removeNum | 0, 0);
+      if (numArgs === 0 || (numArgs === 2 && !removeNum)) {
+        return this;
       }
-    }
-    return -1;
-  },
-  lastIndexOf: function(searchValue) {
-    return this.indexOf(searchValue);
-  },
-  take: function(amount) {
-    return this.slice(0, Math.max(0, amount));
-  },
-  skip: function(amount) {
-    return this.slice(Math.max(0, amount));
-  },
-  __iterate: function(fn, reverse) {
-    var maxIndex = this.size - 1;
-    var step = this._step;
-    var value = reverse ? this._start + maxIndex * step : this._start;
-    for (var ii = 0; ii <= maxIndex; ii++) {
-      if (fn(value, ii, this) === false) {
-        return ii + 1;
+      index = resolveBegin(index, this.size);
+      var spliced = this.slice(0, index);
+      return reify(
+        this,
+        numArgs === 1 ?
+          spliced :
+          spliced.concat(arrCopy(arguments, 2), this.slice(index + removeNum))
+      );
+    },
+
+
+    // ### More collection methods
+
+    findLastIndex: function(predicate, context) {
+      var key = this.toKeyedSeq().findLastKey(predicate, context);
+      return key === undefined ? -1 : key;
+    },
+
+    first: function() {
+      return this.get(0);
+    },
+
+    flatten: function(depth) {
+      return reify(this, flattenFactory(this, depth, false));
+    },
+
+    get: function(index, notSetValue) {
+      index = wrapIndex(this, index);
+      return (index < 0 || (this.size === Infinity ||
+          (this.size !== undefined && index > this.size))) ?
+        notSetValue :
+        this.find(function(_, key)  {return key === index}, undefined, notSetValue);
+    },
+
+    has: function(index) {
+      index = wrapIndex(this, index);
+      return index >= 0 && (this.size !== undefined ?
+        this.size === Infinity || index < this.size :
+        this.indexOf(index) !== -1
+      );
+    },
+
+    interpose: function(separator) {
+      return reify(this, interposeFactory(this, separator));
+    },
+
+    interleave: function(/*...iterables*/) {
+      var iterables = [this].concat(arrCopy(arguments));
+      var zipped = zipWithFactory(this.toSeq(), IndexedSeq.of, iterables);
+      var interleaved = zipped.flatten(true);
+      if (zipped.size) {
+        interleaved.size = zipped.size * iterables.length;
       }
-      value += reverse ? -step : step;
+      return reify(this, interleaved);
+    },
+
+    last: function() {
+      return this.get(-1);
+    },
+
+    skipWhile: function(predicate, context) {
+      return reify(this, skipWhileFactory(this, predicate, context, false));
+    },
+
+    zip: function(/*, ...iterables */) {
+      var iterables = [this].concat(arrCopy(arguments));
+      return reify(this, zipWithFactory(this, defaultZipper, iterables));
+    },
+
+    zipWith: function(zipper/*, ...iterables */) {
+      var iterables = arrCopy(arguments);
+      iterables[0] = this;
+      return reify(this, zipWithFactory(this, zipper, iterables));
+    },
+
+  });
+
+  IndexedIterable.prototype[IS_INDEXED_SENTINEL] = true;
+  IndexedIterable.prototype[IS_ORDERED_SENTINEL] = true;
+
+
+
+  mixin(SetIterable, {
+
+    // ### ES6 Collection methods (ES6 Array and Map)
+
+    get: function(value, notSetValue) {
+      return this.has(value) ? value : notSetValue;
+    },
+
+    contains: function(value) {
+      return this.has(value);
+    },
+
+
+    // ### More sequential methods
+
+    keySeq: function() {
+      return this.valueSeq();
+    },
+
+  });
+
+  SetIterable.prototype.has = IterablePrototype.contains;
+
+
+  // Mixin subclasses
+
+  mixin(KeyedSeq, KeyedIterable.prototype);
+  mixin(IndexedSeq, IndexedIterable.prototype);
+  mixin(SetSeq, SetIterable.prototype);
+
+  mixin(KeyedCollection, KeyedIterable.prototype);
+  mixin(IndexedCollection, IndexedIterable.prototype);
+  mixin(SetCollection, SetIterable.prototype);
+
+
+  // #pragma Helper functions
+
+  function keyMapper(v, k) {
+    return k;
+  }
+
+  function entryMapper(v, k) {
+    return [k, v];
+  }
+
+  function not(predicate) {
+    return function() {
+      return !predicate.apply(this, arguments);
     }
-    return ii;
-  },
-  __iterator: function(type, reverse) {
-    var maxIndex = this.size - 1;
-    var step = this._step;
-    var value = reverse ? this._start + maxIndex * step : this._start;
-    var ii = 0;
-    return new Iterator((function() {
-      var v = value;
-      value += reverse ? -step : step;
-      return ii > maxIndex ? iteratorDone() : iteratorValue(type, ii++, v);
-    }));
-  },
-  equals: function(other) {
-    return other instanceof $Range ? this._start === other._start && this._end === other._end && this._step === other._step : deepEqual(this, other);
   }
-}, {}, IndexedSeq);
-var RangePrototype = Range.prototype;
-RangePrototype.__toJS = RangePrototype.toArray;
-RangePrototype.first = ListPrototype.first;
-RangePrototype.last = ListPrototype.last;
-var __EMPTY_RANGE = Range(0, 0);
-var Repeat = function Repeat(value, times) {
-  if (times <= 0 && EMPTY_REPEAT) {
-    return EMPTY_REPEAT;
-  }
-  if (!(this instanceof $Repeat)) {
-    return new $Repeat(value, times);
-  }
-  this._value = value;
-  this.size = times === undefined ? Infinity : Math.max(0, times);
-  if (this.size === 0) {
-    EMPTY_REPEAT = this;
-  }
-};
-var $Repeat = Repeat;
-($traceurRuntime.createClass)(Repeat, {
-  toString: function() {
-    if (this.size === 0) {
-      return 'Repeat []';
+
+  function neg(predicate) {
+    return function() {
+      return -predicate.apply(this, arguments);
     }
-    return 'Repeat [ ' + this._value + ' ' + this.size + ' times ]';
-  },
-  get: function(index, notSetValue) {
-    return this.has(index) ? this._value : notSetValue;
-  },
-  contains: function(searchValue) {
-    return is(this._value, searchValue);
-  },
-  slice: function(begin, end) {
-    var size = this.size;
-    return wholeSlice(begin, end, size) ? this : new $Repeat(this._value, resolveEnd(end, size) - resolveBegin(begin, size));
-  },
-  reverse: function() {
-    return this;
-  },
-  indexOf: function(searchValue) {
-    if (is(this._value, searchValue)) {
+  }
+
+  function quoteString(value) {
+    return typeof value === 'string' ? JSON.stringify(value) : value;
+  }
+
+  function defaultZipper() {
+    return arrCopy(arguments);
+  }
+
+  function defaultNegComparator(a, b) {
+    return a < b ? 1 : a > b ? -1 : 0;
+  }
+
+  function hashIterable(iterable) {
+    if (iterable.size === Infinity) {
       return 0;
     }
-    return -1;
-  },
-  lastIndexOf: function(searchValue) {
-    if (is(this._value, searchValue)) {
-      return this.size;
-    }
-    return -1;
-  },
-  __iterate: function(fn, reverse) {
-    for (var ii = 0; ii < this.size; ii++) {
-      if (fn(this._value, ii, this) === false) {
-        return ii + 1;
-      }
-    }
-    return ii;
-  },
-  __iterator: function(type, reverse) {
-    var $__0 = this;
-    var ii = 0;
-    return new Iterator((function() {
-      return ii < $__0.size ? iteratorValue(type, ii++, $__0._value) : iteratorDone();
-    }));
-  },
-  equals: function(other) {
-    return other instanceof $Repeat ? is(this._value, other._value) : deepEqual(other);
+    var ordered = isOrdered(iterable);
+    var keyed = isKeyed(iterable);
+    var h = ordered ? 1 : 0;
+    var size = iterable.__iterate(
+      keyed ?
+        ordered ?
+          function(v, k)  { h = 31 * h + hashMerge(hash(v), hash(k)) | 0; } :
+          function(v, k)  { h = h + hashMerge(hash(v), hash(k)) | 0; } :
+        ordered ?
+          function(v ) { h = 31 * h + hash(v) | 0; } :
+          function(v ) { h = h + hash(v) | 0; }
+    );
+    return murmurHashOfSize(size, h);
   }
-}, {}, IndexedSeq);
-var RepeatPrototype = Repeat.prototype;
-RepeatPrototype.last = RepeatPrototype.first;
-RepeatPrototype.has = RangePrototype.has;
-RepeatPrototype.take = RangePrototype.take;
-RepeatPrototype.skip = RangePrototype.skip;
-RepeatPrototype.__toJS = RangePrototype.__toJS;
-var EMPTY_REPEAT;
-var Immutable = {
-  Iterable: Iterable,
-  Seq: Seq,
-  Collection: Collection,
-  Map: Map,
-  OrderedMap: OrderedMap,
-  List: List,
-  Stack: Stack,
-  Set: Set,
-  OrderedSet: OrderedSet,
-  Record: Record,
-  Range: Range,
-  Repeat: Repeat,
-  is: is,
-  fromJS: fromJS
-};
+
+  function murmurHashOfSize(size, h) {
+    h = Math__imul(h, 0xCC9E2D51);
+    h = Math__imul(h << 15 | h >>> -15, 0x1B873593);
+    h = Math__imul(h << 13 | h >>> -13, 5);
+    h = (h + 0xE6546B64 | 0) ^ size;
+    h = Math__imul(h ^ h >>> 16, 0x85EBCA6B);
+    h = Math__imul(h ^ h >>> 13, 0xC2B2AE35);
+    h = smi(h ^ h >>> 16);
+    return h;
+  }
+
+  function hashMerge(a, b) {
+    return a ^ b + 0x9E3779B9 + (a << 6) + (a >> 2) | 0; // int
+  }
+
+  var Immutable = {
+
+    Iterable: Iterable,
+
+    Seq: Seq,
+    Collection: Collection,
+    Map: Map,
+    OrderedMap: OrderedMap,
+    List: List,
+    Stack: Stack,
+    Set: Set,
+    OrderedSet: OrderedSet,
+
+    Record: Record,
+    Range: Range,
+    Repeat: Repeat,
+
+    is: is,
+    fromJS: fromJS,
+
+  };
 
   return Immutable;
-}
-typeof exports === 'object' ? module.exports = universalModule() :
-  typeof define === 'function' && define.amd ? define(universalModule) :
-    Immutable = universalModule();
 
+}));
 },{}],6:[function(require,module,exports){
 /**
  * MicroEvent - to make any js object an event emitter (server or browser)
@@ -4296,7 +5245,7 @@ if( typeof module !== "undefined" && ('exports' in module)){
 }
 
 },{}],7:[function(require,module,exports){
-/*! qwest 1.5.4 (https://github.com/pyrsmk/qwest) */
+/*! qwest 1.5.5 (https://github.com/pyrsmk/qwest) */
 
 ;(function(context,name,definition){
 	if(typeof module!='undefined' && module.exports){
@@ -4723,7 +5672,7 @@ if( typeof module !== "undefined" && ('exports' in module)){
 			// Send request
 			if(xdr){
 				setTimeout(function(){ // https://developer.mozilla.org/en-US/docs/Web/API/XDomainRequest
-					xhr.send();
+					xhr.send(method!='GET'?data:null);
 				},0);
 			}
 			else{
@@ -5060,7 +6009,6 @@ module.exports = BeforeInputEventPlugin;
  */
 var isUnitlessNumber = {
   columnCount: true,
-  fillOpacity: true,
   flex: true,
   flexGrow: true,
   flexShrink: true,
@@ -5072,7 +6020,11 @@ var isUnitlessNumber = {
   orphans: true,
   widows: true,
   zIndex: true,
-  zoom: true
+  zoom: true,
+
+  // SVG-related properties
+  fillOpacity: true,
+  strokeOpacity: true
 };
 
 /**
@@ -5194,7 +6146,7 @@ if (ExecutionEnvironment.canUseDOM) {
   }
 }
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   var warnedStyleNames = {};
 
   var warnHyphenatedStyleName = function(name) {
@@ -5203,7 +6155,7 @@ if ("production" !== process.env.NODE_ENV) {
     }
 
     warnedStyleNames[name] = true;
-    ("production" !== process.env.NODE_ENV ? warning(
+    ("production" !== "development" ? warning(
       false,
       'Unsupported style property ' + name + '. Did you mean ' +
       camelizeStyleName(name) + '?'
@@ -5234,7 +6186,7 @@ var CSSPropertyOperations = {
       if (!styles.hasOwnProperty(styleName)) {
         continue;
       }
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         if (styleName.indexOf('-') > -1) {
           warnHyphenatedStyleName(styleName);
         }
@@ -5261,7 +6213,7 @@ var CSSPropertyOperations = {
       if (!styles.hasOwnProperty(styleName)) {
         continue;
       }
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         if (styleName.indexOf('-') > -1) {
           warnHyphenatedStyleName(styleName);
         }
@@ -5292,7 +6244,7 @@ var CSSPropertyOperations = {
 module.exports = CSSPropertyOperations;
 
 }).call(this,require('_process'))
-},{"./CSSProperty":10,"./ExecutionEnvironment":28,"./camelizeStyleName":107,"./dangerousStyleValue":112,"./hyphenateStyleName":131,"./memoizeStringOnly":142,"./warning":152,"_process":168}],12:[function(require,module,exports){
+},{"./CSSProperty":10,"./ExecutionEnvironment":28,"./camelizeStyleName":107,"./dangerousStyleValue":112,"./hyphenateStyleName":131,"./memoizeStringOnly":142,"./warning":152,"_process":172}],12:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -5354,7 +6306,7 @@ assign(CallbackQueue.prototype, {
     var callbacks = this._callbacks;
     var contexts = this._contexts;
     if (callbacks) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         callbacks.length === contexts.length,
         "Mismatched list of contexts in callback queue"
       ) : invariant(callbacks.length === contexts.length));
@@ -5392,7 +6344,7 @@ PooledClass.addPoolingTo(CallbackQueue);
 module.exports = CallbackQueue;
 
 }).call(this,require('_process'))
-},{"./Object.assign":33,"./PooledClass":34,"./invariant":133,"_process":168}],13:[function(require,module,exports){
+},{"./Object.assign":33,"./PooledClass":34,"./invariant":133,"_process":172}],13:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -6169,7 +7121,7 @@ var DOMChildrenOperations = {
         var updatedChild = update.parentNode.childNodes[updatedIndex];
         var parentID = update.parentID;
 
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           updatedChild,
           'processUpdates(): Unable to find child %s of element. This ' +
           'probably means the DOM was unexpectedly mutated (e.g., by the ' +
@@ -6233,7 +7185,7 @@ var DOMChildrenOperations = {
 module.exports = DOMChildrenOperations;
 
 }).call(this,require('_process'))
-},{"./Danger":19,"./ReactMultiChildUpdateTypes":72,"./getTextContentAccessor":128,"./invariant":133,"_process":168}],17:[function(require,module,exports){
+},{"./Danger":19,"./ReactMultiChildUpdateTypes":72,"./getTextContentAccessor":128,"./invariant":133,"_process":172}],17:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -6308,7 +7260,7 @@ var DOMPropertyInjection = {
     }
 
     for (var propName in Properties) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !DOMProperty.isStandardName.hasOwnProperty(propName),
         'injectDOMPropertyConfig(...): You\'re trying to inject DOM property ' +
         '\'%s\' which has already been injected. You may be accidentally ' +
@@ -6357,21 +7309,21 @@ var DOMPropertyInjection = {
       DOMProperty.hasOverloadedBooleanValue[propName] =
         checkMask(propConfig, DOMPropertyInjection.HAS_OVERLOADED_BOOLEAN_VALUE);
 
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !DOMProperty.mustUseAttribute[propName] ||
           !DOMProperty.mustUseProperty[propName],
         'DOMProperty: Cannot require using both attribute and property: %s',
         propName
       ) : invariant(!DOMProperty.mustUseAttribute[propName] ||
         !DOMProperty.mustUseProperty[propName]));
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         DOMProperty.mustUseProperty[propName] ||
           !DOMProperty.hasSideEffects[propName],
         'DOMProperty: Properties that have side effects must use property: %s',
         propName
       ) : invariant(DOMProperty.mustUseProperty[propName] ||
         !DOMProperty.hasSideEffects[propName]));
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !!DOMProperty.hasBooleanValue[propName] +
           !!DOMProperty.hasNumericValue[propName] +
           !!DOMProperty.hasOverloadedBooleanValue[propName] <= 1,
@@ -6532,7 +7484,7 @@ var DOMProperty = {
 module.exports = DOMProperty;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],18:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],18:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -6566,7 +7518,7 @@ var processAttributeNameAndPrefix = memoizeStringOnly(function(name) {
   return escapeTextForBrowser(name) + '="';
 });
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   var reactProps = {
     children: true,
     dangerouslySetInnerHTML: true,
@@ -6595,7 +7547,7 @@ if ("production" !== process.env.NODE_ENV) {
 
     // For now, only warn when we have a suggested correction. This prevents
     // logging too much when using transferPropsTo.
-    ("production" !== process.env.NODE_ENV ? warning(
+    ("production" !== "development" ? warning(
       standardName == null,
       'Unknown DOM property ' + name + '. Did you mean ' + standardName + '?'
     ) : null);
@@ -6645,7 +7597,7 @@ var DOMPropertyOperations = {
       }
       return processAttributeNameAndPrefix(name) +
         escapeTextForBrowser(value) + '"';
-    } else if ("production" !== process.env.NODE_ENV) {
+    } else if ("production" !== "development") {
       warnUnknownProperty(name);
     }
     return null;
@@ -6687,7 +7639,7 @@ var DOMPropertyOperations = {
       } else {
         node.setAttribute(name, '' + value);
       }
-    } else if ("production" !== process.env.NODE_ENV) {
+    } else if ("production" !== "development") {
       warnUnknownProperty(name);
     }
   },
@@ -6719,7 +7671,7 @@ var DOMPropertyOperations = {
       }
     } else if (DOMProperty.isCustomAttribute(name)) {
       node.removeAttribute(name);
-    } else if ("production" !== process.env.NODE_ENV) {
+    } else if ("production" !== "development") {
       warnUnknownProperty(name);
     }
   }
@@ -6729,7 +7681,7 @@ var DOMPropertyOperations = {
 module.exports = DOMPropertyOperations;
 
 }).call(this,require('_process'))
-},{"./DOMProperty":17,"./escapeTextForBrowser":116,"./memoizeStringOnly":142,"./warning":152,"_process":168}],19:[function(require,module,exports){
+},{"./DOMProperty":17,"./escapeTextForBrowser":116,"./memoizeStringOnly":142,"./warning":152,"_process":172}],19:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -6784,7 +7736,7 @@ var Danger = {
    * @internal
    */
   dangerouslyRenderMarkup: function(markupList) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       ExecutionEnvironment.canUseDOM,
       'dangerouslyRenderMarkup(...): Cannot render markup in a worker ' +
       'thread. Make sure `window` and `document` are available globally ' +
@@ -6795,7 +7747,7 @@ var Danger = {
     var markupByNodeName = {};
     // Group markup by `nodeName` if a wrap is necessary, else by '*'.
     for (var i = 0; i < markupList.length; i++) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         markupList[i],
         'dangerouslyRenderMarkup(...): Missing markup.'
       ) : invariant(markupList[i]));
@@ -6844,7 +7796,7 @@ var Danger = {
           resultIndex = +renderNode.getAttribute(RESULT_INDEX_ATTR);
           renderNode.removeAttribute(RESULT_INDEX_ATTR);
 
-          ("production" !== process.env.NODE_ENV ? invariant(
+          ("production" !== "development" ? invariant(
             !resultList.hasOwnProperty(resultIndex),
             'Danger: Assigning to an already-occupied result index.'
           ) : invariant(!resultList.hasOwnProperty(resultIndex)));
@@ -6855,7 +7807,7 @@ var Danger = {
           // we're done.
           resultListAssignmentCount += 1;
 
-        } else if ("production" !== process.env.NODE_ENV) {
+        } else if ("production" !== "development") {
           console.error(
             "Danger: Discarding unexpected node:",
             renderNode
@@ -6866,12 +7818,12 @@ var Danger = {
 
     // Although resultList was populated out of order, it should now be a dense
     // array.
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       resultListAssignmentCount === resultList.length,
       'Danger: Did not assign to every index of resultList.'
     ) : invariant(resultListAssignmentCount === resultList.length));
 
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       resultList.length === markupList.length,
       'Danger: Expected markup to render %s nodes, but rendered %s.',
       markupList.length,
@@ -6890,15 +7842,15 @@ var Danger = {
    * @internal
    */
   dangerouslyReplaceNodeWithMarkup: function(oldChild, markup) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       ExecutionEnvironment.canUseDOM,
       'dangerouslyReplaceNodeWithMarkup(...): Cannot render markup in a ' +
       'worker thread. Make sure `window` and `document` are available ' +
       'globally before requiring React when unit testing or use ' +
       'React.renderToString for server rendering.'
     ) : invariant(ExecutionEnvironment.canUseDOM));
-    ("production" !== process.env.NODE_ENV ? invariant(markup, 'dangerouslyReplaceNodeWithMarkup(...): Missing markup.') : invariant(markup));
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(markup, 'dangerouslyReplaceNodeWithMarkup(...): Missing markup.') : invariant(markup));
+    ("production" !== "development" ? invariant(
       oldChild.tagName.toLowerCase() !== 'html',
       'dangerouslyReplaceNodeWithMarkup(...): Cannot replace markup of the ' +
       '<html> node. This is because browser quirks make this unreliable ' +
@@ -6915,7 +7867,7 @@ var Danger = {
 module.exports = Danger;
 
 }).call(this,require('_process'))
-},{"./ExecutionEnvironment":28,"./createNodesFromMarkup":111,"./emptyFunction":114,"./getMarkupWrap":125,"./invariant":133,"_process":168}],20:[function(require,module,exports){
+},{"./ExecutionEnvironment":28,"./createNodesFromMarkup":111,"./emptyFunction":114,"./getMarkupWrap":125,"./invariant":133,"_process":172}],20:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -7231,7 +8183,7 @@ var EventListener = {
    */
   capture: function(target, eventType, callback) {
     if (!target.addEventListener) {
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         console.error(
           'Attempted to listen to events during the capture phase on a ' +
           'browser that does not support the capture phase. Your application ' +
@@ -7257,7 +8209,7 @@ var EventListener = {
 module.exports = EventListener;
 
 }).call(this,require('_process'))
-},{"./emptyFunction":114,"_process":168}],24:[function(require,module,exports){
+},{"./emptyFunction":114,"_process":172}],24:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -7368,13 +8320,13 @@ var EventPluginHub = {
      */
     injectInstanceHandle: function(InjectedInstanceHandle) {
       InstanceHandle = InjectedInstanceHandle;
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         validateInstanceHandle();
       }
     },
 
     getInstanceHandle: function() {
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         validateInstanceHandle();
       }
       return InstanceHandle;
@@ -7405,7 +8357,7 @@ var EventPluginHub = {
    * @param {?function} listener The callback to store.
    */
   putListener: function(id, registrationName, listener) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       !listener || typeof listener === 'function',
       'Expected %s listener to be a function, instead got type %s',
       registrationName, typeof listener
@@ -7510,7 +8462,7 @@ var EventPluginHub = {
     var processingEventQueue = eventQueue;
     eventQueue = null;
     forEachAccumulated(processingEventQueue, executeDispatchesAndRelease);
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       !eventQueue,
       'processEventQueue(): Additional events were enqueued while processing ' +
       'an event queue. Support for this has not yet been implemented.'
@@ -7533,7 +8485,7 @@ var EventPluginHub = {
 module.exports = EventPluginHub;
 
 }).call(this,require('_process'))
-},{"./EventPluginRegistry":25,"./EventPluginUtils":26,"./accumulateInto":104,"./forEachAccumulated":119,"./invariant":133,"_process":168}],25:[function(require,module,exports){
+},{"./EventPluginRegistry":25,"./EventPluginUtils":26,"./accumulateInto":104,"./forEachAccumulated":119,"./invariant":133,"_process":172}],25:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -7574,7 +8526,7 @@ function recomputePluginOrdering() {
   for (var pluginName in namesToPlugins) {
     var PluginModule = namesToPlugins[pluginName];
     var pluginIndex = EventPluginOrder.indexOf(pluginName);
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       pluginIndex > -1,
       'EventPluginRegistry: Cannot inject event plugins that do not exist in ' +
       'the plugin ordering, `%s`.',
@@ -7583,7 +8535,7 @@ function recomputePluginOrdering() {
     if (EventPluginRegistry.plugins[pluginIndex]) {
       continue;
     }
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       PluginModule.extractEvents,
       'EventPluginRegistry: Event plugins must implement an `extractEvents` ' +
       'method, but `%s` does not.',
@@ -7592,7 +8544,7 @@ function recomputePluginOrdering() {
     EventPluginRegistry.plugins[pluginIndex] = PluginModule;
     var publishedEvents = PluginModule.eventTypes;
     for (var eventName in publishedEvents) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         publishEventForPlugin(
           publishedEvents[eventName],
           PluginModule,
@@ -7619,7 +8571,7 @@ function recomputePluginOrdering() {
  * @private
  */
 function publishEventForPlugin(dispatchConfig, PluginModule, eventName) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !EventPluginRegistry.eventNameDispatchConfigs.hasOwnProperty(eventName),
     'EventPluginHub: More than one plugin attempted to publish the same ' +
     'event name, `%s`.',
@@ -7660,7 +8612,7 @@ function publishEventForPlugin(dispatchConfig, PluginModule, eventName) {
  * @private
  */
 function publishRegistrationName(registrationName, PluginModule, eventName) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !EventPluginRegistry.registrationNameModules[registrationName],
     'EventPluginHub: More than one plugin attempted to publish the same ' +
     'registration name, `%s`.',
@@ -7708,7 +8660,7 @@ var EventPluginRegistry = {
    * @see {EventPluginHub.injection.injectEventPluginOrder}
    */
   injectEventPluginOrder: function(InjectedEventPluginOrder) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       !EventPluginOrder,
       'EventPluginRegistry: Cannot inject event plugin ordering more than ' +
       'once. You are likely trying to load more than one copy of React.'
@@ -7737,7 +8689,7 @@ var EventPluginRegistry = {
       var PluginModule = injectedNamesToPlugins[pluginName];
       if (!namesToPlugins.hasOwnProperty(pluginName) ||
           namesToPlugins[pluginName] !== PluginModule) {
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           !namesToPlugins[pluginName],
           'EventPluginRegistry: Cannot inject two different event plugins ' +
           'using the same name, `%s`.',
@@ -7813,7 +8765,7 @@ var EventPluginRegistry = {
 module.exports = EventPluginRegistry;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],26:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],26:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -7844,8 +8796,8 @@ var injection = {
   Mount: null,
   injectMount: function(InjectedMount) {
     injection.Mount = InjectedMount;
-    if ("production" !== process.env.NODE_ENV) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+    if ("production" !== "development") {
+      ("production" !== "development" ? invariant(
         InjectedMount && InjectedMount.getNode,
         'EventPluginUtils.injection.injectMount(...): Injected Mount module ' +
         'is missing getNode.'
@@ -7873,7 +8825,7 @@ function isStartish(topLevelType) {
 
 
 var validateEventDispatches;
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   validateEventDispatches = function(event) {
     var dispatchListeners = event._dispatchListeners;
     var dispatchIDs = event._dispatchIDs;
@@ -7885,7 +8837,7 @@ if ("production" !== process.env.NODE_ENV) {
       dispatchListeners.length :
       dispatchListeners ? 1 : 0;
 
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       idsIsArr === listenersIsArr && IDsLen === listenersLen,
       'EventPluginUtils: Invalid `event`.'
     ) : invariant(idsIsArr === listenersIsArr && IDsLen === listenersLen));
@@ -7900,7 +8852,7 @@ if ("production" !== process.env.NODE_ENV) {
 function forEachEventDispatch(event, cb) {
   var dispatchListeners = event._dispatchListeners;
   var dispatchIDs = event._dispatchIDs;
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     validateEventDispatches(event);
   }
   if (Array.isArray(dispatchListeners)) {
@@ -7948,7 +8900,7 @@ function executeDispatchesInOrder(event, executeDispatch) {
 function executeDispatchesInOrderStopAtTrueImpl(event) {
   var dispatchListeners = event._dispatchListeners;
   var dispatchIDs = event._dispatchIDs;
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     validateEventDispatches(event);
   }
   if (Array.isArray(dispatchListeners)) {
@@ -7989,12 +8941,12 @@ function executeDispatchesInOrderStopAtTrue(event) {
  * @return The return value of executing the single dispatch.
  */
 function executeDirectDispatch(event) {
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     validateEventDispatches(event);
   }
   var dispatchListener = event._dispatchListeners;
   var dispatchID = event._dispatchIDs;
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !Array.isArray(dispatchListener),
     'executeDirectDispatch(...): Invalid `event`.'
   ) : invariant(!Array.isArray(dispatchListener)));
@@ -8034,7 +8986,7 @@ var EventPluginUtils = {
 module.exports = EventPluginUtils;
 
 }).call(this,require('_process'))
-},{"./EventConstants":22,"./invariant":133,"_process":168}],27:[function(require,module,exports){
+},{"./EventConstants":22,"./invariant":133,"_process":172}],27:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -8075,7 +9027,7 @@ function listenerAtPhase(id, event, propagationPhase) {
  * "dispatch" object that pairs the event with the listener.
  */
 function accumulateDirectionalDispatches(domID, upwards, event) {
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     if (!domID) {
       throw new Error('Dispatching id must not be null');
     }
@@ -8176,7 +9128,7 @@ var EventPropagators = {
 module.exports = EventPropagators;
 
 }).call(this,require('_process'))
-},{"./EventConstants":22,"./EventPluginHub":24,"./accumulateInto":104,"./forEachAccumulated":119,"_process":168}],28:[function(require,module,exports){
+},{"./EventConstants":22,"./EventPluginHub":24,"./accumulateInto":104,"./forEachAccumulated":119,"_process":172}],28:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -8312,7 +9264,11 @@ var HTMLDOMPropertyConfig = {
     draggable: null,
     encType: null,
     form: MUST_USE_ATTRIBUTE,
+    formAction: MUST_USE_ATTRIBUTE,
+    formEncType: MUST_USE_ATTRIBUTE,
+    formMethod: MUST_USE_ATTRIBUTE,
     formNoValidate: HAS_BOOLEAN_VALUE,
+    formTarget: MUST_USE_ATTRIBUTE,
     frameBorder: MUST_USE_ATTRIBUTE,
     height: MUST_USE_ATTRIBUTE,
     hidden: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
@@ -8327,6 +9283,8 @@ var HTMLDOMPropertyConfig = {
     list: MUST_USE_ATTRIBUTE,
     loop: MUST_USE_PROPERTY | HAS_BOOLEAN_VALUE,
     manifest: MUST_USE_ATTRIBUTE,
+    marginHeight: null,
+    marginWidth: null,
     max: null,
     maxLength: MUST_USE_ATTRIBUTE,
     media: MUST_USE_ATTRIBUTE,
@@ -8438,7 +9396,7 @@ var hasReadOnlyValue = {
 };
 
 function _assertSingleLink(input) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     input.props.checkedLink == null || input.props.valueLink == null,
     'Cannot provide a checkedLink and a valueLink. If you want to use ' +
     'checkedLink, you probably don\'t want to use valueLink and vice versa.'
@@ -8446,7 +9404,7 @@ function _assertSingleLink(input) {
 }
 function _assertValueLink(input) {
   _assertSingleLink(input);
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     input.props.value == null && input.props.onChange == null,
     'Cannot provide a valueLink and a value or onChange event. If you want ' +
     'to use value or onChange, you probably don\'t want to use valueLink.'
@@ -8455,7 +9413,7 @@ function _assertValueLink(input) {
 
 function _assertCheckedLink(input) {
   _assertSingleLink(input);
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     input.props.checked == null && input.props.onChange == null,
     'Cannot provide a checkedLink and a checked property or onChange event. ' +
     'If you want to use checked or onChange, you probably don\'t want to ' +
@@ -8563,7 +9521,7 @@ var LinkedValueUtils = {
 module.exports = LinkedValueUtils;
 
 }).call(this,require('_process'))
-},{"./ReactPropTypes":79,"./invariant":133,"_process":168}],31:[function(require,module,exports){
+},{"./ReactPropTypes":79,"./invariant":133,"_process":172}],31:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014, Facebook, Inc.
@@ -8590,7 +9548,7 @@ function remove(event) {
 
 var LocalEventTrapMixin = {
   trapBubbledEvent:function(topLevelType, handlerBaseName) {
-    ("production" !== process.env.NODE_ENV ? invariant(this.isMounted(), 'Must be mounted to trap events') : invariant(this.isMounted()));
+    ("production" !== "development" ? invariant(this.isMounted(), 'Must be mounted to trap events') : invariant(this.isMounted()));
     var listener = ReactBrowserEventEmitter.trapBubbledEvent(
       topLevelType,
       handlerBaseName,
@@ -8613,7 +9571,7 @@ var LocalEventTrapMixin = {
 module.exports = LocalEventTrapMixin;
 
 }).call(this,require('_process'))
-},{"./ReactBrowserEventEmitter":37,"./accumulateInto":104,"./forEachAccumulated":119,"./invariant":133,"_process":168}],32:[function(require,module,exports){
+},{"./ReactBrowserEventEmitter":37,"./accumulateInto":104,"./forEachAccumulated":119,"./invariant":133,"_process":172}],32:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -8788,7 +9746,7 @@ var fiveArgumentPooler = function(a1, a2, a3, a4, a5) {
 
 var standardReleaser = function(instance) {
   var Klass = this;
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     instance instanceof Klass,
     'Trying to release an instance into a pool of a different type.'
   ) : invariant(instance instanceof Klass));
@@ -8834,7 +9792,7 @@ var PooledClass = {
 module.exports = PooledClass;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],35:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],35:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -8879,7 +9837,7 @@ ReactDefaultInjection.inject();
 var createElement = ReactElement.createElement;
 var createFactory = ReactElement.createFactory;
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   createElement = ReactElementValidator.createElement;
   createFactory = ReactElementValidator.createFactory;
 }
@@ -8970,7 +9928,7 @@ if (
   });
 }
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   var ExecutionEnvironment = require("./ExecutionEnvironment");
   if (ExecutionEnvironment.canUseDOM && window.top === window.self) {
 
@@ -9017,12 +9975,12 @@ if ("production" !== process.env.NODE_ENV) {
 
 // Version exists only in the open-source version of React, not in Facebook's
 // internal version.
-React.version = '0.12.1';
+React.version = '0.12.2';
 
 module.exports = React;
 
 }).call(this,require('_process'))
-},{"./DOMPropertyOperations":18,"./EventPluginUtils":26,"./ExecutionEnvironment":28,"./Object.assign":33,"./ReactChildren":38,"./ReactComponent":39,"./ReactCompositeComponent":41,"./ReactContext":42,"./ReactCurrentOwner":43,"./ReactDOM":44,"./ReactDOMComponent":46,"./ReactDefaultInjection":56,"./ReactElement":59,"./ReactElementValidator":60,"./ReactInstanceHandles":67,"./ReactLegacyElement":68,"./ReactMount":70,"./ReactMultiChild":71,"./ReactPerf":75,"./ReactPropTypes":79,"./ReactServerRendering":83,"./ReactTextComponent":85,"./deprecated":113,"./onlyChild":144,"_process":168}],36:[function(require,module,exports){
+},{"./DOMPropertyOperations":18,"./EventPluginUtils":26,"./ExecutionEnvironment":28,"./Object.assign":33,"./ReactChildren":38,"./ReactComponent":39,"./ReactCompositeComponent":41,"./ReactContext":42,"./ReactCurrentOwner":43,"./ReactDOM":44,"./ReactDOMComponent":46,"./ReactDefaultInjection":56,"./ReactElement":59,"./ReactElementValidator":60,"./ReactInstanceHandles":67,"./ReactLegacyElement":68,"./ReactMount":70,"./ReactMultiChild":71,"./ReactPerf":75,"./ReactPropTypes":79,"./ReactServerRendering":83,"./ReactTextComponent":85,"./deprecated":113,"./onlyChild":144,"_process":172}],36:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -9051,7 +10009,7 @@ var ReactBrowserComponentMixin = {
    * @protected
    */
   getDOMNode: function() {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       this.isMounted(),
       'getDOMNode(): A component must be mounted to have a DOM node.'
     ) : invariant(this.isMounted()));
@@ -9065,7 +10023,7 @@ var ReactBrowserComponentMixin = {
 module.exports = ReactBrowserComponentMixin;
 
 }).call(this,require('_process'))
-},{"./ReactEmptyComponent":61,"./ReactMount":70,"./invariant":133,"_process":168}],37:[function(require,module,exports){
+},{"./ReactEmptyComponent":61,"./ReactMount":70,"./invariant":133,"_process":172}],37:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -9505,7 +10463,7 @@ function mapSingleChildIntoContext(traverseContext, child, name, i) {
   var mapResult = mapBookKeeping.mapResult;
 
   var keyUnique = !mapResult.hasOwnProperty(name);
-  ("production" !== process.env.NODE_ENV ? warning(
+  ("production" !== "development" ? warning(
     keyUnique,
     'ReactChildren.map(...): Encountered two children with the same key, ' +
     '`%s`. Child keys must be unique; when two children share a key, only ' +
@@ -9570,7 +10528,7 @@ var ReactChildren = {
 module.exports = ReactChildren;
 
 }).call(this,require('_process'))
-},{"./PooledClass":34,"./traverseAllChildren":151,"./warning":152,"_process":168}],39:[function(require,module,exports){
+},{"./PooledClass":34,"./traverseAllChildren":151,"./warning":152,"_process":172}],39:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -9659,7 +10617,7 @@ var ReactComponent = {
 
   injection: {
     injectEnvironment: function(ReactComponentEnvironment) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !injected,
         'ReactComponent: injectEnvironment() can only be called once.'
       ) : invariant(!injected));
@@ -9732,11 +10690,11 @@ var ReactComponent = {
      * @public
      */
     replaceProps: function(props, callback) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         this.isMounted(),
         'replaceProps(...): Can only update a mounted component.'
       ) : invariant(this.isMounted()));
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         this._mountDepth === 0,
         'replaceProps(...): You called `setProps` or `replaceProps` on a ' +
         'component with a parent. This is an anti-pattern since props will ' +
@@ -9819,7 +10777,7 @@ var ReactComponent = {
      * @internal
      */
     mountComponent: function(rootID, transaction, mountDepth) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !this.isMounted(),
         'mountComponent(%s, ...): Can only mount an unmounted component. ' +
         'Make sure to avoid storing components between renders or reusing a ' +
@@ -9848,7 +10806,7 @@ var ReactComponent = {
      * @internal
      */
     unmountComponent: function() {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         this.isMounted(),
         'unmountComponent(): Can only unmount a mounted component.'
       ) : invariant(this.isMounted()));
@@ -9873,7 +10831,7 @@ var ReactComponent = {
      * @internal
      */
     receiveComponent: function(nextElement, transaction) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         this.isMounted(),
         'receiveComponent(...): Can only update a mounted component.'
       ) : invariant(this.isMounted()));
@@ -10013,7 +10971,7 @@ var ReactComponent = {
 module.exports = ReactComponent;
 
 }).call(this,require('_process'))
-},{"./Object.assign":33,"./ReactElement":59,"./ReactOwner":74,"./ReactUpdates":86,"./invariant":133,"./keyMirror":139,"_process":168}],40:[function(require,module,exports){
+},{"./Object.assign":33,"./ReactElement":59,"./ReactOwner":74,"./ReactUpdates":86,"./invariant":133,"./keyMirror":139,"_process":172}],40:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -10075,7 +11033,7 @@ var ReactComponentBrowserEnvironment = {
     'ReactComponentBrowserEnvironment',
     'mountImageIntoNode',
     function(markup, container, shouldReuseMarkup) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         container && (
           container.nodeType === ELEMENT_NODE_TYPE ||
             container.nodeType === DOC_NODE_TYPE
@@ -10092,7 +11050,7 @@ var ReactComponentBrowserEnvironment = {
           getReactRootElementInContainer(container))) {
           return;
         } else {
-          ("production" !== process.env.NODE_ENV ? invariant(
+          ("production" !== "development" ? invariant(
             container.nodeType !== DOC_NODE_TYPE,
             'You\'re trying to render a component to the document using ' +
             'server rendering but the checksum was invalid. This usually ' +
@@ -10104,7 +11062,7 @@ var ReactComponentBrowserEnvironment = {
             'and ensure the props are the same client and server side.'
           ) : invariant(container.nodeType !== DOC_NODE_TYPE));
 
-          if ("production" !== process.env.NODE_ENV) {
+          if ("production" !== "development") {
             console.warn(
               'React attempted to use reuse markup in a container but the ' +
               'checksum was invalid. This generally means that you are ' +
@@ -10119,7 +11077,7 @@ var ReactComponentBrowserEnvironment = {
         }
       }
 
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         container.nodeType !== DOC_NODE_TYPE,
         'You\'re trying to render a component to the document but ' +
           'you didn\'t use server rendering. We can\'t do this ' +
@@ -10135,7 +11093,7 @@ var ReactComponentBrowserEnvironment = {
 module.exports = ReactComponentBrowserEnvironment;
 
 }).call(this,require('_process'))
-},{"./ReactDOMIDOperations":48,"./ReactMarkupChecksum":69,"./ReactMount":70,"./ReactPerf":75,"./ReactReconcileTransaction":81,"./getReactRootElementInContainer":127,"./invariant":133,"./setInnerHTML":147,"_process":168}],41:[function(require,module,exports){
+},{"./ReactDOMIDOperations":48,"./ReactMarkupChecksum":69,"./ReactMount":70,"./ReactPerf":75,"./ReactReconcileTransaction":81,"./getReactRootElementInContainer":127,"./invariant":133,"./setInnerHTML":147,"_process":172}],41:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -10541,7 +11499,7 @@ function getDeclarationErrorAddendum(component) {
 function validateTypeDef(Constructor, typeDef, location) {
   for (var propName in typeDef) {
     if (typeDef.hasOwnProperty(propName)) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         typeof typeDef[propName] == 'function',
         '%s: %s type `%s` is invalid; it must be a function, usually from ' +
         'React.PropTypes.',
@@ -10560,7 +11518,7 @@ function validateMethodOverride(proto, name) {
 
   // Disallow overriding of base class methods unless explicitly allowed.
   if (ReactCompositeComponentMixin.hasOwnProperty(name)) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       specPolicy === SpecPolicy.OVERRIDE_BASE,
       'ReactCompositeComponentInterface: You are attempting to override ' +
       '`%s` from your class specification. Ensure that your method names ' +
@@ -10571,7 +11529,7 @@ function validateMethodOverride(proto, name) {
 
   // Disallow defining methods more than once unless explicitly allowed.
   if (proto.hasOwnProperty(name)) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       specPolicy === SpecPolicy.DEFINE_MANY ||
       specPolicy === SpecPolicy.DEFINE_MANY_MERGED,
       'ReactCompositeComponentInterface: You are attempting to define ' +
@@ -10585,19 +11543,19 @@ function validateMethodOverride(proto, name) {
 
 function validateLifeCycleOnReplaceState(instance) {
   var compositeLifeCycleState = instance._compositeLifeCycleState;
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     instance.isMounted() ||
       compositeLifeCycleState === CompositeLifeCycle.MOUNTING,
     'replaceState(...): Can only update a mounted or mounting component.'
   ) : invariant(instance.isMounted() ||
     compositeLifeCycleState === CompositeLifeCycle.MOUNTING));
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     ReactCurrentOwner.current == null,
     'replaceState(...): Cannot update during an existing state transition ' +
     '(such as within `render`). Render methods should be a pure function ' +
     'of props and state.'
   ) : invariant(ReactCurrentOwner.current == null));
-  ("production" !== process.env.NODE_ENV ? invariant(compositeLifeCycleState !== CompositeLifeCycle.UNMOUNTING,
+  ("production" !== "development" ? invariant(compositeLifeCycleState !== CompositeLifeCycle.UNMOUNTING,
     'replaceState(...): Cannot update while unmounting component. This ' +
     'usually means you called setState() on an unmounted component.'
   ) : invariant(compositeLifeCycleState !== CompositeLifeCycle.UNMOUNTING));
@@ -10612,12 +11570,12 @@ function mixSpecIntoComponent(Constructor, spec) {
     return;
   }
 
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !ReactLegacyElement.isValidFactory(spec),
     'ReactCompositeComponent: You\'re attempting to ' +
     'use a component class as a mixin. Instead, just use a regular object.'
   ) : invariant(!ReactLegacyElement.isValidFactory(spec)));
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !ReactElement.isValidElement(spec),
     'ReactCompositeComponent: You\'re attempting to ' +
     'use a component as a mixin. Instead, just use a regular object.'
@@ -10674,7 +11632,7 @@ function mixSpecIntoComponent(Constructor, spec) {
           var specPolicy = ReactCompositeComponentInterface[name];
 
           // These cases should already be caught by validateMethodOverride
-          ("production" !== process.env.NODE_ENV ? invariant(
+          ("production" !== "development" ? invariant(
             isCompositeComponentMethod && (
               specPolicy === SpecPolicy.DEFINE_MANY_MERGED ||
               specPolicy === SpecPolicy.DEFINE_MANY
@@ -10697,7 +11655,7 @@ function mixSpecIntoComponent(Constructor, spec) {
           }
         } else {
           proto[name] = property;
-          if ("production" !== process.env.NODE_ENV) {
+          if ("production" !== "development") {
             // Add verbose displayName to the function, which helps when looking
             // at profiling tools.
             if (typeof property === 'function' && spec.displayName) {
@@ -10721,7 +11679,7 @@ function mixStaticSpecIntoComponent(Constructor, statics) {
     }
 
     var isReserved = name in RESERVED_SPEC_KEYS;
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       !isReserved,
       'ReactCompositeComponent: You are attempting to define a reserved ' +
       'property, `%s`, that shouldn\'t be on the "statics" key. Define it ' +
@@ -10731,7 +11689,7 @@ function mixStaticSpecIntoComponent(Constructor, statics) {
     ) : invariant(!isReserved));
 
     var isInherited = name in Constructor;
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       !isInherited,
       'ReactCompositeComponent: You are attempting to define ' +
       '`%s` on your component more than once. This conflict may be ' +
@@ -10750,13 +11708,13 @@ function mixStaticSpecIntoComponent(Constructor, statics) {
  * @return {object} one after it has been mutated to contain everything in two.
  */
 function mergeObjectsWithNoDuplicateKeys(one, two) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     one && two && typeof one === 'object' && typeof two === 'object',
     'mergeObjectsWithNoDuplicateKeys(): Cannot merge non-objects'
   ) : invariant(one && two && typeof one === 'object' && typeof two === 'object'));
 
   mapObject(two, function(value, key) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       one[key] === undefined,
       'mergeObjectsWithNoDuplicateKeys(): ' +
       'Tried to merge two objects with the same key: `%s`. This conflict ' +
@@ -10918,7 +11876,7 @@ var ReactCompositeComponentMixin = {
       this.props = this._processProps(this.props);
 
       this.state = this.getInitialState ? this.getInitialState() : null;
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         typeof this.state === 'object' && !Array.isArray(this.state),
         '%s.getInitialState(): must return an object or null',
         this.constructor.displayName || 'ReactCompositeComponent'
@@ -10998,12 +11956,12 @@ var ReactCompositeComponentMixin = {
    * @protected
    */
   setState: function(partialState, callback) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       typeof partialState === 'object' || partialState == null,
       'setState(...): takes an object of state variables to update.'
     ) : invariant(typeof partialState === 'object' || partialState == null));
-    if ("production" !== process.env.NODE_ENV){
-      ("production" !== process.env.NODE_ENV ? warning(
+    if ("production" !== "development"){
+      ("production" !== "development" ? warning(
         partialState != null,
         'setState(...): You passed an undefined or null state object; ' +
         'instead, use forceUpdate().'
@@ -11058,7 +12016,7 @@ var ReactCompositeComponentMixin = {
       for (var contextName in contextTypes) {
         maskedContext[contextName] = context[contextName];
       }
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         this._checkPropTypes(
           contextTypes,
           maskedContext,
@@ -11078,13 +12036,13 @@ var ReactCompositeComponentMixin = {
     var childContext = this.getChildContext && this.getChildContext();
     var displayName = this.constructor.displayName || 'ReactCompositeComponent';
     if (childContext) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         typeof this.constructor.childContextTypes === 'object',
         '%s.getChildContext(): childContextTypes must be defined in order to ' +
         'use getChildContext().',
         displayName
       ) : invariant(typeof this.constructor.childContextTypes === 'object'));
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         this._checkPropTypes(
           this.constructor.childContextTypes,
           childContext,
@@ -11092,7 +12050,7 @@ var ReactCompositeComponentMixin = {
         );
       }
       for (var name in childContext) {
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           name in this.constructor.childContextTypes,
           '%s.getChildContext(): key "%s" is not defined in childContextTypes.',
           displayName,
@@ -11114,7 +12072,7 @@ var ReactCompositeComponentMixin = {
    * @private
    */
   _processProps: function(newProps) {
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       var propTypes = this.constructor.propTypes;
       if (propTypes) {
         this._checkPropTypes(propTypes, newProps, ReactPropTypeLocations.prop);
@@ -11144,7 +12102,7 @@ var ReactCompositeComponentMixin = {
           // renderComponent calls, so I'm abstracting it away into
           // a function to minimize refactoring in the future
           var addendum = getDeclarationErrorAddendum(this);
-          ("production" !== process.env.NODE_ENV ? warning(false, error.message + addendum) : null);
+          ("production" !== "development" ? warning(false, error.message + addendum) : null);
         }
       }
     }
@@ -11197,7 +12155,7 @@ var ReactCompositeComponentMixin = {
       !this.shouldComponentUpdate ||
       this.shouldComponentUpdate(nextProps, nextState, nextContext);
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       if (typeof shouldUpdate === "undefined") {
         console.warn(
           (this.constructor.displayName || 'ReactCompositeComponent') +
@@ -11364,14 +12322,14 @@ var ReactCompositeComponentMixin = {
    */
   forceUpdate: function(callback) {
     var compositeLifeCycleState = this._compositeLifeCycleState;
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       this.isMounted() ||
         compositeLifeCycleState === CompositeLifeCycle.MOUNTING,
       'forceUpdate(...): Can only force an update on mounted or mounting ' +
         'components.'
     ) : invariant(this.isMounted() ||
       compositeLifeCycleState === CompositeLifeCycle.MOUNTING));
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       compositeLifeCycleState !== CompositeLifeCycle.UNMOUNTING &&
       ReactCurrentOwner.current == null,
       'forceUpdate(...): Cannot force an update while unmounting component ' +
@@ -11407,7 +12365,7 @@ var ReactCompositeComponentMixin = {
         ReactContext.current = previousContext;
         ReactCurrentOwner.current = null;
       }
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         ReactElement.isValidElement(renderedComponent),
         '%s.render(): A valid ReactComponent must be returned. You may have ' +
           'returned undefined, an array or some other invalid object.',
@@ -11442,7 +12400,7 @@ var ReactCompositeComponentMixin = {
   _bindAutoBindMethod: function(method) {
     var component = this;
     var boundMethod = method.bind(component);
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       boundMethod.__reactBoundContext = component;
       boundMethod.__reactBoundMethod = method;
       boundMethod.__reactBoundArguments = null;
@@ -11528,12 +12486,12 @@ var ReactCompositeComponent = {
       Constructor.defaultProps = Constructor.getDefaultProps();
     }
 
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       Constructor.prototype.render,
       'createClass(...): Class specification must implement a `render` method.'
     ) : invariant(Constructor.prototype.render));
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       if (Constructor.prototype.componentShouldUpdate) {
         monitorCodeUse(
           'react_component_should_update_warning',
@@ -11555,7 +12513,7 @@ var ReactCompositeComponent = {
       }
     }
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       return ReactLegacyElement.wrapFactory(
         ReactElementValidator.createFactory(Constructor)
       );
@@ -11575,7 +12533,7 @@ var ReactCompositeComponent = {
 module.exports = ReactCompositeComponent;
 
 }).call(this,require('_process'))
-},{"./Object.assign":33,"./ReactComponent":39,"./ReactContext":42,"./ReactCurrentOwner":43,"./ReactElement":59,"./ReactElementValidator":60,"./ReactEmptyComponent":61,"./ReactErrorUtils":62,"./ReactLegacyElement":68,"./ReactOwner":74,"./ReactPerf":75,"./ReactPropTransferer":76,"./ReactPropTypeLocationNames":77,"./ReactPropTypeLocations":78,"./ReactUpdates":86,"./instantiateReactComponent":132,"./invariant":133,"./keyMirror":139,"./keyOf":140,"./mapObject":141,"./monitorCodeUse":143,"./shouldUpdateReactComponent":149,"./warning":152,"_process":168}],42:[function(require,module,exports){
+},{"./Object.assign":33,"./ReactComponent":39,"./ReactContext":42,"./ReactCurrentOwner":43,"./ReactElement":59,"./ReactElementValidator":60,"./ReactEmptyComponent":61,"./ReactErrorUtils":62,"./ReactLegacyElement":68,"./ReactOwner":74,"./ReactPerf":75,"./ReactPropTransferer":76,"./ReactPropTypeLocationNames":77,"./ReactPropTypeLocations":78,"./ReactUpdates":86,"./instantiateReactComponent":132,"./invariant":133,"./keyMirror":139,"./keyOf":140,"./mapObject":141,"./monitorCodeUse":143,"./shouldUpdateReactComponent":149,"./warning":152,"_process":172}],42:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -11700,7 +12658,7 @@ var mapObject = require("./mapObject");
  * @private
  */
 function createDOMFactory(tag) {
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     return ReactLegacyElement.markNonLegacyFactory(
       ReactElementValidator.createFactory(tag)
     );
@@ -11854,7 +12812,7 @@ var ReactDOM = mapObject({
 module.exports = ReactDOM;
 
 }).call(this,require('_process'))
-},{"./ReactElement":59,"./ReactElementValidator":60,"./ReactLegacyElement":68,"./mapObject":141,"_process":168}],45:[function(require,module,exports){
+},{"./ReactElement":59,"./ReactElementValidator":60,"./ReactLegacyElement":68,"./mapObject":141,"_process":172}],45:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -11971,11 +12929,11 @@ function assertValidProps(props) {
     return;
   }
   // Note the use of `==` which checks for null or undefined.
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     props.children == null || props.dangerouslySetInnerHTML == null,
     'Can only set one of `children` or `props.dangerouslySetInnerHTML`.'
   ) : invariant(props.children == null || props.dangerouslySetInnerHTML == null));
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     if (props.contentEditable && props.children != null) {
       console.warn(
         'A component is `contentEditable` and contains `children` managed by ' +
@@ -11985,7 +12943,7 @@ function assertValidProps(props) {
       );
     }
   }
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     props.style == null || typeof props.style === 'object',
     'The `style` prop expects a mapping from style properties to values, ' +
     'not a string.'
@@ -11993,7 +12951,7 @@ function assertValidProps(props) {
 }
 
 function putListener(id, registrationName, listener, transaction) {
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     // IE8 has no API for event capturing and the `onScroll` event doesn't
     // bubble.
     if (registrationName === 'onScroll' &&
@@ -12048,7 +13006,7 @@ var hasOwnProperty = {}.hasOwnProperty;
 
 function validateDangerousTag(tag) {
   if (!hasOwnProperty.call(validatedTagCache, tag)) {
-    ("production" !== process.env.NODE_ENV ? invariant(VALID_TAG_REGEX.test(tag), 'Invalid tag: %s', tag) : invariant(VALID_TAG_REGEX.test(tag)));
+    ("production" !== "development" ? invariant(VALID_TAG_REGEX.test(tag), 'Invalid tag: %s', tag) : invariant(VALID_TAG_REGEX.test(tag)));
     validatedTagCache[tag] = true;
   }
 }
@@ -12406,7 +13364,7 @@ assign(
 module.exports = ReactDOMComponent;
 
 }).call(this,require('_process'))
-},{"./CSSPropertyOperations":11,"./DOMProperty":17,"./DOMPropertyOperations":18,"./Object.assign":33,"./ReactBrowserComponentMixin":36,"./ReactBrowserEventEmitter":37,"./ReactComponent":39,"./ReactMount":70,"./ReactMultiChild":71,"./ReactPerf":75,"./escapeTextForBrowser":116,"./invariant":133,"./isEventSupported":134,"./keyOf":140,"./monitorCodeUse":143,"_process":168}],47:[function(require,module,exports){
+},{"./CSSPropertyOperations":11,"./DOMProperty":17,"./DOMPropertyOperations":18,"./Object.assign":33,"./ReactBrowserComponentMixin":36,"./ReactBrowserEventEmitter":37,"./ReactComponent":39,"./ReactMount":70,"./ReactMultiChild":71,"./ReactPerf":75,"./escapeTextForBrowser":116,"./invariant":133,"./isEventSupported":134,"./keyOf":140,"./monitorCodeUse":143,"_process":172}],47:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -12515,7 +13473,7 @@ var ReactDOMIDOperations = {
     'updatePropertyByID',
     function(id, name, value) {
       var node = ReactMount.getNode(id);
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !INVALID_PROPERTY_ERRORS.hasOwnProperty(name),
         'updatePropertyByID(...): %s',
         INVALID_PROPERTY_ERRORS[name]
@@ -12545,7 +13503,7 @@ var ReactDOMIDOperations = {
     'deletePropertyByID',
     function(id, name, value) {
       var node = ReactMount.getNode(id);
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         !INVALID_PROPERTY_ERRORS.hasOwnProperty(name),
         'updatePropertyByID(...): %s',
         INVALID_PROPERTY_ERRORS[name]
@@ -12642,7 +13600,7 @@ var ReactDOMIDOperations = {
 module.exports = ReactDOMIDOperations;
 
 }).call(this,require('_process'))
-},{"./CSSPropertyOperations":11,"./DOMChildrenOperations":16,"./DOMPropertyOperations":18,"./ReactMount":70,"./ReactPerf":75,"./invariant":133,"./setInnerHTML":147,"_process":168}],49:[function(require,module,exports){
+},{"./CSSPropertyOperations":11,"./DOMChildrenOperations":16,"./DOMPropertyOperations":18,"./ReactMount":70,"./ReactPerf":75,"./invariant":133,"./setInnerHTML":147,"_process":172}],49:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -12842,13 +13800,13 @@ var ReactDOMInput = ReactCompositeComponent.createClass({
           continue;
         }
         var otherID = ReactMount.getID(otherNode);
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           otherID,
           'ReactDOMInput: Mixing React and non-React radio inputs with the ' +
           'same `name` is not supported.'
         ) : invariant(otherID));
         var otherInstance = instancesByReactID[otherID];
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           otherInstance,
           'ReactDOMInput: Unknown radio button ID %s.',
           otherID
@@ -12868,7 +13826,7 @@ var ReactDOMInput = ReactCompositeComponent.createClass({
 module.exports = ReactDOMInput;
 
 }).call(this,require('_process'))
-},{"./AutoFocusMixin":8,"./DOMPropertyOperations":18,"./LinkedValueUtils":30,"./Object.assign":33,"./ReactBrowserComponentMixin":36,"./ReactCompositeComponent":41,"./ReactDOM":44,"./ReactElement":59,"./ReactMount":70,"./ReactUpdates":86,"./invariant":133,"_process":168}],51:[function(require,module,exports){
+},{"./AutoFocusMixin":8,"./DOMPropertyOperations":18,"./LinkedValueUtils":30,"./Object.assign":33,"./ReactBrowserComponentMixin":36,"./ReactCompositeComponent":41,"./ReactDOM":44,"./ReactElement":59,"./ReactMount":70,"./ReactUpdates":86,"./invariant":133,"_process":172}],51:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -12903,8 +13861,8 @@ var ReactDOMOption = ReactCompositeComponent.createClass({
 
   componentWillMount: function() {
     // TODO (yungsters): Remove support for `selected` in <option>.
-    if ("production" !== process.env.NODE_ENV) {
-      ("production" !== process.env.NODE_ENV ? warning(
+    if ("production" !== "development") {
+      ("production" !== "development" ? warning(
         this.props.selected == null,
         'Use the `defaultValue` or `value` props on <select> instead of ' +
         'setting `selected` on <option>.'
@@ -12921,7 +13879,7 @@ var ReactDOMOption = ReactCompositeComponent.createClass({
 module.exports = ReactDOMOption;
 
 }).call(this,require('_process'))
-},{"./ReactBrowserComponentMixin":36,"./ReactCompositeComponent":41,"./ReactDOM":44,"./ReactElement":59,"./warning":152,"_process":168}],52:[function(require,module,exports){
+},{"./ReactBrowserComponentMixin":36,"./ReactCompositeComponent":41,"./ReactDOM":44,"./ReactElement":59,"./warning":152,"_process":172}],52:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -13378,19 +14336,19 @@ var ReactDOMTextarea = ReactCompositeComponent.createClass({
     // TODO (yungsters): Remove support for children content in <textarea>.
     var children = this.props.children;
     if (children != null) {
-      if ("production" !== process.env.NODE_ENV) {
-        ("production" !== process.env.NODE_ENV ? warning(
+      if ("production" !== "development") {
+        ("production" !== "development" ? warning(
           false,
           'Use the `defaultValue` or `value` props instead of setting ' +
           'children on <textarea>.'
         ) : null);
       }
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         defaultValue == null,
         'If you supply `defaultValue` on a <textarea>, do not pass children.'
       ) : invariant(defaultValue == null));
       if (Array.isArray(children)) {
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           children.length <= 1,
           '<textarea> can only have at most one child.'
         ) : invariant(children.length <= 1));
@@ -13416,7 +14374,7 @@ var ReactDOMTextarea = ReactCompositeComponent.createClass({
     // Clone `this.props` so we don't mutate the input.
     var props = assign({}, this.props);
 
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       props.dangerouslySetInnerHTML == null,
       '`dangerouslySetInnerHTML` does not make sense on <textarea>.'
     ) : invariant(props.dangerouslySetInnerHTML == null));
@@ -13455,7 +14413,7 @@ var ReactDOMTextarea = ReactCompositeComponent.createClass({
 module.exports = ReactDOMTextarea;
 
 }).call(this,require('_process'))
-},{"./AutoFocusMixin":8,"./DOMPropertyOperations":18,"./LinkedValueUtils":30,"./Object.assign":33,"./ReactBrowserComponentMixin":36,"./ReactCompositeComponent":41,"./ReactDOM":44,"./ReactElement":59,"./ReactUpdates":86,"./invariant":133,"./warning":152,"_process":168}],55:[function(require,module,exports){
+},{"./AutoFocusMixin":8,"./DOMPropertyOperations":18,"./LinkedValueUtils":30,"./Object.assign":33,"./ReactBrowserComponentMixin":36,"./ReactCompositeComponent":41,"./ReactDOM":44,"./ReactElement":59,"./ReactUpdates":86,"./invariant":133,"./warning":152,"_process":172}],55:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -13643,7 +14601,7 @@ function inject() {
 
   ReactInjection.Component.injectEnvironment(ReactComponentBrowserEnvironment);
 
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     var url = (ExecutionEnvironment.canUseDOM && window.location.href) || '';
     if ((/[?&]react_perf\b/).test(url)) {
       var ReactDefaultPerf = require("./ReactDefaultPerf");
@@ -13657,7 +14615,7 @@ module.exports = {
 };
 
 }).call(this,require('_process'))
-},{"./BeforeInputEventPlugin":9,"./ChangeEventPlugin":13,"./ClientReactRootIndex":14,"./CompositionEventPlugin":15,"./DefaultEventPluginOrder":20,"./EnterLeaveEventPlugin":21,"./ExecutionEnvironment":28,"./HTMLDOMPropertyConfig":29,"./MobileSafariClickEventPlugin":32,"./ReactBrowserComponentMixin":36,"./ReactComponentBrowserEnvironment":40,"./ReactDOMButton":45,"./ReactDOMComponent":46,"./ReactDOMForm":47,"./ReactDOMImg":49,"./ReactDOMInput":50,"./ReactDOMOption":51,"./ReactDOMSelect":52,"./ReactDOMTextarea":54,"./ReactDefaultBatchingStrategy":55,"./ReactDefaultPerf":57,"./ReactEventListener":64,"./ReactInjection":65,"./ReactInstanceHandles":67,"./ReactMount":70,"./SVGDOMPropertyConfig":87,"./SelectEventPlugin":88,"./ServerReactRootIndex":89,"./SimpleEventPlugin":90,"./createFullPageComponent":110,"_process":168}],57:[function(require,module,exports){
+},{"./BeforeInputEventPlugin":9,"./ChangeEventPlugin":13,"./ClientReactRootIndex":14,"./CompositionEventPlugin":15,"./DefaultEventPluginOrder":20,"./EnterLeaveEventPlugin":21,"./ExecutionEnvironment":28,"./HTMLDOMPropertyConfig":29,"./MobileSafariClickEventPlugin":32,"./ReactBrowserComponentMixin":36,"./ReactComponentBrowserEnvironment":40,"./ReactDOMButton":45,"./ReactDOMComponent":46,"./ReactDOMForm":47,"./ReactDOMImg":49,"./ReactDOMInput":50,"./ReactDOMOption":51,"./ReactDOMSelect":52,"./ReactDOMTextarea":54,"./ReactDefaultBatchingStrategy":55,"./ReactDefaultPerf":57,"./ReactEventListener":64,"./ReactInjection":65,"./ReactInstanceHandles":67,"./ReactMount":70,"./SVGDOMPropertyConfig":87,"./SelectEventPlugin":88,"./ServerReactRootIndex":89,"./SimpleEventPlugin":90,"./createFullPageComponent":110,"_process":172}],57:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -14169,7 +15127,7 @@ function defineWarningProperty(object, key) {
     },
 
     set: function(value) {
-      ("production" !== process.env.NODE_ENV ? warning(
+      ("production" !== "development" ? warning(
         false,
         'Don\'t set the ' + key + ' property of the component. ' +
         'Mutate the existing props object instead.'
@@ -14228,7 +15186,7 @@ var ReactElement = function(type, key, ref, owner, context, props) {
   // through the owner.
   this._context = context;
 
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     // The validation flag and props are currently mutative. We put them on
     // an external backing store so that we can freeze the whole object.
     // This can be replaced with a WeakMap once they are implemented in
@@ -14253,7 +15211,7 @@ ReactElement.prototype = {
   _isReactElement: true
 };
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   defineMutationMembrane(ReactElement.prototype);
 }
 
@@ -14268,8 +15226,8 @@ ReactElement.createElement = function(type, config, children) {
 
   if (config != null) {
     ref = config.ref === undefined ? null : config.ref;
-    if ("production" !== process.env.NODE_ENV) {
-      ("production" !== process.env.NODE_ENV ? warning(
+    if ("production" !== "development") {
+      ("production" !== "development" ? warning(
         config.key !== null,
         'createElement(...): Encountered component with a `key` of null. In ' +
         'a future version, this will be treated as equivalent to the string ' +
@@ -14301,7 +15259,7 @@ ReactElement.createElement = function(type, config, children) {
   }
 
   // Resolve default props
-  if (type.defaultProps) {
+  if (type && type.defaultProps) {
     var defaultProps = type.defaultProps;
     for (propName in defaultProps) {
       if (typeof props[propName] === 'undefined') {
@@ -14340,7 +15298,7 @@ ReactElement.cloneAndReplaceProps = function(oldElement, newProps) {
     newProps
   );
 
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     // If the key on the original is valid, then the clone is valid
     newElement._store.validated = oldElement._store.validated;
   }
@@ -14369,7 +15327,8 @@ ReactElement.isValidElement = function(object) {
 module.exports = ReactElement;
 
 }).call(this,require('_process'))
-},{"./ReactContext":42,"./ReactCurrentOwner":43,"./warning":152,"_process":168}],60:[function(require,module,exports){
+},{"./ReactContext":42,"./ReactCurrentOwner":43,"./warning":152,"_process":172}],60:[function(require,module,exports){
+(function (process){
 /**
  * Copyright 2014, Facebook, Inc.
  * All rights reserved.
@@ -14395,6 +15354,7 @@ var ReactPropTypeLocations = require("./ReactPropTypeLocations");
 var ReactCurrentOwner = require("./ReactCurrentOwner");
 
 var monitorCodeUse = require("./monitorCodeUse");
+var warning = require("./warning");
 
 /**
  * Warn if there's no key explicitly set on dynamic arrays of children or
@@ -14592,6 +15552,15 @@ function checkPropTypes(componentName, propTypes, props, location) {
 var ReactElementValidator = {
 
   createElement: function(type, props, children) {
+    // We warn in this case but don't throw. We expect the element creation to
+    // succeed and there will likely be errors in render.
+    ("production" !== "development" ? warning(
+      type != null,
+      'React.createElement: type should not be null or undefined. It should ' +
+        'be a string (for DOM elements) or a ReactClass (for composite ' +
+        'components).'
+    ) : null);
+
     var element = ReactElement.createElement.apply(this, arguments);
 
     // The result can be nullish if a mock or a custom function is used.
@@ -14604,22 +15573,24 @@ var ReactElementValidator = {
       validateChildKeys(arguments[i], type);
     }
 
-    var name = type.displayName;
-    if (type.propTypes) {
-      checkPropTypes(
-        name,
-        type.propTypes,
-        element.props,
-        ReactPropTypeLocations.prop
-      );
-    }
-    if (type.contextTypes) {
-      checkPropTypes(
-        name,
-        type.contextTypes,
-        element._context,
-        ReactPropTypeLocations.context
-      );
+    if (type) {
+      var name = type.displayName;
+      if (type.propTypes) {
+        checkPropTypes(
+          name,
+          type.propTypes,
+          element.props,
+          ReactPropTypeLocations.prop
+        );
+      }
+      if (type.contextTypes) {
+        checkPropTypes(
+          name,
+          type.contextTypes,
+          element._context,
+          ReactPropTypeLocations.context
+        );
+      }
     }
     return element;
   },
@@ -14637,7 +15608,8 @@ var ReactElementValidator = {
 
 module.exports = ReactElementValidator;
 
-},{"./ReactCurrentOwner":43,"./ReactElement":59,"./ReactPropTypeLocations":78,"./monitorCodeUse":143}],61:[function(require,module,exports){
+}).call(this,require('_process'))
+},{"./ReactCurrentOwner":43,"./ReactElement":59,"./ReactPropTypeLocations":78,"./monitorCodeUse":143,"./warning":152,"_process":172}],61:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014, Facebook, Inc.
@@ -14671,7 +15643,7 @@ var ReactEmptyComponentInjection = {
  * @return {ReactComponent} component The injected empty component.
  */
 function getEmptyComponent() {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     component,
     'Trying to return null from a render, but no null placeholder component ' +
     'was injected.'
@@ -14714,7 +15686,7 @@ var ReactEmptyComponent = {
 module.exports = ReactEmptyComponent;
 
 }).call(this,require('_process'))
-},{"./ReactElement":59,"./invariant":133,"_process":168}],62:[function(require,module,exports){
+},{"./ReactElement":59,"./invariant":133,"_process":172}],62:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -15256,13 +16228,13 @@ function getParentID(id) {
  * @private
  */
 function getNextDescendantID(ancestorID, destinationID) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     isValidID(ancestorID) && isValidID(destinationID),
     'getNextDescendantID(%s, %s): Received an invalid React DOM ID.',
     ancestorID,
     destinationID
   ) : invariant(isValidID(ancestorID) && isValidID(destinationID)));
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     isAncestorIDOf(ancestorID, destinationID),
     'getNextDescendantID(...): React has made an invalid assumption about ' +
     'the DOM hierarchy. Expected `%s` to be an ancestor of `%s`.',
@@ -15309,7 +16281,7 @@ function getFirstCommonAncestorID(oneID, twoID) {
     }
   }
   var longestCommonID = oneID.substr(0, lastCommonMarkerIndex);
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     isValidID(longestCommonID),
     'getFirstCommonAncestorID(%s, %s): Expected a valid React DOM ID: %s',
     oneID,
@@ -15334,13 +16306,13 @@ function getFirstCommonAncestorID(oneID, twoID) {
 function traverseParentPath(start, stop, cb, arg, skipFirst, skipLast) {
   start = start || '';
   stop = stop || '';
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     start !== stop,
     'traverseParentPath(...): Cannot traverse from and to the same ID, `%s`.',
     start
   ) : invariant(start !== stop));
   var traverseUp = isAncestorIDOf(stop, start);
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     traverseUp || isAncestorIDOf(start, stop),
     'traverseParentPath(%s, %s, ...): Cannot traverse from two IDs that do ' +
     'not have a parent path.',
@@ -15359,7 +16331,7 @@ function traverseParentPath(start, stop, cb, arg, skipFirst, skipLast) {
       // Only break //after// visiting `stop`.
       break;
     }
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       depth++ < MAX_TREE_DEPTH,
       'traverseParentPath(%s, %s, ...): Detected an infinite loop while ' +
       'traversing the React DOM ID tree. This may be due to malformed IDs: %s',
@@ -15491,7 +16463,7 @@ var ReactInstanceHandles = {
 module.exports = ReactInstanceHandles;
 
 }).call(this,require('_process'))
-},{"./ReactRootIndex":82,"./invariant":133,"_process":168}],68:[function(require,module,exports){
+},{"./ReactRootIndex":82,"./invariant":133,"_process":172}],68:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014, Facebook, Inc.
@@ -15526,7 +16498,7 @@ function warnForLegacyFactoryCall() {
     return;
   }
   legacyFactoryLogs[name] = true;
-  ("production" !== process.env.NODE_ENV ? warning(
+  ("production" !== "development" ? warning(
     false,
     name + ' is calling a React component directly. ' +
     'Use a factory or JSX instead. See: http://fb.me/react-legacyfactory'
@@ -15540,7 +16512,7 @@ function warnForPlainFunctionType(type) {
     typeof type.prototype.mountComponent === 'function' &&
     typeof type.prototype.receiveComponent === 'function';
   if (isReactClass) {
-    ("production" !== process.env.NODE_ENV ? warning(
+    ("production" !== "development" ? warning(
       false,
       'Did not expect to get a React class here. Use `Component` instead ' +
       'of `Component.type` or `this.constructor`.'
@@ -15557,7 +16529,7 @@ function warnForPlainFunctionType(type) {
         { version: 3, name: type.name }
       );
     }
-    ("production" !== process.env.NODE_ENV ? warning(
+    ("production" !== "development" ? warning(
       false,
       'This JSX uses a plain function. Only React components are ' +
       'valid in React\'s JSX transform.'
@@ -15566,7 +16538,7 @@ function warnForPlainFunctionType(type) {
 }
 
 function warnForNonLegacyFactory(type) {
-  ("production" !== process.env.NODE_ENV ? warning(
+  ("production" !== "development" ? warning(
     false,
     'Do not pass React.DOM.' + type.type + ' to JSX or createFactory. ' +
     'Use the string "' + type.type + '" instead.'
@@ -15619,7 +16591,7 @@ ReactLegacyElementFactory.wrapCreateFactory = function(createFactory) {
       // This is probably a factory created by ReactDOM we unwrap it to get to
       // the underlying string type. It shouldn't have been passed here so we
       // warn.
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         warnForNonLegacyFactory(type);
       }
       return createFactory(type.type);
@@ -15631,7 +16603,7 @@ ReactLegacyElementFactory.wrapCreateFactory = function(createFactory) {
       return createFactory(type.type);
     }
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       warnForPlainFunctionType(type);
     }
 
@@ -15655,7 +16627,7 @@ ReactLegacyElementFactory.wrapCreateElement = function(createElement) {
       // This is probably a factory created by ReactDOM we unwrap it to get to
       // the underlying string type. It shouldn't have been passed here so we
       // warn.
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         warnForNonLegacyFactory(type);
       }
       args = Array.prototype.slice.call(arguments, 0);
@@ -15677,7 +16649,7 @@ ReactLegacyElementFactory.wrapCreateElement = function(createElement) {
       return createElement.apply(this, args);
     }
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       warnForPlainFunctionType(type);
     }
 
@@ -15689,13 +16661,13 @@ ReactLegacyElementFactory.wrapCreateElement = function(createElement) {
 };
 
 ReactLegacyElementFactory.wrapFactory = function(factory) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     typeof factory === 'function',
     'This is suppose to accept a element factory'
   ) : invariant(typeof factory === 'function'));
   var legacyElementFactory = function(config, children) {
     // This factory should not be called when JSX is used. Use JSX instead.
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       warnForLegacyFactoryCall();
     }
     return factory.apply(this, arguments);
@@ -15723,8 +16695,8 @@ ReactLegacyElementFactory.isValidFactory = function(factory) {
 };
 
 ReactLegacyElementFactory.isValidClass = function(factory) {
-  if ("production" !== process.env.NODE_ENV) {
-    ("production" !== process.env.NODE_ENV ? warning(
+  if ("production" !== "development") {
+    ("production" !== "development" ? warning(
       false,
       'isValidClass is deprecated and will be removed in a future release. ' +
       'Use a more specific validator instead.'
@@ -15738,7 +16710,7 @@ ReactLegacyElementFactory._isLegacyCallWarningEnabled = true;
 module.exports = ReactLegacyElementFactory;
 
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":43,"./invariant":133,"./monitorCodeUse":143,"./warning":152,"_process":168}],69:[function(require,module,exports){
+},{"./ReactCurrentOwner":43,"./invariant":133,"./monitorCodeUse":143,"./warning":152,"_process":172}],69:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -15835,7 +16807,7 @@ var instancesByReactRootID = {};
 /** Mapping from reactRootID to `container` nodes. */
 var containersByReactRootID = {};
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   /** __DEV__-only mapping from reactRootID to root elements. */
   var rootElementsByReactRootID = {};
 }
@@ -15868,7 +16840,7 @@ function getID(node) {
     if (nodeCache.hasOwnProperty(id)) {
       var cached = nodeCache[id];
       if (cached !== node) {
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           !isValid(cached, id),
           'ReactMount: Two valid but unequal nodes with the same `%s`: %s',
           ATTR_NAME, id
@@ -15932,7 +16904,7 @@ function getNode(id) {
  */
 function isValid(node, id) {
   if (node) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       internalGetID(node) === id,
       'ReactMount: Unexpected modification of `%s`',
       ATTR_NAME
@@ -16034,7 +17006,7 @@ var ReactMount = {
       prevComponent.replaceProps(nextProps, callback);
     });
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       // Record the root element in case it later gets transplanted.
       rootElementsByReactRootID[getReactRootID(container)] =
         getReactRootElementInContainer(container);
@@ -16051,7 +17023,7 @@ var ReactMount = {
    * @return {string} reactRoot ID prefix
    */
   _registerComponent: function(nextComponent, container) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       container && (
         container.nodeType === ELEMENT_NODE_TYPE ||
         container.nodeType === DOC_NODE_TYPE
@@ -16086,7 +17058,7 @@ var ReactMount = {
       // Various parts of our code (such as ReactCompositeComponent's
       // _renderValidatedComponent) assume that calls to render aren't nested;
       // verify that that's the case.
-      ("production" !== process.env.NODE_ENV ? warning(
+      ("production" !== "development" ? warning(
         ReactCurrentOwner.current == null,
         '_renderNewRootComponent(): Render methods should be a pure function ' +
         'of props and state; triggering nested component updates from ' +
@@ -16105,7 +17077,7 @@ var ReactMount = {
         shouldReuseMarkup
       );
 
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         // Record the root element in case it later gets transplanted.
         rootElementsByReactRootID[reactRootID] =
           getReactRootElementInContainer(container);
@@ -16128,7 +17100,7 @@ var ReactMount = {
    * @return {ReactComponent} Component instance rendered in `container`.
    */
   render: function(nextElement, container, callback) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       ReactElement.isValidElement(nextElement),
       'renderComponent(): Invalid component element.%s',
       (
@@ -16202,7 +17174,7 @@ var ReactMount = {
    */
   constructAndRenderComponentByID: function(constructor, props, id) {
     var domNode = document.getElementById(id);
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       domNode,
       'Tried to get element with id of "%s" but it is not present on the page.',
       id
@@ -16244,7 +17216,7 @@ var ReactMount = {
     // _renderValidatedComponent) assume that calls to render aren't nested;
     // verify that that's the case. (Strictly speaking, unmounting won't cause a
     // render but we still don't expect to be in a render call here.)
-    ("production" !== process.env.NODE_ENV ? warning(
+    ("production" !== "development" ? warning(
       ReactCurrentOwner.current == null,
       'unmountComponentAtNode(): Render methods should be a pure function of ' +
       'props and state; triggering nested component updates from render is ' +
@@ -16260,7 +17232,7 @@ var ReactMount = {
     ReactMount.unmountComponentFromNode(component, container);
     delete instancesByReactRootID[reactRootID];
     delete containersByReactRootID[reactRootID];
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       delete rootElementsByReactRootID[reactRootID];
     }
     return true;
@@ -16299,10 +17271,10 @@ var ReactMount = {
     var reactRootID = ReactInstanceHandles.getReactRootIDFromNodeID(id);
     var container = containersByReactRootID[reactRootID];
 
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       var rootElement = rootElementsByReactRootID[reactRootID];
       if (rootElement && rootElement.parentNode !== container) {
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           // Call internalGetID here because getID calls isValid which calls
           // findReactContainerForID (this function).
           internalGetID(rootElement) === reactRootID,
@@ -16443,7 +17415,7 @@ var ReactMount = {
 
     firstChildren.length = 0;
 
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       false,
       'findComponentRoot(..., %s): Unable to find element. This probably ' +
       'means the DOM was unexpectedly mutated (e.g., by the browser), ' +
@@ -16484,7 +17456,7 @@ ReactMount.renderComponent = deprecated(
 module.exports = ReactMount;
 
 }).call(this,require('_process'))
-},{"./DOMProperty":17,"./ReactBrowserEventEmitter":37,"./ReactCurrentOwner":43,"./ReactElement":59,"./ReactInstanceHandles":67,"./ReactLegacyElement":68,"./ReactPerf":75,"./containsNode":108,"./deprecated":113,"./getReactRootElementInContainer":127,"./instantiateReactComponent":132,"./invariant":133,"./shouldUpdateReactComponent":149,"./warning":152,"_process":168}],71:[function(require,module,exports){
+},{"./DOMProperty":17,"./ReactBrowserEventEmitter":37,"./ReactCurrentOwner":43,"./ReactElement":59,"./ReactInstanceHandles":67,"./ReactLegacyElement":68,"./ReactPerf":75,"./containsNode":108,"./deprecated":113,"./getReactRootElementInContainer":127,"./instantiateReactComponent":132,"./invariant":133,"./shouldUpdateReactComponent":149,"./warning":152,"_process":172}],71:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -16990,7 +17962,7 @@ var ReactNativeComponentInjection = {
 function createInstanceForTag(tag, props, parentType) {
   var componentClass = tagToComponentClass[tag];
   if (componentClass == null) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       genericComponentClass,
       'There is no registered component for the tag %s',
       tag
@@ -16999,7 +17971,7 @@ function createInstanceForTag(tag, props, parentType) {
   }
   if (parentType === tag) {
     // Avoid recursion
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       genericComponentClass,
       'There is no registered component for the tag %s',
       tag
@@ -17012,13 +17984,13 @@ function createInstanceForTag(tag, props, parentType) {
 
 var ReactNativeComponent = {
   createInstanceForTag: createInstanceForTag,
-  injection: ReactNativeComponentInjection,
+  injection: ReactNativeComponentInjection
 };
 
 module.exports = ReactNativeComponent;
 
 }).call(this,require('_process'))
-},{"./Object.assign":33,"./invariant":133,"_process":168}],74:[function(require,module,exports){
+},{"./Object.assign":33,"./invariant":133,"_process":172}],74:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -17091,7 +18063,7 @@ var ReactOwner = {
    * @internal
    */
   addComponentAsRefTo: function(component, ref, owner) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       ReactOwner.isValidOwner(owner),
       'addComponentAsRefTo(...): Only a ReactOwner can have refs. This ' +
       'usually means that you\'re trying to add a ref to a component that ' +
@@ -17112,7 +18084,7 @@ var ReactOwner = {
    * @internal
    */
   removeComponentAsRefFrom: function(component, ref, owner) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       ReactOwner.isValidOwner(owner),
       'removeComponentAsRefFrom(...): Only a ReactOwner can have refs. This ' +
       'usually means that you\'re trying to remove a ref to a component that ' +
@@ -17147,7 +18119,7 @@ var ReactOwner = {
      * @private
      */
     attachRef: function(ref, component) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         component.isOwnedBy(this),
         'attachRef(%s, ...): Only a component\'s owner can store a ref to it.',
         ref
@@ -17174,7 +18146,7 @@ var ReactOwner = {
 module.exports = ReactOwner;
 
 }).call(this,require('_process'))
-},{"./emptyObject":115,"./invariant":133,"_process":168}],75:[function(require,module,exports){
+},{"./emptyObject":115,"./invariant":133,"_process":172}],75:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -17216,7 +18188,7 @@ var ReactPerf = {
    * @return {function}
    */
   measure: function(objName, fnName, func) {
-    if ("production" !== process.env.NODE_ENV) {
+    if ("production" !== "development") {
       var measuredFunc = null;
       var wrapper = function() {
         if (ReactPerf.enableMeasure) {
@@ -17258,7 +18230,7 @@ function _noMeasure(objName, fnName, func) {
 module.exports = ReactPerf;
 
 }).call(this,require('_process'))
-},{"_process":168}],76:[function(require,module,exports){
+},{"_process":172}],76:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -17390,7 +18362,7 @@ var ReactPropTransferer = {
      * @protected
      */
     transferPropsTo: function(element) {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         element._owner === this,
         '%s: You can\'t call transferPropsTo() on a component that you ' +
         'don\'t own, %s. This usually means you are calling ' +
@@ -17401,10 +18373,10 @@ var ReactPropTransferer = {
         element.type.displayName
       ) : invariant(element._owner === this));
 
-      if ("production" !== process.env.NODE_ENV) {
+      if ("production" !== "development") {
         if (!didWarn) {
           didWarn = true;
-          ("production" !== process.env.NODE_ENV ? warning(
+          ("production" !== "development" ? warning(
             false,
             'transferPropsTo is deprecated. ' +
             'See http://fb.me/react-transferpropsto for more information.'
@@ -17425,7 +18397,7 @@ var ReactPropTransferer = {
 module.exports = ReactPropTransferer;
 
 }).call(this,require('_process'))
-},{"./Object.assign":33,"./emptyFunction":114,"./invariant":133,"./joinClasses":138,"./warning":152,"_process":168}],77:[function(require,module,exports){
+},{"./Object.assign":33,"./emptyFunction":114,"./invariant":133,"./joinClasses":138,"./warning":152,"_process":172}],77:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -17442,7 +18414,7 @@ module.exports = ReactPropTransferer;
 
 var ReactPropTypeLocationNames = {};
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   ReactPropTypeLocationNames = {
     prop: 'prop',
     context: 'context',
@@ -17453,7 +18425,7 @@ if ("production" !== process.env.NODE_ENV) {
 module.exports = ReactPropTypeLocationNames;
 
 }).call(this,require('_process'))
-},{"_process":168}],78:[function(require,module,exports){
+},{"_process":172}],78:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -18123,7 +19095,7 @@ var invariant = require("./invariant");
  * @return {string} the HTML markup
  */
 function renderToString(element) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     ReactElement.isValidElement(element),
     'renderToString(): You must pass a valid ReactElement.'
   ) : invariant(ReactElement.isValidElement(element)));
@@ -18149,7 +19121,7 @@ function renderToString(element) {
  * (for generating static pages)
  */
 function renderToStaticMarkup(element) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     ReactElement.isValidElement(element),
     'renderToStaticMarkup(): You must pass a valid ReactElement.'
   ) : invariant(ReactElement.isValidElement(element)));
@@ -18174,7 +19146,7 @@ module.exports = {
 };
 
 }).call(this,require('_process'))
-},{"./ReactElement":59,"./ReactInstanceHandles":67,"./ReactMarkupChecksum":69,"./ReactServerRenderingTransaction":84,"./instantiateReactComponent":132,"./invariant":133,"_process":168}],84:[function(require,module,exports){
+},{"./ReactElement":59,"./ReactInstanceHandles":67,"./ReactMarkupChecksum":69,"./ReactServerRenderingTransaction":84,"./instantiateReactComponent":132,"./invariant":133,"_process":172}],84:[function(require,module,exports){
 /**
  * Copyright 2014, Facebook, Inc.
  * All rights reserved.
@@ -18425,7 +19397,7 @@ var asapEnqueued = false;
 var batchingStrategy = null;
 
 function ensureInjected() {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     ReactUpdates.ReactReconcileTransaction && batchingStrategy,
     'ReactUpdates: must inject a reconcile transaction class and batching ' +
     'strategy'
@@ -18519,7 +19491,7 @@ function mountDepthComparator(c1, c2) {
 
 function runBatchedUpdates(transaction) {
   var len = transaction.dirtyComponentsLength;
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     len === dirtyComponents.length,
     'Expected flush transaction\'s stored dirty-components length (%s) to ' +
     'match dirty-components array length (%s).',
@@ -18587,7 +19559,7 @@ var flushBatchedUpdates = ReactPerf.measure(
  * list of functions which will be executed once the rerender occurs.
  */
 function enqueueUpdate(component, callback) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !callback || typeof callback === "function",
     'enqueueUpdate(...): You called `setProps`, `replaceProps`, ' +
     '`setState`, `replaceState`, or `forceUpdate` with a callback that ' +
@@ -18600,7 +19572,7 @@ function enqueueUpdate(component, callback) {
   // verify that that's the case. (This is called by each top-level update
   // function, like setProps, setState, forceUpdate, etc.; creation and
   // destruction of top-level components is guarded in ReactMount.)
-  ("production" !== process.env.NODE_ENV ? warning(
+  ("production" !== "development" ? warning(
     ReactCurrentOwner.current == null,
     'enqueueUpdate(): Render methods should be a pure function of props ' +
     'and state; triggering nested component updates from render is not ' +
@@ -18629,7 +19601,7 @@ function enqueueUpdate(component, callback) {
  * if no updates are currently being performed.
  */
 function asap(callback, context) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     batchingStrategy.isBatchingUpdates,
     'ReactUpdates.asap: Can\'t enqueue an asap callback in a context where' +
     'updates are not being batched.'
@@ -18640,7 +19612,7 @@ function asap(callback, context) {
 
 var ReactUpdatesInjection = {
   injectReconcileTransaction: function(ReconcileTransaction) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       ReconcileTransaction,
       'ReactUpdates: must provide a reconcile transaction class'
     ) : invariant(ReconcileTransaction));
@@ -18648,15 +19620,15 @@ var ReactUpdatesInjection = {
   },
 
   injectBatchingStrategy: function(_batchingStrategy) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       _batchingStrategy,
       'ReactUpdates: must provide a batching strategy'
     ) : invariant(_batchingStrategy));
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       typeof _batchingStrategy.batchedUpdates === 'function',
       'ReactUpdates: must provide a batchedUpdates() function'
     ) : invariant(typeof _batchingStrategy.batchedUpdates === 'function'));
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       typeof _batchingStrategy.isBatchingUpdates === 'boolean',
       'ReactUpdates: must provide an isBatchingUpdates boolean attribute'
     ) : invariant(typeof _batchingStrategy.isBatchingUpdates === 'boolean'));
@@ -18683,7 +19655,7 @@ var ReactUpdates = {
 module.exports = ReactUpdates;
 
 }).call(this,require('_process'))
-},{"./CallbackQueue":12,"./Object.assign":33,"./PooledClass":34,"./ReactCurrentOwner":43,"./ReactPerf":75,"./Transaction":102,"./invariant":133,"./warning":152,"_process":168}],87:[function(require,module,exports){
+},{"./CallbackQueue":12,"./Object.assign":33,"./PooledClass":34,"./ReactCurrentOwner":43,"./ReactPerf":75,"./Transaction":102,"./invariant":133,"./warning":152,"_process":172}],87:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -19309,7 +20281,7 @@ var SimpleEventPlugin = {
   executeDispatch: function(event, listener, domID) {
     var returnValue = EventPluginUtils.executeDispatch(event, listener, domID);
 
-    ("production" !== process.env.NODE_ENV ? warning(
+    ("production" !== "development" ? warning(
       typeof returnValue !== 'boolean',
       'Returning `false` from an event handler is deprecated and will be ' +
       'ignored in a future release. Instead, manually call ' +
@@ -19410,7 +20382,7 @@ var SimpleEventPlugin = {
         EventConstructor = SyntheticClipboardEvent;
         break;
     }
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       EventConstructor,
       'SimpleEventPlugin: Unhandled event type, `%s`.',
       topLevelType
@@ -19429,7 +20401,7 @@ var SimpleEventPlugin = {
 module.exports = SimpleEventPlugin;
 
 }).call(this,require('_process'))
-},{"./EventConstants":22,"./EventPluginUtils":26,"./EventPropagators":27,"./SyntheticClipboardEvent":91,"./SyntheticDragEvent":93,"./SyntheticEvent":94,"./SyntheticFocusEvent":95,"./SyntheticKeyboardEvent":97,"./SyntheticMouseEvent":98,"./SyntheticTouchEvent":99,"./SyntheticUIEvent":100,"./SyntheticWheelEvent":101,"./getEventCharCode":121,"./invariant":133,"./keyOf":140,"./warning":152,"_process":168}],91:[function(require,module,exports){
+},{"./EventConstants":22,"./EventPluginUtils":26,"./EventPropagators":27,"./SyntheticClipboardEvent":91,"./SyntheticDragEvent":93,"./SyntheticEvent":94,"./SyntheticFocusEvent":95,"./SyntheticKeyboardEvent":97,"./SyntheticMouseEvent":98,"./SyntheticTouchEvent":99,"./SyntheticUIEvent":100,"./SyntheticWheelEvent":101,"./getEventCharCode":121,"./invariant":133,"./keyOf":140,"./warning":152,"_process":172}],91:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -20265,7 +21237,7 @@ var Mixin = {
    * @return Return value from `method`.
    */
   perform: function(method, scope, a, b, c, d, e, f) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       !this.isInTransaction(),
       'Transaction.perform(...): Cannot initialize a transaction when there ' +
       'is already an outstanding transaction.'
@@ -20337,7 +21309,7 @@ var Mixin = {
    * invoked).
    */
   closeAll: function(startIndex) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       this.isInTransaction(),
       'Transaction.closeAll(): Cannot close transaction when none are open.'
     ) : invariant(this.isInTransaction()));
@@ -20386,7 +21358,7 @@ var Transaction = {
 module.exports = Transaction;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],103:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],103:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -20450,7 +21422,7 @@ var invariant = require("./invariant");
  */
 
 function accumulateInto(current, next) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     next != null,
     'accumulateInto(...): Accumulated items must not be null or undefined.'
   ) : invariant(next != null));
@@ -20484,7 +21456,7 @@ function accumulateInto(current, next) {
 module.exports = accumulateInto;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],105:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],105:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -20762,7 +21734,7 @@ function createFullPageComponent(tag) {
     displayName: 'ReactFullPageComponent' + tag,
 
     componentWillUnmount: function() {
-      ("production" !== process.env.NODE_ENV ? invariant(
+      ("production" !== "development" ? invariant(
         false,
         '%s tried to unmount. Because of cross-browser quirks it is ' +
         'impossible to unmount some top-level components (eg <html>, <head>, ' +
@@ -20783,7 +21755,7 @@ function createFullPageComponent(tag) {
 module.exports = createFullPageComponent;
 
 }).call(this,require('_process'))
-},{"./ReactCompositeComponent":41,"./ReactElement":59,"./invariant":133,"_process":168}],111:[function(require,module,exports){
+},{"./ReactCompositeComponent":41,"./ReactElement":59,"./invariant":133,"_process":172}],111:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -20839,7 +21811,7 @@ function getNodeName(markup) {
  */
 function createNodesFromMarkup(markup, handleScript) {
   var node = dummyNode;
-  ("production" !== process.env.NODE_ENV ? invariant(!!dummyNode, 'createNodesFromMarkup dummy not initialized') : invariant(!!dummyNode));
+  ("production" !== "development" ? invariant(!!dummyNode, 'createNodesFromMarkup dummy not initialized') : invariant(!!dummyNode));
   var nodeName = getNodeName(markup);
 
   var wrap = nodeName && getMarkupWrap(nodeName);
@@ -20856,7 +21828,7 @@ function createNodesFromMarkup(markup, handleScript) {
 
   var scripts = node.getElementsByTagName('script');
   if (scripts.length) {
-    ("production" !== process.env.NODE_ENV ? invariant(
+    ("production" !== "development" ? invariant(
       handleScript,
       'createNodesFromMarkup(...): Unexpected <script> element rendered.'
     ) : invariant(handleScript));
@@ -20873,7 +21845,7 @@ function createNodesFromMarkup(markup, handleScript) {
 module.exports = createNodesFromMarkup;
 
 }).call(this,require('_process'))
-},{"./ExecutionEnvironment":28,"./createArrayFrom":109,"./getMarkupWrap":125,"./invariant":133,"_process":168}],112:[function(require,module,exports){
+},{"./ExecutionEnvironment":28,"./createArrayFrom":109,"./getMarkupWrap":125,"./invariant":133,"_process":172}],112:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -20960,9 +21932,9 @@ var warning = require("./warning");
  */
 function deprecated(namespace, oldName, newName, ctx, fn) {
   var warned = false;
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     var newFn = function() {
-      ("production" !== process.env.NODE_ENV ? warning(
+      ("production" !== "development" ? warning(
         warned,
         (namespace + "." + oldName + " will be deprecated in a future version. ") +
         ("Use " + namespace + "." + newName + " instead.")
@@ -20982,7 +21954,7 @@ function deprecated(namespace, oldName, newName, ctx, fn) {
 module.exports = deprecated;
 
 }).call(this,require('_process'))
-},{"./Object.assign":33,"./warning":152,"_process":168}],114:[function(require,module,exports){
+},{"./Object.assign":33,"./warning":152,"_process":172}],114:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -21033,14 +22005,14 @@ module.exports = emptyFunction;
 
 var emptyObject = {};
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   Object.freeze(emptyObject);
 }
 
 module.exports = emptyObject;
 
 }).call(this,require('_process'))
-},{"_process":168}],116:[function(require,module,exports){
+},{"_process":172}],116:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -21110,7 +22082,7 @@ function flattenSingleChildIntoContext(traverseContext, child, name) {
   // We found a component instance.
   var result = traverseContext;
   var keyUnique = !result.hasOwnProperty(name);
-  ("production" !== process.env.NODE_ENV ? warning(
+  ("production" !== "development" ? warning(
     keyUnique,
     'flattenChildren(...): Encountered two children with the same key, ' +
     '`%s`. Child keys must be unique; when two children share a key, only ' +
@@ -21150,7 +22122,7 @@ function flattenChildren(children) {
 module.exports = flattenChildren;
 
 }).call(this,require('_process'))
-},{"./ReactTextComponent":85,"./traverseAllChildren":151,"./warning":152,"_process":168}],118:[function(require,module,exports){
+},{"./ReactTextComponent":85,"./traverseAllChildren":151,"./warning":152,"_process":172}],118:[function(require,module,exports){
 /**
  * Copyright 2014, Facebook, Inc.
  * All rights reserved.
@@ -21572,7 +22544,7 @@ var markupWrap = {
  * @return {?array} Markup wrap configuration, if applicable.
  */
 function getMarkupWrap(nodeName) {
-  ("production" !== process.env.NODE_ENV ? invariant(!!dummyNode, 'Markup wrapping node not initialized') : invariant(!!dummyNode));
+  ("production" !== "development" ? invariant(!!dummyNode, 'Markup wrapping node not initialized') : invariant(!!dummyNode));
   if (!markupWrap.hasOwnProperty(nodeName)) {
     nodeName = '*';
   }
@@ -21591,7 +22563,7 @@ function getMarkupWrap(nodeName) {
 module.exports = getMarkupWrap;
 
 }).call(this,require('_process'))
-},{"./ExecutionEnvironment":28,"./invariant":133,"_process":168}],126:[function(require,module,exports){
+},{"./ExecutionEnvironment":28,"./invariant":133,"_process":172}],126:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -21886,8 +22858,8 @@ var ReactEmptyComponent = require("./ReactEmptyComponent");
 function instantiateReactComponent(element, parentCompositeType) {
   var instance;
 
-  if ("production" !== process.env.NODE_ENV) {
-    ("production" !== process.env.NODE_ENV ? warning(
+  if ("production" !== "development") {
+    ("production" !== "development" ? warning(
       element && (typeof element.type === 'function' ||
                      typeof element.type === 'string'),
       'Only functions or strings can be mounted as React components.'
@@ -21947,8 +22919,8 @@ function instantiateReactComponent(element, parentCompositeType) {
     instance = new element.type(element.props);
   }
 
-  if ("production" !== process.env.NODE_ENV) {
-    ("production" !== process.env.NODE_ENV ? warning(
+  if ("production" !== "development") {
+    ("production" !== "development" ? warning(
       typeof instance.construct === 'function' &&
       typeof instance.mountComponent === 'function' &&
       typeof instance.receiveComponent === 'function',
@@ -21966,7 +22938,7 @@ function instantiateReactComponent(element, parentCompositeType) {
 module.exports = instantiateReactComponent;
 
 }).call(this,require('_process'))
-},{"./ReactElement":59,"./ReactEmptyComponent":61,"./ReactLegacyElement":68,"./ReactNativeComponent":73,"./warning":152,"_process":168}],133:[function(require,module,exports){
+},{"./ReactElement":59,"./ReactEmptyComponent":61,"./ReactLegacyElement":68,"./ReactNativeComponent":73,"./warning":152,"_process":172}],133:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -21993,7 +22965,7 @@ module.exports = instantiateReactComponent;
  */
 
 var invariant = function(condition, format, a, b, c, d, e, f) {
-  if ("production" !== process.env.NODE_ENV) {
+  if ("production" !== "development") {
     if (format === undefined) {
       throw new Error('invariant requires an error message argument');
     }
@@ -22023,7 +22995,7 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 module.exports = invariant;
 
 }).call(this,require('_process'))
-},{"_process":168}],134:[function(require,module,exports){
+},{"_process":172}],134:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -22265,7 +23237,7 @@ var invariant = require("./invariant");
 var keyMirror = function(obj) {
   var ret = {};
   var key;
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     obj instanceof Object && !Array.isArray(obj),
     'keyMirror(...): Argument must be an object.'
   ) : invariant(obj instanceof Object && !Array.isArray(obj)));
@@ -22281,7 +23253,7 @@ var keyMirror = function(obj) {
 module.exports = keyMirror;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],140:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],140:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -22429,7 +23401,7 @@ var invariant = require("./invariant");
  */
 
 function monitorCodeUse(eventName, data) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     eventName && !/[^a-z0-9_]/.test(eventName),
     'You must provide an eventName using only the characters [a-z0-9_]'
   ) : invariant(eventName && !/[^a-z0-9_]/.test(eventName)));
@@ -22438,7 +23410,7 @@ function monitorCodeUse(eventName, data) {
 module.exports = monitorCodeUse;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],144:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],144:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -22468,7 +23440,7 @@ var invariant = require("./invariant");
  * structure.
  */
 function onlyChild(children) {
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     ReactElement.isValidElement(children),
     'onlyChild must be passed a children with exactly one child.'
   ) : invariant(ReactElement.isValidElement(children)));
@@ -22478,7 +23450,7 @@ function onlyChild(children) {
 module.exports = onlyChild;
 
 }).call(this,require('_process'))
-},{"./ReactElement":59,"./invariant":133,"_process":168}],145:[function(require,module,exports){
+},{"./ReactElement":59,"./invariant":133,"_process":172}],145:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -22724,19 +23696,19 @@ function toArray(obj) {
 
   // Some browse builtin objects can report typeof 'function' (e.g. NodeList in
   // old versions of Safari).
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     !Array.isArray(obj) &&
     (typeof obj === 'object' || typeof obj === 'function'),
     'toArray: Array-like object expected'
   ) : invariant(!Array.isArray(obj) &&
   (typeof obj === 'object' || typeof obj === 'function')));
 
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     typeof length === 'number',
     'toArray: Object needs a length property'
   ) : invariant(typeof length === 'number'));
 
-  ("production" !== process.env.NODE_ENV ? invariant(
+  ("production" !== "development" ? invariant(
     length === 0 ||
     (length - 1) in obj,
     'toArray: Object should have keys for indices'
@@ -22766,7 +23738,7 @@ function toArray(obj) {
 module.exports = toArray;
 
 }).call(this,require('_process'))
-},{"./invariant":133,"_process":168}],151:[function(require,module,exports){
+},{"./invariant":133,"_process":172}],151:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2014, Facebook, Inc.
@@ -22895,7 +23867,7 @@ var traverseAllChildrenImpl =
         callback(traverseContext, children, storageName, indexSoFar);
         subtreeCount = 1;
       } else if (type === 'object') {
-        ("production" !== process.env.NODE_ENV ? invariant(
+        ("production" !== "development" ? invariant(
           !children || children.nodeType !== 1,
           'traverseAllChildren(...): Encountered an invalid child; DOM ' +
           'elements are not valid children of React components.'
@@ -22949,7 +23921,7 @@ function traverseAllChildren(children, callback, traverseContext) {
 module.exports = traverseAllChildren;
 
 }).call(this,require('_process'))
-},{"./ReactElement":59,"./ReactInstanceHandles":67,"./invariant":133,"_process":168}],152:[function(require,module,exports){
+},{"./ReactElement":59,"./ReactInstanceHandles":67,"./invariant":133,"_process":172}],152:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014, Facebook, Inc.
@@ -22975,7 +23947,7 @@ var emptyFunction = require("./emptyFunction");
 
 var warning = emptyFunction;
 
-if ("production" !== process.env.NODE_ENV) {
+if ("production" !== "development") {
   warning = function(condition, format ) {for (var args=[],$__0=2,$__1=arguments.length;$__0<$__1;$__0++) args.push(arguments[$__0]);
     if (format === undefined) {
       throw new Error(
@@ -22994,113 +23966,123 @@ if ("production" !== process.env.NODE_ENV) {
 module.exports = warning;
 
 }).call(this,require('_process'))
-},{"./emptyFunction":114,"_process":168}],153:[function(require,module,exports){
+},{"./emptyFunction":114,"_process":172}],153:[function(require,module,exports){
 module.exports = require('./lib/React');
 
 },{"./lib/React":35}],154:[function(require,module,exports){
+"use strict";
+
 var ActionsContentEventIDs = {
 	documentSection: {
-		setContent: 'documentSection.setContent',
-		saveChanges: 'documentSection.saveChanges',
-		enterHTMLPreview: 'documentSection.enterHTMLPreview',
-		exitHTMLPreview: 'documentSection.exitHTMLPreview',
+		setContent: "documentSection.setContent",
+		saveChanges: "documentSection.saveChanges",
+		enterHTMLPreview: "documentSection.enterHTMLPreview",
+		exitHTMLPreview: "documentSection.exitHTMLPreview",
 		edit: {
-			blockWithKeyPath: 'documentSection.edit.blockWithKeyPath',
-			textItemWithKeyPath: 'documentSection.edit.textItemWithKeyPath',
-			textItemBasedBlockWithKeyPathAddingIfNeeded: 'documentSection.edit.textItemBasedBlockWithKeyPathAddingIfNeeded'
+			blockWithKeyPath: "documentSection.edit.blockWithKeyPath",
+			textItemWithKeyPath: "documentSection.edit.textItemWithKeyPath",
+			textItemBasedBlockWithKeyPathAddingIfNeeded: "documentSection.edit.textItemBasedBlockWithKeyPathAddingIfNeeded"
 		},
-		finishEditing: 'documentSection.finishEditing',
+		finishEditing: "documentSection.finishEditing",
 		blocks: {
-			insertSubsectionOfTypeAtIndex: 'documentSection.blocks.insertSubsectionOfTypeAtIndex'
-		},
-		blockAtKeyPath: {
-			changeType: 'documentSection.blockAtKeyPath.changeType',
-			changePlaceholderID: 'documentSection.blockAtKeyPath.changePlaceholderID',
-			remove: 'documentSection.blockAtKeyPath.remove',
-			insertRelatedBlockAfter: 'documentSection.blockAtKeyPath.insertRelatedBlockAfter'
+			insertSubsectionOfTypeAtIndex: "documentSection.blocks.insertSubsectionOfTypeAtIndex"
 		},
 		subsectionAtKeyPath: {
-			changeType: 'documentSection.subsectionAtKeyPath.changeType'
+			changeType: "documentSection.subsectionAtKeyPath.changeType"
+		},
+		blockAtKeyPath: {
+			changeType: "documentSection.blockAtKeyPath.changeType",
+			changePlaceholderID: "documentSection.blockAtKeyPath.changePlaceholderID",
+			changeValue: "documentSection.blockAtKeyPath.changeValue",
+			remove: "documentSection.blockAtKeyPath.remove",
+			insertRelatedBlockAfter: "documentSection.blockAtKeyPath.insertRelatedBlockAfter"
 		},
 		editedBlock: {
-			remove: 'documentSection.editedBlock.remove',
-			insertRelatedBlockAfter: 'documentSection.editedBlock.insertRelatedBlockAfter'
-		},
+			remove: "documentSection.editedBlock.remove",
+			insertRelatedBlockAfter: "documentSection.editedBlock.insertRelatedBlockAfter",
+			changeTraitValue: "documentSection.editedBlock.changeTraitValue",
+			removeTrait: "documentSection.editedBlock.removeTrait" },
 		editedItem: {
-			remove: 'documentSection.editedItem.remove',
-			setText: 'documentSection.editedItem.setText',
-			changeTraitValue: 'documentSection.editedItem.changeTraitValue',
-			editPreviousItem: 'documentSection.editedItem.editPreviousItem',
-			editNextItem: 'documentSection.editedItem.editNextItem',
-			addNewTextItemAfter: 'documentSection.editedItem.addNewTextItemAfter',
-			splitBlockBefore: 'documentSection.editedItem.splitBlockBefore',
-			joinWithPreviousItem: 'documentSection.editedItem.joinWithPreviousItem',
-			registerSelectedTextRangeFunction: 'documentSection.editedItem.registerSelectedTextRangeFunction',
-			unregisterSelectedTextRangeFunction: 'documentSection.editedItem.unregisterSelectedTextRangeFunction',
-			splitTextAtSelectedTextRange: 'documentSection.editedItem.splitTextAtSelectedTextRange',
-			splitTextInRange: 'documentSection.editedItem.splitTextInRange'
+			remove: "documentSection.editedItem.remove",
+			setText: "documentSection.editedItem.setText",
+			changeTraitValue: "documentSection.editedItem.changeTraitValue",
+			removeTrait: "documentSection.editedItem.removeTrait",
+			editPreviousItem: "documentSection.editedItem.editPreviousItem",
+			editNextItem: "documentSection.editedItem.editNextItem",
+			addNewTextItemAfter: "documentSection.editedItem.addNewTextItemAfter",
+			addLineBreakAfter: "documentSection.editedItem.addLineBreakAfter",
+			splitBlockBefore: "documentSection.editedItem.splitBlockBefore",
+			joinWithPreviousItem: "documentSection.editedItem.joinWithPreviousItem",
+			registerSelectedTextRangeFunction: "documentSection.editedItem.registerSelectedTextRangeFunction",
+			unregisterSelectedTextRangeFunction: "documentSection.editedItem.unregisterSelectedTextRangeFunction",
+			splitTextAtSelectedTextRange: "documentSection.editedItem.splitTextAtSelectedTextRange",
+			splitTextInRange: "documentSection.editedItem.splitTextInRange"
 		}
 	}
 };
 
 module.exports = ActionsContentEventIDs;
-},{}],155:[function(require,module,exports){
-var AppDispatcher = require('../app-dispatcher');
-var ContentStore = require('../stores/store-content');
 
-var eventIDs = require('./actions-content-eventIDs');
+},{}],155:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var ContentStore = require("../stores/store-content");
+var Immutable = require("immutable");
+
+var eventIDs = require("./actions-content-eventIDs");
 var documentSectionEventIDs = eventIDs.documentSection;
 
 var ActionsContent = {
-	getActionsForDocumentSection: function(documentID, sectionID) {
+	getActionsForDocumentSection: function getActionsForDocumentSection(documentID, sectionID) {
 		var documentSectionStore = ContentStore.getDocumentSection(documentID, sectionID);
-		
+
 		function dispatchForDocumentSection(payload) {
 			payload.documentID = documentID;
 			payload.sectionID = sectionID;
-			
+
 			AppDispatcher.dispatch(payload);
 		};
-		
+
 		return {
-			setContent: function(content) {
+			setContent: function setContent(content) {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.setContent,
 					content: content
 				});
 			},
-			
-			saveChanges: function() {
+
+			saveChanges: function saveChanges() {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.saveChanges
 				});
 			},
-			
-			enterHTMLPreview: function() {
+
+			enterHTMLPreview: function enterHTMLPreview() {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.enterHTMLPreview
 				});
 			},
-			
-			exitHTMLPreview: function() {
+
+			exitHTMLPreview: function exitHTMLPreview() {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.exitHTMLPreview
 				});
 			},
-			
-			getEditedBlockIdentifier: function() {
+
+			getEditedBlockIdentifier: function getEditedBlockIdentifier() {
 				return documentSectionStore.getEditedBlockIdentifier();
 			},
-			
-			getEditedTextItemIdentifier: function() {
+
+			getEditedTextItemIdentifier: function getEditedTextItemIdentifier() {
 				return ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID);
 			},
-			
-			getEditedTextItemKeyPath: function() {
+
+			getEditedTextItemKeyPath: function getEditedTextItemKeyPath() {
 				return ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
 			},
-			
-			editBlockWithKeyPath: function(blockKeyPath) {
+
+			editBlockWithKeyPath: function editBlockWithKeyPath(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.blockWithKeyPath,
 					documentID: documentID,
@@ -23108,8 +24090,8 @@ var ActionsContent = {
 					blockKeyPath: blockKeyPath
 				});
 			},
-			
-			editTextItemWithKeyPath: function(textItemKeyPath) {
+
+			editTextItemWithKeyPath: function editTextItemWithKeyPath(textItemKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.textItemWithKeyPath,
 					documentID: documentID,
@@ -23117,8 +24099,8 @@ var ActionsContent = {
 					textItemKeyPath: textItemKeyPath
 				});
 			},
-			
-			editTextItemBasedBlockWithKeyPathAddingIfNeeded: function(blockKeyPath) {
+
+			editTextItemBasedBlockWithKeyPathAddingIfNeeded: function editTextItemBasedBlockWithKeyPathAddingIfNeeded(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded,
 					documentID: documentID,
@@ -23126,26 +24108,26 @@ var ActionsContent = {
 					blockKeyPath: blockKeyPath
 				});
 			},
-			
-			finishEditing: function() {
+
+			finishEditing: function finishEditing() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.finishEditing,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			insertSubsectionOfTypeAtBlockIndex: function(subsectionType, blockIndex) {
+
+			insertSubsectionOfTypeAtBlockIndex: function insertSubsectionOfTypeAtBlockIndex(subsectionType, blockIndex) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex,
 					documentID: documentID,
 					sectionID: sectionID,
 					subsectionType: subsectionType,
 					blockIndex: blockIndex
-				})
+				});
 			},
-			
-			changeTypeOfSubsectionAtKeyPath: function(subsectionKeyPath, subsectionType) {
+
+			changeTypeOfSubsectionAtKeyPath: function changeTypeOfSubsectionAtKeyPath(subsectionKeyPath, subsectionType) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.subsectionAtKeyPath.changeType,
 					documentID: documentID,
@@ -23154,18 +24136,19 @@ var ActionsContent = {
 					subsectionType: subsectionType
 				});
 			},
-			
-			changeTypeOfBlockAtKeyPath: function(type, keyPath) {
+
+			changeTypeOfBlockAtKeyPath: function changeTypeOfBlockAtKeyPath(typeGroup, type, keyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
 					documentID: documentID,
 					sectionID: sectionID,
 					blockKeyPath: keyPath,
+					blockTypeGroup: typeGroup,
 					blockType: type
 				});
 			},
-			
-			removeBlockAtKeyPath: function(keyPath) {
+
+			removeBlockAtKeyPath: function removeBlockAtKeyPath(keyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.remove,
 					documentID: documentID,
@@ -23173,8 +24156,8 @@ var ActionsContent = {
 					blockKeyPath: keyPath
 				});
 			},
-			
-			insertRelatedBlockAfterBlockAtKeyPath: function(keyPath) {
+
+			insertRelatedBlockAfterBlockAtKeyPath: function insertRelatedBlockAfterBlockAtKeyPath(keyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
 					documentID: documentID,
@@ -23182,24 +24165,35 @@ var ActionsContent = {
 					blockKeyPath: keyPath
 				});
 			},
-			
-			removeEditedBlock: function() {
+
+			removeEditedBlock: function removeEditedBlock() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedBlock.remove,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			insertRelatedBlockAfterEditedBlock: function() {
+
+			insertRelatedBlockAfterEditedBlock: function insertRelatedBlockAfterEditedBlock() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedBlock.insertRelatedBlockAfter,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			changePlaceholderIDOfBlockAtKeyPath: function(placeholderID, keyPath) {
+
+			updateValueForBlockAtKeyPath: function updateValueForBlockAtKeyPath(keyPath, defaultValue, newValueFunction) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.blockAtKeyPath.changeValue,
+					documentID: documentID,
+					sectionID: sectionID,
+					blockKeyPath: keyPath,
+					defaultValue: defaultValue,
+					newValueFunction: newValueFunction
+				});
+			},
+
+			changePlaceholderIDOfBlockAtKeyPath: function changePlaceholderIDOfBlockAtKeyPath(placeholderID, keyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changePlaceholderID,
 					documentID: documentID,
@@ -23208,16 +24202,46 @@ var ActionsContent = {
 					placeholderID: placeholderID
 				});
 			},
-			
-			removeEditedTextItem: function() {
+
+			changeTraitUsingFunctionForEditedBlock: function changeTraitUsingFunctionForEditedBlock(traitID, defaultValue, newValueFunction) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedBlock.changeTraitValue,
+					documentID: documentID,
+					sectionID: sectionID,
+					traitID: traitID,
+					defaultValue: defaultValue,
+					newValueFunction: newValueFunction
+				});
+			},
+
+			toggleBooleanTraitForEditedBlock: function toggleBooleanTraitForEditedBlock(traitID) {
+				this.changeTraitUsingFunctionForEditedBlock(traitID, false, function (valueBefore) {
+					return !valueBefore;
+				});
+			},
+
+			changeMapTraitUsingFunctionForEditedBlock: function changeMapTraitUsingFunctionForEditedBlock(traitID, changeFunction) {
+				this.changeTraitUsingFunctionForEditedBlock(traitID, Immutable.Map(), changeFunction);
+			},
+
+			removeTraitWithIDForEditedBlock: function removeTraitWithIDForEditedBlock(traitID) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedBlock.removeTrait,
+					documentID: documentID,
+					sectionID: sectionID,
+					traitID: traitID
+				});
+			},
+
+			removeEditedTextItem: function removeEditedTextItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.remove,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			setTextForEditedTextItem: function(text) {
+
+			setTextForEditedTextItem: function setTextForEditedTextItem(text) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.setText,
 					documentID: documentID,
@@ -23225,94 +24249,86 @@ var ActionsContent = {
 					textItemText: text
 				});
 			},
-			
-			changeTraitValueForEditedTextItem: function(attributeID, defaultValue, newValueFunction)
-			{
+
+			changeTraitUsingFunctionForEditedTextItem: function changeTraitUsingFunctionForEditedTextItem(traitID, defaultValue, newValueFunction) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.changeTraitValue,
 					documentID: documentID,
 					sectionID: sectionID,
-					attributeID: attributeID,
+					traitID: traitID,
 					defaultValue: defaultValue,
 					newValueFunction: newValueFunction
 				});
 			},
-			
-			toggleBoldForEditedTextItem: function()
-			{
-				this.changeTraitValueForEditedTextItem('bold', false, function(valueBefore) {
+
+			toggleBooleanTraitForEditedTextItem: function toggleBooleanTraitForEditedTextItem(traitID) {
+				this.changeTraitUsingFunctionForEditedTextItem(traitID, false, function (valueBefore) {
 					return !valueBefore;
 				});
 			},
-			
-			toggleItalicForEditedTextItem: function()
-			{
-				this.changeTraitValueForEditedTextItem('italic', false, function(valueBefore) {
-					return !valueBefore;
+
+			changeMapTraitUsingFunctionForEditedTextItem: function changeMapTraitUsingFunctionForEditedTextItem(traitID, changeFunction) {
+				this.changeTraitUsingFunctionForEditedTextItem(traitID, Immutable.Map(), changeFunction);
+			},
+
+			removeTraitWithIDForEditedTextItem: function removeTraitWithIDForEditedTextItem(traitID) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedItem.removeTrait,
+					documentID: documentID,
+					sectionID: sectionID,
+					traitID: traitID
 				});
 			},
-			
-			toggleTraitForEditedTextItem: function(traitID)
-			{
-				this.changeTraitValueForEditedTextItem(traitID, false, function(valueBefore) {
-					return !valueBefore;
-				});
-			},
-			
-			editPreviousItemBeforeEditedTextItem: function()
-			{
+
+			editPreviousItemBeforeEditedTextItem: function editPreviousItemBeforeEditedTextItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.editPreviousItem,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			editNextItemAfterEditedTextItem: function()
-			{
+
+			editNextItemAfterEditedTextItem: function editNextItemAfterEditedTextItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.editNextItem,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			addNewTextItemAfterEditedTextItem: function()
-			{
+
+			addNewTextItemAfterEditedTextItem: function addNewTextItemAfterEditedTextItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.addNewTextItemAfter,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			addLineBreakAfterEditedTextItem: function()
-			{
-				
+
+			addLineBreakAfterEditedTextItem: function addLineBreakAfterEditedTextItem() {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedItem.addLineBreakAfter,
+					documentID: documentID,
+					sectionID: sectionID
+				});
 			},
-			
-			splitBlockBeforeEditedTextItem: function()
-			{
+
+			splitBlockBeforeEditedTextItem: function splitBlockBeforeEditedTextItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.splitBlockBefore,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			joinEditedTextItemWithPreviousItem: function()
-			{
+
+			joinEditedTextItemWithPreviousItem: function joinEditedTextItemWithPreviousItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.joinWithPreviousItem,
 					documentID: documentID,
 					sectionID: sectionID
 				});
 			},
-			
-			splitTextInRangeOfEditedTextItem: function(textRange)
-			{
-				console.log('splitTextOfEditedTextItem');
-				
+
+			splitTextInRangeOfEditedTextItem: function splitTextInRangeOfEditedTextItem(textRange) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.splitTextInRange,
 					documentID: documentID,
@@ -23320,9 +24336,8 @@ var ActionsContent = {
 					textRange: textRange
 				});
 			},
-			
-			registerSelectedTextRangeFunctionForEditedItem: function(selectedTextRangeFunction)
-			{
+
+			registerSelectedTextRangeFunctionForEditedItem: function registerSelectedTextRangeFunctionForEditedItem(selectedTextRangeFunction) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.registerSelectedTextRangeFunction,
 					documentID: documentID,
@@ -23330,529 +24345,625 @@ var ActionsContent = {
 					selectedTextRangeFunction: selectedTextRangeFunction
 				});
 			},
-			
-			unregisterSelectedTextRangeFunctionForEditedItem: function()
-			{
+
+			unregisterSelectedTextRangeFunctionForEditedItem: function unregisterSelectedTextRangeFunctionForEditedItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.unregisterSelectedTextRangeFunction,
 					documentID: documentID,
-					sectionID: sectionID,
-				});
+					sectionID: sectionID });
 			}
 		};
 	}
 };
 
 module.exports = ActionsContent;
-},{"../app-dispatcher":156,"../stores/store-content":164,"./actions-content-eventIDs":154}],156:[function(require,module,exports){
-var Dispatcher = require('flux').Dispatcher;
+
+},{"../app-dispatcher":156,"../stores/store-content":167,"./actions-content-eventIDs":154,"immutable":5}],156:[function(require,module,exports){
+"use strict";
+
+var Dispatcher = require("flux").Dispatcher;
 
 var AppDispatcher = new Dispatcher();
 
 module.exports = AppDispatcher;
+
 },{"flux":2}],157:[function(require,module,exports){
+"use strict";
+
+var BlockTypesAssistant = {};
+
+BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList = function (chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
+	// Find options by searching for the particular ID
+	var chosenBlockTypeOptions = null;
+	var chosenTypesList = blockGroupIDsToTypesMap.get(chosenBlockTypeGroup);
+	chosenTypesList.some(function (blockTypeOptions) {
+		if (blockTypeOptions.get("id") === chosenBlockType) {
+			chosenBlockTypeOptions = blockTypeOptions;
+			return true;
+		}
+	});
+
+	return chosenBlockTypeOptions;
+};
+
+module.exports = BlockTypesAssistant;
+
+},{}],158:[function(require,module,exports){
+"use strict";
+
+var React = require("react");
+var Immutable = require("immutable");
+
+var HTMLRepresentationAssistant = {};
+
+HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function (HTMLRepresentation, value) {
+	var reactElementForElementOptions = (function (_reactElementForElementOptions) {
+		var _reactElementForElementOptionsWrapper = function reactElementForElementOptions(_x) {
+			return _reactElementForElementOptions.apply(this, arguments);
+		};
+
+		_reactElementForElementOptionsWrapper.toString = function () {
+			return _reactElementForElementOptions.toString();
+		};
+
+		return _reactElementForElementOptionsWrapper;
+	})(function (elementOptions) {
+		var tagName = elementOptions.get("tagName");
+		var attributes = elementOptions.get("attributes");
+		var attributesReady = {};
+		if (attributes && value) {
+			attributesReady = attributes.map(function (attributeValueRepresentation, attributeName) {
+				if (typeof attributeValueRepresentation === "string") {
+					return attributeValueRepresentation;
+				} else if (Immutable.List.isList(attributeValueRepresentation)) {
+					var attributeKeyPath = attributeValueRepresentation;
+					return value.getIn(attributeKeyPath);
+				}
+			}).toJS();
+		}
+
+		var children = elementOptions.get("children");
+		var childrenReady = null;
+		if (children) {
+			childrenReady = children.map(reactElementForElementOptions).toJS();
+		}
+
+		return React.createElement(tagName, attributesReady, childrenReady);
+	});
+
+	return HTMLRepresentation.map(reactElementForElementOptions).toJS();
+};
+
+module.exports = HTMLRepresentationAssistant;
+
+},{"immutable":5,"react":153}],159:[function(require,module,exports){
 module.exports={
 	"namespace": "com.burntcaramel",
-	"blockTypes": {
-		"heading": [
-			{"id": "subheading", "title": "Subheading"},
-			{"id": "subheadingB", "title": "Subheading B"},
-			{"id": "subheadingC", "title": "Subheading C"},
+	"sectionTypes": [
+		{"id": "normal", "title": "Normal"},
+		{"id": "unorderedList", "title": "Unordered List", "allowedChildren": "*"},
+		{"id": "orderedList", "title": "Ordered List", "allowedChildren": "*"},
+		{"id": "quote", "title": "Quote", "allowedChildren": "*"}
+	],
+	"defaultSectionType": "normal",
+	"blockTypesByGroups": {
+		"text": [
+			{"id": "body", "title": "Paragraph"},
+			{"id": "heading", "title": "Heading 1"},
+			{"id": "subhead1", "title": "Heading 2"},
+			{"id": "subhead2", "title": "Heading 3"},
+			{"id": "subhead3", "title": "Heading 4"},
+		],
+		"media": [
 			{
-				"id": "featureHeading",
-				"title": "Feature Heading",
-				"itemFieldsAreRequired": true,
-				"itemFields": [
-					{"id": "primary", "title": "Primary", "type": "text"},
-					{"id": "secondary", "title": "Secondary", "type": "text"}
+				"id": "externalImage",
+				"title": "External Image",
+				"fieldsAreRequired": true,
+				"fields": [
+					{
+						"id": "url",
+						"type": "url",
+						"title": "Image URL"
+					},
+					{
+						"id": "width",
+						"title": "Displayed Width",
+						"type": "number-integer"
+					},
+					{
+						"id": "height",
+						"title": "Displayed Height",
+						"type": "number-integer"
+					}
+				],
+				"HTMLTagNameForBlock": "p",
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "img",
+						"attributes": {
+							"src": ["url"],
+							"width": ["width"],
+							"height": ["height"]
+						}
+					}
 				]
 			}
 		],
-		"section": [
-			{"id": "list", "title": "List", "allowedChildren": "*"},
-			{"id": "quote", "title": "Quote", "allowedChildren": "*"}
-		],
 		"particular": [
-			{
-				"group": "blik",
-				"id": "header",
-				"title": "Blik Header",
-				"description": "The Blik logo"
-			},
-			{
-				"group": "blik",
-				"id": "mac-app-store-link",
-				"title": "Blik Mac App Store Link",
-				"description": "The official-style black button linking to the Mac App Store."
-			},
 			{
 				"id": "contactRichSnippet",
 				"title": "Contact Details (Rich Snippet)",
-				"itemFieldsAreRequired": true,
-				"itemFields": [
+				"fieldsAreRequired": false,
+				"fields": [
 					{"id": "businessName", "title": "Business Name"},
 					{"id": "streetAddress", "title": "Street Address"},
 					{"id": "suburb", "title": "Suburb"},
 					{"id": "province", "title": "Province"},
 					{"id": "country", "title": "Country"}
-				]
-			}
-		]
-	},
-	"traits": {
-		"itemsByBlock": {
-			"*": {
-				"text": [
+				],
+				"innerHTMLRepresentation": [
 					{
-						"id": "bold",
-						"title": "Bold"
-					},
-					{
-						"id": "italic",
-						"title": "Italic"
-					},
-					{
-						"id": "link",
-						"disabled": true,
-						"title": "Link",
-						"type": "fields",
-						"fields": [
+						"tagName": "div",
+						"attributes": {
+							"itemscope": true,
+							"itemtype": "http://schema.org/Organization"
+						},
+						"children": [
 							{
-								"id": "type",
-								"title": "Type",
-								"type": "choice",
-								"choices": [
+								"tagName": "div",
+								"attributes": {
+									"itemprop": "name"
+								},
+								"children": [
 									{
-										"id": "URL",
-										"title": "URL",
-										"fields": [
-											{
-												"type": "URL",
-												"id": "URL"
-											}
-										]
-									},
+										"textFromFields": ["businessName"]
+									}
+								]
+							},
+							{
+								"tagName": "div",
+								"attributes": {
+									"itemprop": "address",
+									"itemscope": true,
+									"itemtype": "http://schema.org/PostalAddress"
+								},
+								"children": [
 									{
-										"id": "email",
-										"title": "Email",
-										"fields": [
+										"tagName": "div",
+										"children": [
 											{
-												"type": "email",
-												"id": "emailAddress"
+												"textFromFields": ["streetAddress"]
 											}
 										]
 									}
 								]
 							}
 						]
-					},
-					{
-						"id": "primary",
-						"disabled": true,
-						"title": "Primary"
-					},
-					{
-						"id": "secondary",
-						"disabled": true,
-						"title": "Secondary"
 					}
 				]
 			},
-			"heading": {
-				"text": [
-					
+			{
+				"id": "blikPlaceholder",
+				"title": "Blik Placeholder",
+				"choices": [
+					{
+						"id": "header",
+						"title": "Blik Header",
+						"description": "The Blik logo"
+					},
+					{
+						"id": "mac-app-store-link",
+						"title": "Blik Mac App Store Link",
+						"description": "The official-style black button linking to the Mac App Store."
+					},
 				]
 			},
-			"figure": {
-				"image externalImage": [
-					{"id": "resolution-1x", "title": "1x Resolution"},
-					{"id": "resolution-2x", "title": "2x Resolution"}
+			{
+				"id": "featureHeading",
+				"title": "Feature Heading",
+				"fieldsAreRequired": true,
+				"fields": [
+					{"id": "primary", "title": "Primary"},
+					{"id": "secondary", "title": "Secondary"}
 				]
 			}
+		]
+	},
+	"allowedTextItemTraits": {
+		"bold": true,
+		"italic": true
+	},
+	"traits": [
+		{
+			"id": "bold",
+			"title": "Bold",
+			"allowedForAnyTextItems": true
+		},
+		{
+			"id": "italic",
+			"title": "Italic",
+			"allowedForAnyTextItems": true
+		},
+		{
+			"id": "link",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": {
+				"text": true,
+				"media": true
+			},
+			"disabled": false,
+			"title": "Link",
+			"type": "fields",
+			"fields": [
+				{
+					"id": "typeChoice",
+					"title": "Link Type",
+					"type": "choice",
+					"choices": [
+						{
+							"id": "URL",
+							"title": "URL",
+							"fields": [
+								{
+									"type": "url",
+									"id": "URL",
+									"title": "URL"
+								}
+							]
+						},
+						{
+							"id": "email",
+							"title": "Email",
+							"fields": [
+								{
+									"type": "email",
+									"id": "emailAddress",
+									"title": "Email Address"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "primary",
+			"disabled": true,
+			"title": "Primary"
+		},
+		{
+			"id": "secondary",
+			"disabled": true,
+			"title": "Secondary"
+		}
+	],
+	"itemsByBlock": {
+		"*": {
+			"text": [
+				
+			]
+		},
+		"media": {
+			"image externalImage": [
+				{"id": "resolution-1x", "title": "1x Resolution"},
+				{"id": "resolution-2x", "title": "2x Resolution"}
+			]
 		}
 	}
 }
-},{}],158:[function(require,module,exports){
-var React = require('react');
-var Toolbars = require('./editor-toolbars');
-var Immutable = require('immutable');
-var ContentStore = require('../stores/store-content.js');
-var SettingsStore = require('../stores/store-settings.js');
+},{}],160:[function(require,module,exports){
+"use strict";
 
+var React = require("react");
+var Toolbars = require("./editor-toolbars");
+var Immutable = require("immutable");
+var ContentStore = require("../stores/store-content.js");
+var SettingsStore = require("../stores/store-settings.js");
 
-var ChangeSubsectionElement = React.createClass({
-	getDefaultProps: function() {
-		return {
-			isCreate: false
-		};
-	},
-	
-	getInitialState: function() {
-		return {
-			active: false
-		};
-	},
-	
-	onToggleActive: function() {
-		this.setState({
-			active: !this.state.active
-		});
-	},
-	
-	onCreateSubsectionOfType: function(subsectionType) {
-		var props = this.props;
-		var actions = props.actions;
-		actions.insertSubsectionOfTypeAtBlockIndex(subsectionType, props.followingBlockIndex);
-	},
-	
-	onChangeSubsectionType: function(subsectionType) {
-		var props = this.props;
-		var actions = props.actions;
-		actions.changeTypeOfSubsectionAtKeyPath(props.keyPath, subsectionType);
-		
-		this.onToggleActive();
-	},
-	
-	createElementForSubsectionInfo: function(subsectionInfo) {
-		var props = this.props;
-		var isCreate = props.isCreate;
-		var selectedSubsectionType = props.selectedSubsectionType;
-		
-		var onClick;
-		if (isCreate) {
-			onClickFunction = this.onCreateSubsectionOfType;
-		}
-		else {
-			onClickFunction = this.onChangeSubsectionType;
-		}
-		
-		return React.createElement(Toolbars.SecondaryButton, {
-			key: subsectionInfo.id,
-			baseClassNames: ['blocks_makeSubsection_choices_' + subsectionInfo.id],
-			title: subsectionInfo.title,
-			selected: (selectedSubsectionType === subsectionInfo.id),
-			onClick: onClickFunction.bind(this, subsectionInfo.id)
-		});
-	},
-	
-	render: function() {
-		var props = this.props;
-		var isCreate = props.isCreate;
-		
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
-		
-		var classNames = ['blocks_makeSubsection'];
-		var children = [];
-		
-		if (props.isCreate) {
-			children.push(
-				React.createElement(Toolbars.SecondaryButton, {
-					key: 'mainButton',
-					baseClassNames: ['blocks_makeSubsection_mainButton'],
-					title: 'Make Subsection',
-					onClick: this.onToggleActive
-				})
-			);
-		}
-		else {
-			classNames.push('blocks_changeSubsection-hasSelectedSubsectionType')
-			
-			var selectedSubsectionType = props.selectedSubsectionType;
-			var selectedSubsectionInfo = null;
-			subsectionInfos.some(function(subsectionInfo) {
-				if (subsectionInfo.id === selectedSubsectionType) {
-					selectedSubsectionInfo = subsectionInfo;
-					return true;
-				}
-			});
-			
-			children.push(
-				React.createElement(Toolbars.SecondaryButton, {
-					key: 'mainButton',
-					baseClassNames: ['blocks_makeSubsection_mainButton'],
-					title: selectedSubsectionInfo.title,
-					onClick: this.onToggleActive
-				})
-			);
-		}
-		
-		if (this.state.active) {
-			var subsectionChoices = subsectionInfos.map(function(subsectionInfo) {
-				return this.createElementForSubsectionInfo(subsectionInfo);
-			}, this);
-			
-			children.push(
-				React.createElement('div', {
-					className: 'blocks_makeSubsection_choices',
-				}, subsectionChoices)
-			);
-			
-			classNames.push(
-				'blocks_makeSubsection-active'
-			);
-		}
-		
-		return React.createElement('div', {
-			key: ('makeSubsection-' + props.followingBlockIndex),
-			className: classNames.join(' ')
-		}, children);
-	}
-});
+var BlockTypesAssistant = require("../assistants/block-types-assistant");
+var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
+
+var _require = require("../ui/ui-mixins");
+
+var BaseClassNamesMixin = _require.BaseClassNamesMixin;
+
+var _require2 = require("../ui/ui-constants");
+
+var KeyCodes = _require2.KeyCodes;
+
+var HTMLRepresentationAssistant = require("../assistants/html-representation-assistant");
 
 var SubsectionElement = React.createClass({
-	getInitialState: function() {
+	displayName: "SubsectionElement",
+
+	getInitialState: function getInitialState() {
 		return {
 			active: false
 		};
 	},
-	
-	onToggleActive: function() {
+
+	onToggleActive: function onToggleActive() {
 		this.setState({
 			active: !this.state.active
 		});
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var state = this.state;
-		
-		var block = props.block;
-		var blockType = block.type;
-		var subsectionType = block.subsectionType;
+
+		var subsectionType = props.type;
 		var keyPath = props.keyPath;
 		var actions = props.actions;
 		var active = state.active;
 		var edited = props.edited;
-		
-		var classNames = ['subsection', 'subsection-type-' + subsectionType];
-		
+
+		var classNames = ["subsection", "subsection-type-" + subsectionType];
+
 		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
 		var subsectionTitle = null;
-		subsectionInfos.some(function(subsectionInfo) {
+		subsectionInfos.some(function (subsectionInfo) {
 			if (subsectionInfo.id === subsectionType) {
 				subsectionTitle = subsectionInfo.title;
 				return true;
 			}
 		});
-		
+
 		if (active) {
-			classNames.push('section-active');
+			classNames.push("subsection-active");
 		}
 		if (edited) {
-			classNames.push('section-edited');
+			classNames.push("subsection-edited");
 		}
-		
+
 		var children = [];
-		children.push(
-			React.createElement(ChangeSubsectionElement, {
-				selectedSubsectionType: subsectionType,
-				keyPath: keyPath,
-				actions: actions
-			})
-		)
-		
-		return React.createElement('div', {
-			className: classNames.join(' ')
+		children.push(React.createElement(Toolbars.ChangeSubsectionElement, {
+			selectedSubsectionType: subsectionType,
+			keyPath: keyPath,
+			actions: actions
+		}));
+
+		return React.createElement("div", {
+			className: classNames.join(" ")
 		}, children);
 	}
 });
 
 var BlockElement = React.createClass({
-	getInitialState: function() {
+	displayName: "BlockElement",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			active: false
+			baseClassNames: ["block"]
 		};
 	},
-	
-	onToggleActive: function() {
-		this.setState({
-			active: !this.state.active
-		});
+
+	getInitialState: function getInitialState() {
+		return {
+			hovered: false
+		};
 	},
-	
-	onChangeChosenBlockType: function(blockTypeOptions, event) {
+
+	onChangeChosenBlockType: function onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event) {
 		var props = this.props;
-		var type = blockTypeOptions.id;
-		var keyPath = props.keyPath;
 		var actions = props.actions;
-		actions.changeTypeOfBlockAtKeyPath(type, keyPath);
-		
-		this.onToggleActive();
+		var keyPath = props.keyPath;
+		actions.changeTypeOfBlockAtKeyPath(typeGroupOptions.get("id"), typeExtensionOptions.get("id"), keyPath);
 	},
-	
-	beginEditing: function(event) {
+
+	beginEditing: function beginEditing(event) {
+		event.stopPropagation();
+
 		var props = this.props;
-		
+
 		// If already editing, no need to do anything.
 		if (props.edited) {
 			return;
 		}
-		
+
+		var typeGroup = props.typeGroup;
 		var type = props.type;
 		var actions = props.actions;
 		var keyPath = props.keyPath;
-		
-		if (type === 'placeholder') {
+
+		if (typeGroup === "text") {
+			actions.editTextItemBasedBlockWithKeyPathAddingIfNeeded(keyPath);
+		} else {
 			actions.editBlockWithKeyPath(keyPath);
 		}
-		else {
-			console.log('EDIT TEXT ITEM BASED BLOCK');
-			actions.editTextItemBasedBlockWithKeyPathAddingIfNeeded(keyPath);
-		}
 	},
-	
-	render: function() {
-		var props = this.props;
-		var state = this.state;
-		
+
+	onMouseEnter: function onMouseEnter(event) {
+		this.setState({
+			hovered: true
+		});
+	},
+
+	onMouseLeave: function onMouseLeave(event) {
+		this.setState({
+			hovered: false
+		});
+	},
+
+	render: function render() {
+		var _ref = this;
+
+		var props = _ref.props;
+		var state = _ref.state;
 		var block = props.block;
-		var blockType = props.type;
+		var typeGroup = props.typeGroup;
 		var subsectionType = props.subsectionType;
 		var subsectionChildIndex = props.subsectionChildIndex;
 		var keyPath = props.keyPath;
 		var actions = props.actions;
-		var traitsConfig = props.traitsConfig;
-		var active = state.active;
+		var traitSpecs = props.traitSpecs;
+		var blockGroupIDsToTypesMap = props.blockGroupIDsToTypesMap;
 		var edited = props.edited;
-		
-		var classNames = ['block', 'block-' + blockType, 'block-subsectionType-' + subsectionType];
-		
+
+		var blockType = props.type;
+
+		var classNameExtensions = ["-" + typeGroup, "-" + typeGroup + "-" + blockType, "-inSubsection-" + subsectionType];
+
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(typeGroup, blockType, blockGroupIDsToTypesMap);
+
 		var childrenInfo = {};
 		var children;
-		if (blockType === 'placeholder') {
-			var placeholderID = block.placeholderID;
-			var placeholderElement = React.createElement('div', {
-				className: 'block-placeholder-content'
-			}, placeholderID);
-			children = [placeholderElement];
-		}
-		else if (blockType === 'subsection') {
-			children = [
-				React.createElement('div', {
-					
-				}, block.subsectionType)
-			];
-		}
-		else {
-			var textItemsKeyPath = keyPath.concat('textItems');
-			children = EditorElementCreator.reactElementsWithTextItems(
-				props.textItems, textItemsKeyPath, actions, blockType, traitsConfig, childrenInfo
-			);
-			
+		if (typeGroup === "media" || typeGroup === "particular") {
+			// http://www.burntcaramel.com/images/stylised-name.png
+			var value = block.get("value", Immutable.Map());
+			var HTMLRepresentation = blockTypeOptions.get("innerHTMLRepresentation");
+			if (HTMLRepresentation) {
+				var elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, value);
+				children = [React.createElement("div", {
+					className: "block-" + typeGroup + "-" + blockType + "-HTMLRepresentation"
+				}, elementsForHTMLRepresentation)];
+			} else {
+				children = [React.createElement("div", {
+					className: "block-noRepresentationForContent"
+				}, "(No HTML Representation)")];
+			}
+		} else {
+			var textItemsKeyPath = keyPath.concat("textItems");
+			children = EditorElementCreator.reactElementsWithTextItems(props.textItems, textItemsKeyPath, actions, block, typeGroup, blockType, traitSpecs, childrenInfo);
+
 			if (children.length === 0) {
-				classNames.push('block-textItemsIsEmpty');
-				children.push(React.createElement('span'));
+				classNameExtensions.push("-textItemsIsEmpty");
+				children.push(React.createElement("span"));
 			}
 		}
-		
+
 		var toolbarActions = {
 			onToggleActive: this.onToggleActive,
 			onChangeChosenBlockType: this.onChangeChosenBlockType
 		};
-		
-		children.push(
-			React.createElement(Toolbars.BlockToolbar, {
-				key: 'blockToolbar',
-				chosenBlockTypeID: blockType,
-				actions: toolbarActions,
-				active: state.active
-			})
-		);
-		
+
+		children.push(React.createElement(Toolbars.BlockToolbar, {
+			key: "blockToolbar",
+			chosenBlockTypeGroup: typeGroup,
+			chosenBlockType: blockType,
+			blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+			actions: toolbarActions
+		}));
+
 		if (edited) {
-			if (blockType === 'placeholder') {
-				children.push(
-					React.createElement(Toolbars.PlaceholderEditor, {
-						key: 'placeholderEditor',
-						actions: actions,
-						keyPath: keyPath,
-						placeholderID: block.placeholderID
-					})
-				);
+			if (typeGroup === "particular" || typeGroup === "media") {
+				children.push(React.createElement(Toolbars.ParticularEditor, {
+					key: "particularEditor",
+					block: block,
+					typeGroup: typeGroup,
+					type: blockType,
+					blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+					blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+					traitSpecs: traitSpecs,
+					traits: block.get("traits", Immutable.Map()).toJS(),
+					actions: actions,
+					keyPath: keyPath
+				}));
 			}
 		}
-		
-		if (active) {
-			classNames.push('block-active');
-		}
+
 		if (edited) {
-			classNames.push('block-edited');
+			classNameExtensions.push("-edited");
+		} else if (state.hovered) {
+			classNameExtensions.push("-hover");
 		}
-		
-		return React.createElement('div', {
-			className: classNames.join(' '),
-			"data-subsection-child-index": (subsectionChildIndex + 1), // Change from zero to one based.
-			onClick: this.beginEditing
+
+		return React.createElement("div", {
+			className: this.getClassNameStringWithExtensions(classNameExtensions),
+			"data-subsection-child-index": subsectionChildIndex + 1, // Change from zero to one based.
+			onClick: this.beginEditing,
+			onMouseEnter: this.onMouseEnter,
+			onMouseLeave: this.onMouseLeave
 		}, children);
 	}
 });
 
 var TextItem = React.createClass({
-	getDefaultProps: function() {
+	displayName: "TextItem",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
 		return {
+			baseClassNames: ["textItem"],
 			traits: {}
 		};
 	},
-	
-	getInitialState: function() {
+
+	getInitialState: function getInitialState() {
 		return {
 			active: false
 		};
 	},
-	
-	beginEditing: function(event) {
+
+	beginEditing: function beginEditing(event) {
 		var props = this.props;
 		var actions = props.actions;
 		var keyPath = props.keyPath;
 		actions.editTextItemWithKeyPath(keyPath);
-		
+
 		event.stopPropagation(); // Don't bubble to block
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var text = props.text;
-		var classes = ['textItem'];
-		var id = '';
-		
-		if (props.edited) {
-			classes.push('textItem-edited');
-			id = 'icing-textItem-edited';
+		var traits = props.traits;
+		var edited = props.edited;
+
+		var classNameExtensions = [];
+		var id = null;
+
+		if (edited) {
+			classNameExtensions.push("-edited");
+			id = "icing-textItem-edited";
 		}
-		
-		if (props.traits.bold) {
-			classes.push('textItem-hasTrait-bold');
+
+		for (var traitID in traits) {
+			if (traits.hasOwnProperty(traitID) && !!traits[traitID]) {
+				classNameExtensions.push("-hasTrait-" + traitID);
+			}
 		}
-		if (props.traits.italic) {
-			classes.push('textItem-hasTrait-italic');
-		}
-		
+
 		var contentChildren = [];
-		
-		if (props.edited) {
-			contentChildren.push(
-				React.createElement(Toolbars.TextItemEditor, {
-					key: ('edited-' + props.key),
-					text: text,
-					traits: props.traits,
-					actions: props.actions,
-					blockType: props.blockType,
-					availableTraits: props.traitsConfig
-				})
-			);
+
+		if (edited) {
+			contentChildren.push(React.createElement(Toolbars.TextItemEditor, {
+				key: "itemEditor",
+				text: text,
+				traits: props.traits,
+				traitSpecs: props.traitSpecs,
+				block: props.block,
+				blockTypeGroup: props.blockTypeGroup,
+				blockType: props.blockType,
+				actions: props.actions
+			}));
 		}
-		
-		contentChildren.push(
-			React.createElement('span', {
-				key: 'text',
-				className: 'text'
-			}, text)
-		);
-		
-		return React.createElement('span', {
-			key: 'mainElement',
+
+		if (typeof text === "undefined" || text.length === 0 || text === " ") {
+			// Make inline element have some sort of content, to lay out text editor properly.
+			// TODO: get multiple spaces
+			contentChildren.push(React.createElement("span", {
+				key: "text",
+				className: "text",
+				dangerouslySetInnerHTML: {
+					__html: "&nbsp;"
+				}
+			}));
+		} else {
+			contentChildren.push(React.createElement("span", {
+				key: "text",
+				className: "text"
+			}, text));
+		}
+
+		return React.createElement("span", {
+			key: "mainElement",
 			id: id,
-			className: classes.join(' '),
+			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			onClick: this.beginEditing
 		}, contentChildren);
 	}
@@ -23871,354 +24982,675 @@ var EditorElementCreator = {};
 EditorElementCreator.BlockElement = BlockElement;
 EditorElementCreator.TextItem = TextItem;
 
-EditorElementCreator.reactElementsWithTextItems = function(textItems, keyPath, actions, blockType, traitsConfig, outputInfo) {
+EditorElementCreator.reactElementsWithTextItems = function (textItems, keyPath, actions, block, blockTypeGroup, blockType, traitSpecs, outputInfo) {
 	if (textItems) {
 		var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
-		
+
 		var editedItem = null;
-		
-		var elements = textItems.map(function(textItem, textItemIndex) {
+
+		var elements = textItems.map(function (textItem, textItemIndex) {
+			var identifier = textItem.identifier;
+
 			var props = {
+				key: identifier,
 				keyPath: keyPath.concat(textItemIndex),
-				actions: actions,
+				identifier: identifier,
+				block: block,
+				blockTypeGroup: blockTypeGroup,
 				blockType: blockType,
-				traitsConfig: traitsConfig
+				traitSpecs: traitSpecs,
+				actions: actions
 			};
-	
-			if (textItem.identifier) {
-				var identifier = textItem.identifier;
-				props.identifier = identifier;
-				props.key = identifier;
-				
-				if (editedTextItemIdentifier === identifier) {
-					props.edited = true;
-					editedItem = textItem;
-				}
+
+			if (editedTextItemIdentifier === identifier) {
+				props.edited = true;
+				editedItem = textItem;
 			}
 			if (textItem.traits) {
-				props.traits = textItem.traits || {};
+				props.traits = textItem.traits;
 			}
 			if (textItem.text) {
 				props.text = textItem.text;
 			}
-	
+
 			return React.createElement(TextItem, props);
 		});
 		/*
-		if (editedItem) {
-			elements.push(
-				React.createElement(Toolbars.TextItemEditor, {
-					text: editedItem.text,
-					traits: editedItem.traits,
-					actions: actions,
-					availableTraits: traits,
-					key: ('edited-' + editedTextItemIdentifier)
-				})
-			);
-		}
-		*/
+  if (editedItem) {
+  	elements.push(
+  		React.createElement(Toolbars.TextItemEditor, {
+  			text: editedItem.text,
+  			traits: editedItem.traits,
+  			actions: actions,
+  			availableTraits: traits,
+  			key: ('edited-' + editedTextItemIdentifier)
+  		})
+  	);
+  }
+  */
 		if (outputInfo) {
 			outputInfo.editedItem = editedItem;
-			outputInfo.hasEditedItem = (editedItem !== null);
+			outputInfo.hasEditedItem = editedItem !== null;
 		}
-		
+
 		return elements;
-	}
-	else {
+	} else {
 		return [];
 	}
 };
 
-EditorElementCreator.reactElementsWithBlocks = function(blocks, actions, traitsConfig) {
+EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, actions, specsImmutable) {
+	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroups", Immutable.Map());
+	var traitSpecs = specsImmutable.get("traits", Immutable.List());
+
 	var editedBlockIdentifier = actions.getEditedBlockIdentifier();
-	
-	var currentSubsectionType = 'normal';
+	var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
+
+	var currentSubsectionType = specsImmutable.get("defaultSectionType", "normal");
 	var currentSubsectionChildIndex = 0;
-	
-	var elementsForBlocks = blocks.map(function(block, blockIndex) {
+
+	var elementsForBlocks = blocksImmutable.map(function (blockImmutable, blockIndex) {
+		var blockIdentifier = blockImmutable.get("identifier");
+		var typeGroup = blockImmutable.get("typeGroup");
+		var type = blockImmutable.get("type");
 		var props = {
-			key: block.identifier,
-			block: block,
-			type: block.type,
+			key: blockIdentifier,
+			block: blockImmutable,
+			typeGroup: typeGroup,
+			type: type,
 			subsectionType: currentSubsectionType,
 			subsectionChildIndex: currentSubsectionChildIndex,
 			actions: actions,
-			traitsConfig: traitsConfig,
-			keyPath: ['blocks', blockIndex]
+			traitSpecs: traitSpecs,
+			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+			keyPath: ["blocks", blockIndex]
 		};
-		if (block.traits) {
-			props.traits = block.traits;
+
+		if (typeGroup === "text") {
+			props.textItems = blockImmutable.get("textItems", Immutable.List()).toJS();
 		}
-		if (block.textItems) {
-			props.textItems = block.textItems;
-		}
-		if (block.identifier === editedBlockIdentifier) {
+		if (blockIdentifier === editedBlockIdentifier) {
 			props.edited = true;
 		}
-		
+
 		var elementToReturn;
-		
-		if (block.type === 'subsection') {
+
+		if (typeGroup === "subsection") {
 			elementToReturn = React.createElement(SubsectionElement, props);
-			currentSubsectionType = block.subsectionType;
+			currentSubsectionType = type;
 			currentSubsectionChildIndex = 0;
-		}
-		else {
+		} else {
 			elementToReturn = React.createElement(BlockElement, props);
 			currentSubsectionChildIndex++;
 		}
-		
+
 		return elementToReturn;
 	});
-	
+
 	var elements = [];
-	var blockCount = blocks.length;
+	var blockCount = blocksImmutable.count();
 	var previousBlockWasSubsection = false;
 	for (var blockIndex = 0; blockIndex < blockCount; blockIndex++) {
-		var blockType = blocks[blockIndex].type;
-		var currentBlockIsSubsection = (blockType === 'subsection');
-		
+		var blockTypeGroup = blocksImmutable.getIn([blockIndex, "typeGroup"]);
+		var currentBlockIsSubsection = blockTypeGroup === "subsection";
+
 		if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 			elements.push(
-				/*React.createElement(CreateSubsectionElement, {
-					followingBlockIndex: blockIndex,
-					actions: actions
-				})*/
-				React.createElement(ChangeSubsectionElement, {
-					isCreate: true,
-					followingBlockIndex: blockIndex,
-					actions: actions
-				})	
-			);
+			/*React.createElement(CreateSubsectionElement, {
+   	followingBlockIndex: blockIndex,
+   	actions: actions
+   })*/
+			React.createElement(Toolbars.ChangeSubsectionElement, {
+				isCreate: true,
+				followingBlockIndex: blockIndex,
+				actions: actions
+			}));
 		}
-		
+
 		previousBlockWasSubsection = currentBlockIsSubsection;
-		
-		elements.push(elementsForBlocks[blockIndex]);
+
+		elements.push(elementsForBlocks.get(blockIndex));
 	}
-	
+
 	return elements;
 };
 
 EditorElementCreator.MainElement = React.createClass({
-	getDefaultProps: function() {
+	displayName: "MainElement",
+
+	getDefaultProps: function getDefaultProps() {
 		return {
 			contentImmutable: null,
 			specsImmutable: null,
 			actions: {}
 		};
 	},
-	
-	updateTextItemEditorPosition: function() {
-		var masterNode = this.getDOMNode();
-		var activeTextItem = masterNode.getElementsByClassName('textItem-active')[0];
-		var textItemEditor = masterNode.getElementsByClassName('textItemEditor')[0];
-		
-		if (activeTextItem && textItemEditor) {
-			var offsetTop = activeTextItem.offsetTop;
-			textItemEditor.style.top = offsetTop + 'px';
+
+	onClick: function onClick(event) {
+		event.stopPropagation();
+
+		//console.log('main element clicked', event);
+
+		var actions = this.props.actions;
+		actions.finishEditing();
+	},
+
+	onKeyPress: function onKeyPress(event) {
+		var actions = this.props.actions;
+
+		if (event.which === KeyCodes.RETURN_OR_ENTER) {
+			actions.insertRelatedBlockAfterEditedBlock();
 		}
 	},
-	
-	componentDidMount: function() {
-		ContentStore.on('contentChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.on('editedItemChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.on('editedBlockChangedForDocumentSection', this.contentChangedForDocumentSection);
+
+	updateTextItemEditorPosition: function updateTextItemEditorPosition() {
+		var masterNode = this.getDOMNode();
+		var editedTextItemElement = masterNode.getElementsByClassName("textItem-edited")[0];
+		var textItemEditorElement = masterNode.getElementsByClassName("textItemEditor")[0];
+
+		if (editedTextItemElement && textItemEditorElement) {
+			var offsetTop = editedTextItemElement.offsetTop;
+			textItemEditorElement.style.top = offsetTop + "px";
+		}
 	},
-	
-	componentWillUnmount: function() {  
-		ContentStore.off('contentChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.off('editedItemChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.off('editedBlockChangedForDocumentSection', this.contentChangedForDocumentSection);
+
+	componentDidMount: function componentDidMount() {
+		ContentStore.on("contentChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.on("editedItemChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.on("editedBlockChangedForDocumentSection", this.contentChangedForDocumentSection);
 	},
-	
-	componentDidUpdate: function(prevProps, prevState) {
+
+	componentWillUnmount: function componentWillUnmount() {
+		ContentStore.off("contentChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.off("editedItemChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.off("editedBlockChangedForDocumentSection", this.contentChangedForDocumentSection);
+	},
+
+	componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
 		this.updateTextItemEditorPosition();
 	},
-	
-	contentChangedForDocumentSection: function(documentID, sectionID) {
+
+	contentChangedForDocumentSection: function contentChangedForDocumentSection(documentID, sectionID) {
 		var props = this.props;
-		if (
-			(documentID === props.documentID) ||
-			(sectionID === props.sectionID)
-		) {
+		if (documentID === props.documentID || sectionID === props.sectionID) {
 			this.forceUpdate();
 		}
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;
 		var actions = props.actions;
-		
-		var classNames = ['blocks'];
-	
+
+		var classNames = ["blocks"];
+
 		var elements = [];
-	
-		if (contentImmutable && contentImmutable.get('blocks')) {
-			var content = contentImmutable.toJS();
-			var blocks = content.blocks;
-			var traitsConfig = specsImmutable.get('traits', Immutable.Map()).toJS();
-	
-			elements = EditorElementCreator.reactElementsWithBlocks(blocks, actions, traitsConfig);
+
+		if (contentImmutable && contentImmutable.has("blocks")) {
+			var blocksImmutable = contentImmutable.get("blocks");
+			elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, actions, specsImmutable);
+		} else {
+			elements = React.createElement("div", {
+				key: "loadingIndicator"
+			}, "Loading…");
 		}
-		else {
-			elements = React.createElement('div', {}, 'Loading…');
-		}
-	
-		var isEditingBlock = (actions.getEditedBlockIdentifier() != null);
+
+		var isEditingBlock = actions.getEditedBlockIdentifier() != null;
 		if (isEditingBlock) {
-			classNames.push('blocks-hasEditedBlock')
+			classNames.push("blocks-hasEditedBlock");
 		}
-	
-		return React.createElement('div', {
-			key: 'blocks',
-			className: classNames.join(' ')
+
+		return React.createElement("div", {
+			key: "blocks",
+			className: classNames.join(" "),
+			onClick: this.onClick,
+			onKeyPress: this.onKeyPress
 		}, elements);
 	}
 });
 
 module.exports = EditorElementCreator;
-},{"../stores/store-content.js":164,"../stores/store-settings.js":166,"./editor-toolbars":159,"immutable":5,"react":153}],159:[function(require,module,exports){
-var React = require('react');
-var AppDispatcher = require('../app-dispatcher');
-var SettingsStore = require('../stores/store-settings');
-var PreviewStore = require('../stores/store-preview');
-var eventIDs = require('../actions/actions-content-eventIDs');
+
+},{"../assistants/block-types-assistant":157,"../assistants/html-representation-assistant":158,"../stores/store-content.js":167,"../stores/store-settings.js":169,"../ui/ui-constants":170,"../ui/ui-mixins":171,"./editor-toolbars":162,"immutable":5,"react":153}],161:[function(require,module,exports){
+"use strict";
+
+var React = require("react");
+
+var _require = require("../ui/ui-mixins");
+
+var ButtonMixin = _require.ButtonMixin;
+var BaseClassNamesMixin = _require.BaseClassNamesMixin;
+
+var EditorFields = {};
+
+var changeInfoWithIDAndValue = function changeInfoWithIDAndValue(ID, value) {
+	var changeInfo = {};
+	changeInfo[ID] = value;
+	return changeInfo;
+};
+
+EditorFields.fieldTypeIsTextual = function (fieldType) {
+	var textualFieldTypes = {
+		text: true,
+		url: true,
+		email: true,
+		tel: true,
+		number: true,
+		"number-integer": true
+	};
+	if (textualFieldTypes[fieldType]) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+var InputLabel = React.createClass({
+	displayName: "InputLabel",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			title: ""
+		};
+	},
+
+	render: function render() {
+		var props = this.props;
+		var title = this.props.title;
+
+		var children = [React.createElement("span", {
+			className: "inputLabel_title"
+		}, title)];
+
+		return React.createElement("label", {
+			className: "inputLabel"
+		}, children);
+	}
+});
+
+var InputLabel = React.createClass({
+	displayName: "InputLabel",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			baseClassNames: ["inputLabel"],
+			additionalClassNameExtensions: []
+		};
+	},
+
+	render: function render() {
+		var props = this.props;
+		var children = props.children;
+		var title = props.title;
+
+		children = [React.createElement("span", {
+			className: this.getClassNameStringWithChildSuffix("_title")
+		}, title)].concat(children);
+
+		return React.createElement("label", {
+			className: this.getClassNameStringWithExtensions()
+		}, children);
+	}
+});
+
+EditorFields.createInputLabel = function (title, children) {
+	var labelChildren = [React.createElement("span", {
+		className: "inputLabel_title"
+	}, title)].concat(children);
+
+	return React.createElement("label", {
+		className: "inputLabel"
+	}, labelChildren);
+};
+
+var ChoiceInput = React.createClass({
+	displayName: "ChoiceInput",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			choiceInfos: [],
+			value: {
+				selectedChoiceID: null,
+				selectedChoiceValues: null
+			},
+			keyPath: [],
+			onChangeInfo: null
+		};
+	},
+
+	getDefaultSelectedChoiceID: function getDefaultSelectedChoiceID() {
+		var choiceInfos = this.props.choiceInfos;
+		return choiceInfos[0].id;
+	},
+
+	getSelectedChoiceID: function getSelectedChoiceID() {
+		var value = this.props.value;
+		var selectedChoiceID = value ? value.selectedChoiceID : null;
+		if (!selectedChoiceID) {
+			selectedChoiceID = this.getDefaultSelectedChoiceID();
+		}
+		return selectedChoiceID;
+	},
+
+	onSelectChange: function onSelectChange(event) {
+		var newSelectedChoiceID = event.target.value;
+		var onChangeInfo = this.props.onChangeInfo;
+		if (onChangeInfo) {
+			onChangeInfo({
+				selectedChoiceID: newSelectedChoiceID
+			});
+		}
+	},
+
+	onChildFieldChangeInfo: function onChildFieldChangeInfo(fieldChangeInfo) {
+		var changeInfo = {
+			selectedChoiceID: this.getSelectedChoiceID(),
+			selectedChoiceValues: fieldChangeInfo
+		};
+
+		var onChangeInfo = this.props.onChangeInfo;
+		if (onChangeInfo) {
+			onChangeInfo(changeInfo);
+		}
+	},
+
+	render: function render() {
+		var props = this.props;
+		var choiceInfos = props.choiceInfos;
+		var value = props.value;
+		var title = props.title;
+
+		var selectedChoiceID = this.getSelectedChoiceID();
+		var selectedChoiceInfo = null;
+
+		var optionElements = choiceInfos.map(function (choiceInfo, choiceIndex) {
+			if (choiceInfo.id === selectedChoiceID) {
+				selectedChoiceInfo = choiceInfo;
+			}
+
+			return React.createElement("option", {
+				key: choiceInfo.id,
+				value: choiceInfo.id }, choiceInfo.title);
+		});
+
+		var children = [EditorFields.createInputLabel(title, [React.createElement("select", {
+			value: selectedChoiceID,
+			onChange: this.onSelectChange,
+			className: "choice_select"
+		}, optionElements)])];
+
+		if (selectedChoiceInfo) {
+			children = children.concat(React.createElement(EditorFields.FieldsHolder, {
+				fields: selectedChoiceInfo.fields,
+				values: value ? value.selectedChoiceValues : null,
+				onChangeInfo: this.onChildFieldChangeInfo,
+				className: "choice_fieldsHolder"
+			}));
+		}
+
+		return React.createElement("div", {
+			className: "choice"
+		}, children);
+	}
+});
+
+EditorFields.createElementForField = function (fieldJSON, value, onChangeInfo) {
+	var type = fieldJSON.type;
+	var ID = fieldJSON.id;
+	var title = fieldJSON.title;
+
+	if (!type) {
+		type = "text";
+	}
+
+	if (EditorFields.fieldTypeIsTextual(type)) {
+		var inputType = type;
+
+		return React.createElement(InputLabel, {
+			title: title,
+			additionalClassNameExtensions: ["-inputType-" + type]
+		}, [React.createElement("input", {
+			type: inputType,
+			value: value,
+			onChange: function onChange(event) {
+				var newValue = event.target.value;
+				onChangeInfo(changeInfoWithIDAndValue(ID, newValue));
+			},
+			className: "input-textual input-" + type
+		})]);
+
+		/*
+  return EditorFields.createInputLabel(title, [
+  	React.createElement('input', {
+  		type: inputType,
+  		value: value,
+  		onChange: function(event) {
+  			var newValue = event.target.value;
+  			onChangeInfo(
+  				changeInfoWithIDAndValue(ID, newValue)
+  			);
+  		},
+  		className: 'input-textual input-' + type
+  	})
+  ]);
+  */
+	} else if (type === "choice") {
+		return React.createElement(ChoiceInput, {
+			choiceInfos: fieldJSON.choices,
+			value: value,
+			title: title,
+			onChangeInfo: (function (_onChangeInfo) {
+				var _onChangeInfoWrapper = function onChangeInfo(_x) {
+					return _onChangeInfo.apply(this, arguments);
+				};
+
+				_onChangeInfoWrapper.toString = function () {
+					return _onChangeInfo.toString();
+				};
+
+				return _onChangeInfoWrapper;
+			})(function (changeInfo) {
+				onChangeInfo(changeInfoWithIDAndValue(ID, changeInfo));
+			})
+		});
+	}
+
+	console.error("unknown field type", type);
+};
+
+EditorFields.FieldsHolder = React.createClass({
+	displayName: "FieldsHolder",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			baseClassNames: ["fieldsHolder"],
+			fields: [],
+			values: {},
+			onChangeInfo: null
+		};
+	},
+
+	render: function render() {
+		var props = this.props;
+		var fields = props.fields;
+		var values = props.values;
+		var onChangeInfo = props.onChangeInfo;
+
+		var fieldElements = fields.map(function (fieldJSON) {
+			var fieldID = fieldJSON.id;
+			var valueForField = values ? values[fieldID] : null;
+			return EditorFields.createElementForField(fieldJSON, valueForField, onChangeInfo);
+		});
+
+		return React.createElement("div", {
+			key: "fields",
+			className: this.getClassNameStringWithExtensions()
+		}, fieldElements);
+	}
+});
+
+module.exports = EditorFields;
+
+},{"../ui/ui-mixins":171,"react":153}],162:[function(require,module,exports){
+"use strict";
+
+var React = require("react");
+var AppDispatcher = require("../app-dispatcher");
+var SettingsStore = require("../stores/store-settings");
+var PreviewStore = require("../stores/store-preview");
+var Immutable = require("immutable");
+var eventIDs = require("../actions/actions-content-eventIDs");
 var documentSectionEventIDs = eventIDs.documentSection;
 
-var UIMixins = require('../ui/ui-mixins');
-var ButtonMixin = UIMixins.ButtonMixin;
+var EditorFields = require("./editor-fields");
 
+var _require = require("../ui/ui-mixins");
+
+var ButtonMixin = _require.ButtonMixin;
+var BaseClassNamesMixin = _require.BaseClassNamesMixin;
+
+var BlockTypesAssistant = require("../assistants/block-types-assistant");
+var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
 
 var TextItemTextArea = React.createClass({
-	getInitialState: function() {
+	displayName: "TextItemTextArea",
+
+	getInitialState: function getInitialState() {
 		return {
 			spaceWasJustPressed: false
 		};
 	},
-	
-	componentWillMount: function() {
+
+	componentWillMount: function componentWillMount() {
 		var actions = this.props.actions;
 		actions.registerSelectedTextRangeFunctionForEditedItem(this.getTextSelectionRange);
 	},
-	
-	componentWillUnmount: function() {
+
+	componentWillUnmount: function componentWillUnmount() {
 		var actions = this.props.actions;
 		actions.unregisterSelectedTextRangeFunctionForEditedItem();
 	},
-	
-	onChange: function() {
+
+	onChange: function onChange() {
 		var actions = this.props.actions;
 		var text = this.refs.textarea.getDOMNode().value;
 		actions.setTextForEditedTextItem(text);
 	},
-	
-	hasNoText: function() {
+
+	hasNoText: function hasNoText() {
 		var text = this.refs.textarea.getDOMNode().value;
-		return (text.length === 0);
+		return text.length === 0;
 	},
-	
-	getTextSelectionRange: function() {
+
+	getTextSelectionRange: function getTextSelectionRange() {
 		var textarea = this.refs.textarea.getDOMNode();
 		return {
-			"start": textarea.selectionStart,
-			"end": textarea.selectionEnd
+			start: textarea.selectionStart,
+			end: textarea.selectionEnd
 		};
 	},
-	
-	selectionIsCaretAtBeginning: function() {
+
+	selectionIsCaretAtBeginning: function selectionIsCaretAtBeginning() {
 		var textSelectionRange = this.getTextSelectionRange();
-		return (textSelectionRange.start === 0 && textSelectionRange.end === 0);
+		return textSelectionRange.start === 0 && textSelectionRange.end === 0;
 	},
-	
-	onKeyDown: function(e) {
+
+	onKeyDown: function onKeyDown(e) {
+		e.stopPropagation();
+
 		var actions = this.props.actions;
-		console.log('key down', e.which);
-		if (e.which == 32) { // Space key
+
+		//console.log('key down', e.which);
+		if (e.which == 32) {
+			// Space key
 			if (this.state.spaceWasJustPressed) {
 				actions.addNewTextItemAfterEditedTextItem();
-				this.setState({spaceWasJustPressed: false});
+				this.setState({ spaceWasJustPressed: false });
+				e.preventDefault();
+			} else {
+				this.setState({ spaceWasJustPressed: true });
+			}
+		} else {
+			this.setState({ spaceWasJustPressed: false });
+		}
+
+		if (e.which == 8) {
+			// Delete/Backspace key
+			/*if (this.hasNoText()) {
+   	actions.removeEditedTextItem();
+   	e.preventDefault();
+   }
+   else*/
+			if (this.selectionIsCaretAtBeginning()) {
+				actions.joinEditedTextItemWithPreviousItem();
 				e.preventDefault();
 			}
-			else {
-				this.setState({spaceWasJustPressed: true});
+		} else if (e.which == 9) {
+			// Tab key
+			if (e.shiftKey) {
+				actions.editPreviousItemBeforeEditedTextItem();
+			} else {
+				actions.editNextItemAfterEditedTextItem();
 			}
-		}
-		else {
-			this.setState({spaceWasJustPressed: false});
-		}
-		
-		if (true) {
-			if (e.which == 8) { // Delete/Backspace key
-				/*if (this.hasNoText()) {
-					actions.removeEditedTextItem();
-					e.preventDefault();
-				}
-				else*/
-				if (this.selectionIsCaretAtBeginning()) {
-					actions.joinEditedTextItemWithPreviousItem();
-					e.preventDefault();
-				}
-			}
-			else if (e.which == 9) { // Tab key
-				if (e.shiftKey) {
-					actions.editPreviousItemBeforeEditedTextItem();
-				}
-				else {
-					actions.editNextItemAfterEditedTextItem();
-				}
-		
-				e.preventDefault();
-			}
+
+			e.preventDefault();
 		}
 	},
-	
-	onKeyPress: function(e) {
+
+	onKeyPress: function onKeyPress(e) {
+		e.stopPropagation();
+
 		var actions = this.props.actions;
-		console.log('key press', e);
-		if (true) {
-			if (e.which == 13) { // Return/enter key.
-				if (e.shiftKey) {
-					actions.addLineBreakAfterEditedTextItem();
-				}
-				// Command key
-				else if (e.metaKey) {
-					actions.finishEditing();
-				}
-				// Option key
-				else if (e.altKey) {
-					actions.addNewTextItemAfterEditedTextItem();
-				}
-				else {
-					if (this.hasNoText()) {
-						actions.splitBlockBeforeEditedTextItem();
-					}
-					else {
-						var textSelectionRange = this.getTextSelectionRange();
-						actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
-						actions.splitBlockBeforeEditedTextItem();
-					}
-				}
-				
-				e.preventDefault();
+
+		//console.log('key press', e);
+
+		if (e.which == 13) {
+			// Return/enter key.
+			if (e.shiftKey) {
+				actions.addLineBreakAfterEditedTextItem();
 			}
+			// Command key
+			else if (e.metaKey) {
+				actions.finishEditing();
+			}
+			// Option key
+			else if (e.altKey) {
+				actions.addNewTextItemAfterEditedTextItem();
+			} else {
+				if (this.hasNoText()) {
+					actions.splitBlockBeforeEditedTextItem();
+				} else {
+					var textSelectionRange = this.getTextSelectionRange();
+					actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
+
+					// If text was selected, just break it into its own item but not into its own block.
+					if (textSelectionRange.start === textSelectionRange.end) {
+						actions.splitBlockBeforeEditedTextItem();
+					}
+				}
+			}
+
+			e.preventDefault();
 		}
 	},
-	
-	componentDidMount: function() {
+
+	componentDidMount: function componentDidMount() {
 		var node = this.getDOMNode();
 		node.focus();
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var text = this.props.text;
-		
-		return React.createElement('textarea', {
-			ref: 'textarea',
+
+		return React.createElement("textarea", {
+			ref: "textarea",
 			value: text,
-			className: 'editedTextItemTextArea',
+			className: "editedTextItemTextArea",
 			width: 10,
 			height: 20,
 			//key: 'textarea',
@@ -24230,527 +25662,755 @@ var TextItemTextArea = React.createClass({
 });
 
 var ToolbarButton = React.createClass({
+	displayName: "ToolbarButton",
+
 	mixins: [ButtonMixin],
-	
-	getDefaultProps: function() {
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			baseClassNames: ['toolbarButton']
+			baseClassNames: ["toolbarButton"]
 		};
 	}
 });
 
 var SecondaryButton = React.createClass({
+	displayName: "SecondaryButton",
+
 	mixins: [ButtonMixin],
-	
-	getDefaultProps: function() {
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			baseClassNames: ['secondaryButton']
+			baseClassNames: ["secondaryButton"]
 		};
 	}
 });
 
 var ToolbarDivider = React.createClass({
-	render: function() {
+	displayName: "ToolbarDivider",
+
+	render: function render() {
 		//var text = ' · ';
-		var text = ' ';
-		return React.createElement('span', {
-			className: 'toolbarDivider'
+		var text = " ";
+		return React.createElement("span", {
+			className: "toolbarDivider"
 		}, text);
 	}
 });
 
-var TextItemAttributesToolbar = React.createClass({
-	getDefaultProps: function() {
+var TraitButton = React.createClass({
+	displayName: "TraitButton",
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			bold: false,
-			italic: false,
-			link: null
+			traitSpec: {},
+			traitValue: null
 		};
 	},
-	
-	onToggleBold: function() {
-		var actions = this.props.actions;
-		actions.toggleBoldForEditedTextItem();
+
+	getInitialState: function getInitialState() {
+		return {
+			showFields: false
+		};
 	},
-	
-	onToggleItalic: function() {
-		var actions = this.props.actions;
-		actions.toggleItalicForEditedTextItem();
+
+	toggleShowFields: function toggleShowFields(event) {
+		if (event) {
+			event.stopPropagation();
+		}
+
+		this.setState({
+			showFields: !this.state.showFields
+		});
 	},
-	
-	onToggleEditLink: function() {
-		
-	},
-	
-	onToggleShowIdentifier: function() {
-		
-	},
-	
-	onToggleShowTraits: function() {
-		
-	},
-	
-	onSplit: function() {
-		console.log('onSplit');
-		//var actions = this.props.actions;
-		//actions.splitTextInRangeOfEditedTextItem(null);
-	},
-	
-	render: function() {
+
+	toggleTrait: function toggleTrait(event) {
+		event.stopPropagation();
+
 		var props = this.props;
-		
-		return React.createElement('div', {
-			className: 'textItemEditor-toolbar'
-		}, [
-			React.createElement(ToolbarButton, {
-				key: ('button-bold'),
-				title: 'Bold',
-				selected: props.bold,
-				onClick: this.onToggleBold
-			}),
-			React.createElement(ToolbarButton, {
-				key: ('button-italic'),
-				title: 'Italic',
-				selected: props.italic,
-				onClick: this.onToggleItalic
-			}),
-			React.createElement(ToolbarDivider),
-			React.createElement(ToolbarButton, {
-				key: ('button-link'),
-				title: (props.link != null) ? 'Edit Link' : 'Link',
-				selected: props.link != null,
-				onClick: this.onToggleEditLink
-			}),
-			React.createElement(ToolbarDivider),
-			React.createElement(ToolbarButton, {
-				key: ('button-identifier'),
-				title: 'Identifier',
-				selected: props.identifier != null,
-				onClick: this.onToggleShowIdentifier
-			}),
-			React.createElement(ToolbarButton, {
-				key: ('button-split'),
-				className: 'textItemEditor-toolbar-split',
-				title: 'Split',
-				onClick: this.onSplit
-			})
-		]);
+		props.toggleTrait();
+	},
+
+	changeTraitInfo: function changeTraitInfo(changeInfo) {
+		var props = this.props;
+		props.changeTraitInfo(changeInfo);
+	},
+
+	removeTrait: function removeTrait(event) {
+		event.stopPropagation();
+
+		var props = this.props;
+		props.removeTrait();
+
+		this.toggleShowFields();
+	},
+
+	render: function render() {
+		var props = this.props;
+
+		var traitSpec = props.traitSpec;
+		var traitID = traitSpec.get("id");
+		var traitValue = props.traitValue;
+		var isFields = traitSpec.has("fields");
+
+		var isSelected = traitValue != null && traitValue != false;
+		var onClick;
+		var showFields = this.state.showFields;
+		var buttonClassNameExtensions = [];
+		if (isFields) {
+			onClick = this.toggleShowFields;
+			if (showFields) {
+				buttonClassNameExtensions.push("-showingFields");
+			}
+		} else {
+			onClick = this.toggleTrait;
+		}
+
+		var mainButton = React.createElement(ToolbarButton, {
+			key: "button-" + traitID,
+			title: traitSpec.get("title"),
+			selected: isSelected,
+			onClick: onClick,
+			additionalClassNameExtensions: buttonClassNameExtensions
+		});
+
+		var children = [mainButton];
+
+		if (showFields) {
+			children.push(React.createElement("div", {
+				className: "traitFieldsHolder" }, [React.createElement(EditorFields.FieldsHolder, {
+				fields: traitSpec.get("fields").toJS(),
+				values: traitValue,
+				onChangeInfo: this.changeTraitInfo
+			}), React.createElement(SecondaryButton, {
+				key: "removeButton",
+				title: "Remove",
+				className: "removeButton",
+				onClick: this.removeTrait
+			})]));
+		}
+
+		return React.createElement("div", {
+			key: "button-" + traitID,
+			className: "buttonHolder"
+		}, children);
+	}
+});
+
+var TraitsToolbarMixin = {
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {};
+	},
+
+	createButtonsForTraitSpecs: function createButtonsForTraitSpecs(traitSpecs, chosenTraits) {
+		var actions = this.props.actions;
+
+		return traitSpecs.map(function (traitSpec) {
+			if (traitSpec.get("disabled", false)) {
+				return null;
+			}
+
+			var traitID = traitSpec.get("id");
+			var traitValue = chosenTraits[traitID];
+
+			return React.createElement(TraitButton, {
+				key: "trait-" + traitID,
+				traitSpec: traitSpec,
+				traitValue: traitValue,
+				actions: actions,
+				className: "buttonHolder",
+				toggleTrait: this.toggleTraitWithID.bind(this, traitID),
+				changeTraitInfo: this.changeTraitInfoWithID.bind(this, traitID),
+				removeTrait: this.removeTraitWithID.bind(this, traitID) });
+		}, this).toJS();
+	},
+
+	createButtonGroupForTraitSpecs: function createButtonGroupForTraitSpecs(groupID, traitSpecs, chosenTraits) {
+		var buttons = this.createButtonsForTraitSpecs(traitSpecs, chosenTraits);
+		return React.createElement("div", {
+			key: groupID,
+			className: this.getClassNameStringWithChildSuffix("-" + groupID)
+		}, buttons);
+	},
+
+	render: function render() {
+		var props = this.props;
+		var traitSpecs = props.traitSpecs;
+		var traits = props.traits;
+
+		var buttonGroups = [];
+
+		if (traitSpecs) {
+			var traitSpecsFilter = this.filterTraitSpecs;
+			var textItemTraitSpecs = traitSpecs.filter(traitSpecsFilter, this);
+
+			if (textItemTraitSpecs.count() > 0) {
+				buttonGroups.push(this.createButtonGroupForTraitSpecs("main", textItemTraitSpecs, traits));
+			}
+		}
+
+		return React.createElement("div", {
+			key: "traitsToolbar",
+			className: this.getClassNameStringWithExtensions()
+		}, buttonGroups);
+	}
+};
+
+var BlockTraitsToolbar = React.createClass({
+	displayName: "BlockTraitsToolbar",
+
+	mixins: [TraitsToolbarMixin],
+
+	filterTraitSpecs: function filterTraitSpecs(traitOptions) {
+		if (traitOptions.has("allowedForBlockTypesByGroupType")) {
+			var _props = this.props;
+			var blockTypeGroup = _props.blockTypeGroup;
+
+			var allowedForBlockTypesByGroupType = traitOptions.get("allowedForBlockTypesByGroupType");
+			var allowedForBlockTypes = allowedForBlockTypesByGroupType.get(blockTypeGroup, false);
+			if (allowedForBlockTypes === true) {
+				return true;
+			}
+			if (!allowedForBlockTypes) {
+				return false;
+			}
+
+			//let blockType = props.blockType;
+			//TODO: decide whether this is worth doing.
+			return true;
+		}
+
+		return false;
+	},
+
+	toggleTraitWithID: function toggleTraitWithID(traitID) {
+		var actions = this.props.actions;
+		actions.toggleBooleanTraitForEditedBlock(traitID);
+	},
+
+	changeTraitInfoWithID: function changeTraitInfoWithID(traitID, changeInfo) {
+		var actions = this.props.actions;
+		actions.changeMapTraitUsingFunctionForEditedBlock(traitID, function (valueBefore) {
+			return valueBefore.mergeDeep(changeInfo);
+		});
+	},
+
+	removeTraitWithID: function removeTraitWithID(traitID) {
+		var actions = this.props.actions;
+		actions.removeTraitWithIDForEditedBlock(traitID);
 	}
 });
 
 var ItemTraitsToolbar = React.createClass({
-	getDefaultProps: function() {
-		return {
-			enabledTraits: {}
-		};
-	},
-	
-	onToggleTrait: function(traitID) {
-		console.log('toggle trait', traitID);
-		var actions = this.props.actions;
-		actions.toggleTraitForEditedTextItem(traitID);
-	},
-	
-	createButtonsForTextItemTraitSpecs: function(traitSpecs, chosenTraits) {
-		return traitSpecs.map(function(textItemTraitSpec) {
-			if (textItemTraitSpec.disabled) {
-				return null;
-			}
-			
-			var traitID = textItemTraitSpec.id;
-			var onToggleTrait = this.onToggleTrait.bind(this, traitID);
-			return React.createElement(ToolbarButton, {
-				key: ('button-' + traitID),
-				title: textItemTraitSpec.title,
-				selected: !!(chosenTraits[traitID]),
-				onClick: onToggleTrait
-			});
-		}, this);
-	},
-	
-	createButtonGroupForTextItemTraitSpecs: function(groupID, traitSpecs, chosenTraits) {
-		var buttons = this.createButtonsForTextItemTraitSpecs(traitSpecs, chosenTraits);
-		return React.createElement('div', {
-			key: groupID,
-			className: ('itemEditor-traits-toolbar-' + groupID)
-		}, buttons);
-	},
-	
-	render: function() {
-		var props = this.props;
-		var availableTraits = props.availableTraits;
-		var traits = props.traits;
-		
-		var buttonGroups = [];
-		
-		if (availableTraits) {
-			var itemsByBlock = availableTraits.itemsByBlock;
-			var itemsByAnyBlock = itemsByBlock['*'];
-		
-			var textItemTraits = itemsByAnyBlock.text;
-			buttonGroups.push(this.createButtonGroupForTextItemTraitSpecs('anyBlockType', textItemTraits, traits));
+	displayName: "ItemTraitsToolbar",
+
+	mixins: [TraitsToolbarMixin],
+
+	filterTraitSpecs: function filterTraitSpecs(traitOptions) {
+		if (traitOptions.get("allowedForAnyTextItems", false)) {
+			return true;
 		}
-		
-		return React.createElement('div', {
-			className: props.className,
-			key: 'holder'
-		}, buttonGroups);
+
+		return false;
+	},
+
+	toggleTraitWithID: function toggleTraitWithID(traitID) {
+		var actions = this.props.actions;
+		actions.toggleBooleanTraitForEditedTextItem(traitID);
+	},
+
+	changeTraitInfoWithID: function changeTraitInfoWithID(traitID, changeInfo) {
+		var actions = this.props.actions;
+		actions.changeMapTraitUsingFunctionForEditedTextItem(traitID, function (valueBefore) {
+			return valueBefore.mergeDeep(changeInfo);
+		});
+	},
+
+	removeTraitWithID: function removeTraitWithID(traitID) {
+		var actions = this.props.actions;
+		actions.removeTraitWithIDForEditedTextItem(traitID);
 	}
 });
 
 var TextItemEditor = React.createClass({
-	getDefaultProps: function() {
+	displayName: "TextItemEditor",
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			text: '',
+			text: "",
 			traits: {},
-			availableTraits: {}
+			traitSpecs: null,
+			baseClassNames: ["textItemEditor"]
 		};
 	},
-	
-	onClick: function(event) {
+
+	onClick: function onClick(event) {
+		// Prevent block from getting click event.
 		event.stopPropagation();
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
+		var block = props.block;
 		var text = props.text;
 		var traits = props.traits;
 		var actions = props.actions;
+		var blockTypeGroup = props.blockTypeGroup;
 		var blockType = props.blockType;
-		var availableTraits = props.availableTraits;
-		
-		return React.createElement('div', {
-			key: 'textItemEditor',
-			className: 'textItemEditor',
-			id: 'icing-textItemEditor',
+		var traitSpecs = props.traitSpecs;
+
+		//var textEditorInstructions = 'Press enter to create a new paragraph. Press space twice to create a new sentence.';
+		var textEditorInstructions = "enter: new paragraph · spacebar twice: new sentence";
+
+		return React.createElement("div", {
+			key: "textItemEditor",
+			className: "textItemEditor",
+			id: "icing-textItemEditor",
 			onClick: this.onClick
+		}, [React.createElement(TextItemTextArea, {
+			key: "textAreaHolder",
+			text: text,
+			actions: actions,
+			traitSpecs: traitSpecs
+		}), React.createElement("div", {
+			key: "instructions",
+			className: "textItemEditor_instructions"
 		}, [
-			React.createElement(TextItemTextArea, {
-				text: text,
-				actions: actions,
-				availableTraits: availableTraits,
-				key: 'textAreaHolder'
-			}),
-			/*React.createElement(TextItemAttributesToolbar, {
-				actions: actions,
-				availableTraits: availableTraits,
-				bold: traits.bold,
-				italic: traits.italic,
-				key: 'oldTraitsToolbar',
-			}),*/
-			React.createElement('div', {
-				key: 'instructions',
-				className: 'textItemEditor_instructions'
-			}, [
-				/*React.createElement('div', {
-					key: 'instructions-traits',
-					className: 'instructions_traits'
-				}, 'Use the buttons below'),*/
-				React.createElement('div', {
-					key: 'instructions-split',
-					className: 'textItemEditor_instructions_split'
-				}, 'Press return/enter to split text')
-			]),
-			React.createElement(ItemTraitsToolbar, {
-				actions: actions,
-				availableTraits: availableTraits,
-				traits: traits,
-				blockType: blockType,
-				key: 'traitsToolbar',
-				className: 'textItemEditor_traitsToolbar'
-			}),
-		]);
+		/*React.createElement('div', {
+  	key: 'instructions-traits',
+  	className: 'instructions_traits'
+  }, 'Use the buttons below'),*/
+		React.createElement("div", {
+			key: "instructions-split",
+			className: "textItemEditor_instructions_split"
+		}, textEditorInstructions)]), React.createElement(ItemTraitsToolbar, {
+			key: "traitsToolbar",
+			traitSpecs: traitSpecs,
+			traits: traits,
+			blockTypeGroup: blockTypeGroup,
+			blockType: blockType,
+			actions: actions,
+			className: "textItemEditor_traitsToolbar"
+		}), React.createElement("h5", {
+			className: "textItemEditor_blockTraitsToolbar_heading"
+		}, "All items inside this block:"), React.createElement(BlockTraitsToolbar, {
+			key: "blockTraitsToolbar",
+			traitSpecs: traitSpecs,
+			traits: block.get("traits", Immutable.Map()).toJS(),
+			blockTypeGroup: blockTypeGroup,
+			blockType: blockType,
+			actions: actions,
+			className: "textItemEditor_traitsToolbar textItemEditor_blockTraitsToolbar"
+		})]);
 	}
 });
 
-var PlaceholderEditor = React.createClass({
-	getIDField: function() {
-		var IDField = this.refs.IDField;
-		return IDField.getDOMNode();
+var ParticularEditor = React.createClass({
+	displayName: "ParticularEditor",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			traits: {},
+			traitSpecs: null,
+			baseClassName: "particularEditor"
+		};
 	},
-	
-	componentDidMount: function() {
-		this.getIDField().focus();
+
+	onClick: function onClick(event) {
+		event.stopPropagation();
 	},
-	
-	hasNoText: function() {
-		var text = this.refs.IDField.getDOMNode().value;
-		return (text.length === 0);
-	},
-	
-	onKeyDown: function(e) {
-		var actions = this.props.actions;
-		console.log('key down', e.which);
-		
-		if (true) {
-			if (e.which == 8) { // Delete/Backspace key
-				if (this.hasNoText()) {
-					console.log('REMOVE ME');
-					actions.removeEditedBlock();
-					e.preventDefault();
-				}
-			}
-			else if (e.which == 9) { // Tab key
-				if (e.shiftKey) {
-					actions.editPreviousItemBeforeEditedTextItem();
-				}
-				else {
-					actions.editNextItemAfterEditedTextItem();
-				}
-		
-				e.preventDefault();
-			}
-		}
-	},
-	
-	onKeyPress: function(e) {
-		var actions = this.props.actions;
-		if (true) {
-			if (e.which == 13) { // Return/enter key.
-				actions.insertRelatedBlockAfterEditedBlock();
-				
-				e.preventDefault();
-			}
-		}
-	},
-	
-	onChange: function() {
-		var placeholderID = this.getIDField().value;
+
+	changeFieldsInfo: function changeFieldsInfo(changeInfo) {
 		var props = this.props;
-		var actions = props.actions;
 		var keyPath = props.keyPath;
-		actions.changePlaceholderIDOfBlockAtKeyPath(placeholderID, keyPath);
+		var actions = props.actions;
+		actions.updateValueForBlockAtKeyPath(keyPath, Immutable.Map(), function (valueBefore) {
+			return valueBefore.mergeDeep(changeInfo);
+		});
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
-		var placeholderID = this.props.placeholderID;
-		return React.createElement('div', {
-			className: 'placeholderEditor',
-		}, React.createElement('input', {
-			ref: 'IDField',
-			type: 'text',
-			value: placeholderID,
-			className: 'placeholderEditor-IDField',
-			onChange: this.onChange,
-			onKeyDown: this.onKeyDown,
-			onKeyPress: this.onKeyPress
+
+		var block = props.block;
+		var typeGroup = props.typeGroup;
+		var type = props.type;
+		var traits = props.traits;
+		var traitSpecs = props.traitSpecs;
+		var blockGroupIDsToTypesMap = props.blockGroupIDsToTypesMap;
+		var actions = props.actions;
+
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(typeGroup, type, blockGroupIDsToTypesMap);
+
+		var elements = [];
+		if (blockTypeOptions.has("fields")) {
+			elements.push(React.createElement(EditorFields.FieldsHolder, {
+				fields: blockTypeOptions.get("fields").toJS(),
+				values: block.get("value", Immutable.Map()).toJS(),
+				onChangeInfo: this.changeFieldsInfo
+			}));
+		}
+
+		elements.push(
+		/*React.createElement(ItemTraitsToolbar, {
+  	key: 'traitsToolbar',
+  	traitSpecs: traitSpecs,
+  	traits: traits,
+  	blockTypeGroup: typeGroup,
+  	blockType: type,
+  	className: 'textItemEditor_traitsToolbar',
+  	actions,
+  }),
+  React.createElement('h5', {
+  	className: 'textItemEditor_blockTraitsToolbar_heading'
+  }, 'All items of block:'),*/
+		React.createElement(BlockTraitsToolbar, {
+			key: "blockTraitsToolbar",
+			traitSpecs: traitSpecs,
+			traits: block.get("traits", Immutable.Map()).toJS(),
+			blockTypeGroup: typeGroup,
+			blockType: type,
+			actions: actions,
+			className: "textItemEditor_traitsToolbar textItemEditor_blockTraitsToolbar"
 		}));
+
+		return React.createElement("div", {
+			className: "particularEditor",
+			onClick: this.onClick
+		}, elements);
 	}
 });
 
 var BlockTypeChooser = React.createClass({
-	getDefaultProps: function() {
+	displayName: "BlockTypeChooser",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			chosenBlockTypeID: 'body'
+			baseClassNames: ["blockItemToolbar_typeChooser"] };
+	},
+
+	getInitialState: function getInitialState() {
+		return {
+			active: false
 		};
 	},
-	
-	onToggleActive: function() {
-		var actions = this.props.actions;
-		actions.onToggleActive();
-	},
-	
-	onChangeChosenBlockType: function(blockTypeOptions, event) {
-		var actions = this.props.actions;
-		actions.onChangeChosenBlockType(blockTypeOptions, event);
-	},
-	
-	makeButtonForBlockTypeOptions: function(blockTypeOptions, chosenBlockTypeID, onClick) {
-		return React.createElement(ToolbarButton, {
-			key: ('button-type-' + blockTypeOptions.id),
-			ref: blockTypeOptions.id,
-			title: blockTypeOptions.title,
-			selected: chosenBlockTypeID === blockTypeOptions.id,
-			onClick: onClick
+
+	onToggleActive: function onToggleActive() {
+		this.setState({
+			active: !this.state.active
 		});
 	},
-	
-	render: function() {
+
+	onChangeChosenBlockType: function onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event) {
+		event.stopPropagation();
+
+		var actions = this.props.actions;
+		actions.onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event);
+
+		this.setState({
+			active: false
+		});
+	},
+
+	render: function render() {
+		// PROPS
 		var props = this.props;
-		var chosenBlockTypeID = props.chosenBlockTypeID;
-		var availableBlockTypes = props.availableBlockTypes;
+		var chosenBlockTypeGroup = props.chosenBlockTypeGroup;
+		var chosenBlockType = props.chosenBlockType;
+		var blockTypeGroups = props.blockTypeGroups;
+		var blockGroupIDsToTypesMap = props.blockGroupIDsToTypesMap;
 		var actions = props.actions;
-		var active = props.active;
-		
-		var children;
+		// STATE
+		var state = this.state;
+		var active = state.active;
+
+		var classNameExtensions = [];
+		var children = [];
+
+		var chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap);
+
+		children.push(React.createElement(ToolbarButton, {
+			key: "mainButton",
+			baseClassNames: this.getClassNamesWithChildSuffix("_mainButton"),
+			title: chosenBlockTypeOptions.get("title"),
+			onClick: this.onToggleActive
+		}));
+
 		if (active) {
-			children = availableBlockTypes.map(function(blockTypeOptions) {
-				var onChangeChosenBlockType = this.onChangeChosenBlockType.bind(this, blockTypeOptions);
-				return this.makeButtonForBlockTypeOptions(blockTypeOptions, chosenBlockTypeID, onChangeChosenBlockType);
-			}, this);
+			var groupElements = blockTypeGroups.map(function (groupOptions) {
+				var groupID = groupOptions.get("id");
+				var typesMap = blockGroupIDsToTypesMap.get(groupID);
+				var typeElements = typesMap.map(function (typeOptions) {
+					var type = typeOptions.get("id");
+					var onClick = this.onChangeChosenBlockType.bind(this, groupOptions, typeOptions);
+
+					return React.createElement(ToolbarButton, {
+						key: "button-type-" + type,
+						ref: type,
+						title: typeOptions.get("title"),
+						selected: chosenBlockTypeGroup === groupOptions.get("id") && chosenBlockType === type,
+						onClick: onClick
+					});
+				}, this).toJS();
+
+				var groupTitle = groupOptions.get("title");
+				typeElements.splice(0, 0, React.createElement("h5", {
+					className: this.getClassNameStringWithChildSuffix("_choices_group_title") }, groupTitle));
+
+				return React.createElement("div", {
+					className: this.getClassNameStringWithChildSuffix("_choices_group") }, typeElements);
+			}, this).toJS();
+
+			children.push(React.createElement("div", {
+				className: this.getClassNameStringWithChildSuffix("_choices") }, groupElements));
 		}
-		else {
-			var chosenBlockTypeOptions = availableBlockTypes.filter(function(blockTypeOptions) {
-				return (blockTypeOptions.id === chosenBlockTypeID);
-			}, this);
-			if (chosenBlockTypeOptions) {
-				chosenBlockTypeOptions = chosenBlockTypeOptions[0];
-			}
-			else {
-				chosenBlockTypeOptions = null;
-			}
-			
-			var button = this.makeButtonForBlockTypeOptions(chosenBlockTypeOptions, chosenBlockTypeID, this.onToggleActive);
-			
-			children = [
-				button
-			];
-		}
-		
-		var classes = ['blockItemToolbar_typeChooser'];
+
 		if (active) {
-			classes.push('blockItemToolbar_typeChooser-active');
+			classNameExtensions.push("-active");
 		}
-		
-		return React.createElement('div', {
-			className: classes.join(' ')
+
+		return React.createElement("div", {
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
 	}
 });
 
 var BlockToolbar = React.createClass({
-	getDefaultProps: function() {
+	displayName: "BlockToolbar",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
 		return {
-			chosenBlockTypeID: 'body',
-			availableBlockTypes: SettingsStore.getAvailableBlockTypesForDocumentSection()
+			chosenBlockTypeGroup: "text",
+			chosenBlockType: "body",
+			baseClassNames: ["blockItemToolbar"]
 		};
 	},
-	
-	onToggleActive: function() {
-		var actions = this.props.actions;
-		actions.onToggleActive();
+
+	onClick: function onClick(event) {
+		event.stopPropagation();
 	},
-	
-	onChangeChosenBlockType: function(blockTypeOptions, event) {
-		var actions = this.props.actions;
-		actions.onChangeChosenBlockType(blockTypeOptions, event);
+
+	render: function render() {
+		var props = this.props;
+		var actions = props.actions;
+
+		var children = [React.createElement(BlockTypeChooser, {
+			key: "typeChooser",
+			chosenBlockTypeGroup: props.chosenBlockTypeGroup,
+			chosenBlockType: props.chosenBlockType,
+			blockTypeGroups: props.blockTypeGroups,
+			blockGroupIDsToTypesMap: props.blockGroupIDsToTypesMap,
+			actions: actions,
+			baseClassNames: this.getClassNamesWithChildSuffix("_typeChooser")
+		}) /*,
+     React.createElement(SecondaryButton, {
+     title: 'Rearrange',
+     actions: actions
+     })*/
+		];
+
+		return React.createElement("div", {
+			className: this.getClassNameStringWithExtensions(),
+			onClick: this.onClick
+		}, children);
+	}
+});
+
+var ChangeSubsectionElement = React.createClass({
+	displayName: "ChangeSubsectionElement",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			isCreate: false
+		};
 	},
-	
-	makeButtonForBlockTypeOptions: function(blockTypeOptions, chosenBlockTypeID, onClick) {
-		return React.createElement(ToolbarButton, {
-			key: ('button-type-' + blockTypeOptions.id),
-			ref: blockTypeOptions.id,
-			title: blockTypeOptions.title,
-			selected: chosenBlockTypeID === blockTypeOptions.id,
-			onClick: onClick
+
+	getInitialState: function getInitialState() {
+		return {
+			active: false
+		};
+	},
+
+	onToggleActive: function onToggleActive() {
+		this.setState({
+			active: !this.state.active
 		});
 	},
-	
-	render: function() {
-		var props = this.props;
-		var chosenBlockTypeID = props.chosenBlockTypeID;
-		var availableBlockTypes = props.availableBlockTypes;
-		var actions = props.actions;
-		var active = props.active;
-		
-		var children = [
-			React.createElement(BlockTypeChooser, {
-				chosenBlockTypeID: chosenBlockTypeID,
-				availableBlockTypes: availableBlockTypes,
-				actions: actions,
-				active: active
-			})/*,
-			React.createElement(SecondaryButton, {
-				title: 'Rearrange',
-				actions: actions
-			})*/
-		];
-		
-		var classes = ['blockItemToolbar'];
-		if (active) {
-			classes.push('blockItemToolbar-active');
+
+	onCreateSubsectionOfType: function onCreateSubsectionOfType(subsectionType, event) {
+		event.stopPropagation();
+
+		var actions = this.props.actions;
+
+		actions.insertSubsectionOfTypeAtBlockIndex(subsectionType, props.followingBlockIndex);
+	},
+
+	onChangeSubsectionType: function onChangeSubsectionType(subsectionType, event) {
+		event.stopPropagation();
+
+		var actions = this.props.actions;
+
+		actions.changeTypeOfSubsectionAtKeyPath(props.keyPath, subsectionType);
+
+		this.onToggleActive();
+	},
+
+	createElementForSubsectionInfo: function createElementForSubsectionInfo(subsectionInfo) {
+		var _props = this.props;
+		var isCreate = _props.isCreate;
+		var selectedSubsectionType = _props.selectedSubsectionType;
+
+		var onClickFunction;
+		if (isCreate) {
+			onClickFunction = this.onCreateSubsectionOfType;
+		} else {
+			onClickFunction = this.onChangeSubsectionType;
 		}
-		
-		return React.createElement('div', {
-			className: classes.join(' ')
+
+		return React.createElement(SecondaryButton, {
+			key: subsectionInfo.id,
+			baseClassNames: ["blocks_makeSubsection_choices_" + subsectionInfo.id],
+			title: subsectionInfo.title,
+			selected: selectedSubsectionType === subsectionInfo.id,
+			onClick: onClickFunction.bind(this, subsectionInfo.id)
+		});
+	},
+
+	render: function render() {
+		var props = this.props;
+		var isCreate = props.isCreate;
+
+		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+
+		var classNames = ["blocks_makeSubsection"];
+		var children = [];
+
+		if (props.isCreate) {
+			children.push(React.createElement(SecondaryButton, {
+				key: "mainButton",
+				baseClassNames: ["blocks_makeSubsection_mainButton"],
+				title: "Make Subsection",
+				onClick: this.onToggleActive
+			}));
+		} else {
+			classNames.push("blocks_changeSubsection-hasSelectedSubsectionType");
+
+			var selectedSubsectionType = props.selectedSubsectionType;
+			var selectedSubsectionInfo = null;
+			subsectionInfos.some(function (subsectionInfo) {
+				if (subsectionInfo.id === selectedSubsectionType) {
+					selectedSubsectionInfo = subsectionInfo;
+					return true;
+				}
+			});
+
+			children.push(React.createElement(SecondaryButton, {
+				key: "mainButton",
+				baseClassNames: ["blocks_makeSubsection_mainButton"],
+				title: selectedSubsectionInfo.title,
+				onClick: this.onToggleActive
+			}));
+		}
+
+		if (this.state.active) {
+			var subsectionChoices = subsectionInfos.map(function (subsectionInfo) {
+				return this.createElementForSubsectionInfo(subsectionInfo);
+			}, this);
+
+			children.push(React.createElement("div", {
+				className: "blocks_makeSubsection_choices" }, subsectionChoices));
+
+			classNames.push("blocks_makeSubsection-active");
+		}
+
+		return React.createElement("div", {
+			key: "makeSubsection-" + props.followingBlockIndex,
+			className: classNames.join(" ")
 		}, children);
 	}
 });
 
 var MainToolbar = React.createClass({
-	getDefaultProps: function() {
-		return {
-		};
+	displayName: "MainToolbar",
+
+	getDefaultProps: function getDefaultProps() {
+		return {};
 	},
-	
-	onSave: function() {
+
+	onSave: function onSave() {
 		var actions = this.props.actions;
 		actions.saveChanges();
 	},
-	
-	onTogglePreview: function() {
+
+	onTogglePreview: function onTogglePreview() {
 		var actions = this.props.actions;
-		
+
 		var isPreviewing = PreviewStore.getIsPreviewing();
 		if (isPreviewing) {
 			actions.exitHTMLPreview();
-		}
-		else {
+		} else {
 			actions.enterHTMLPreview();
 		}
 	},
-	
-	createSelectForAvailableDocuments: function() {
+
+	createSelectForAvailableDocuments: function createSelectForAvailableDocuments() {
 		var availableDocuments = SettingsStore.getAvailableDocuments();
 		var documentCount = availableDocuments.length;
-		
+
 		var options = null;
 		if (availableDocuments) {
 			if (availableDocuments.length > 1) {
-				var options = availableDocuments.map(function(documentInfo) {
-					return React.createElement('option', {
+				var options = availableDocuments.map(function (documentInfo) {
+					return React.createElement("option", {
 						key: documentInfo.ID,
 						value: documentInfo.ID
 					}, documentInfo.title);
 				});
-				return React.createElement('select', {
-					key: 'availableDocumentsSelect',
-					className: 'mainToolbar_availableDocumentsSelect'
+				return React.createElement("select", {
+					key: "availableDocumentsSelect",
+					className: "mainToolbar_availableDocumentsSelect"
 				}, options);
-			}
-			else if (availableDocuments.length === 1) {
+			} else if (availableDocuments.length === 1) {
 				var documentInfo = availableDocuments[0];
-				return React.createElement('div', {
+				return React.createElement("div", {
 					key: documentInfo.ID,
-					className: 'mainToolbar_availableDocumentsSingle',
+					className: "mainToolbar_availableDocumentsSingle",
 					value: documentInfo.ID
 				}, documentInfo.title);
 			}
 		}
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var actions = props.actions;
-		
+
 		var children = [];
-		
+
 		if (SettingsStore.getWantsSaveFunctionality()) {
-			children.push(
-				React.createElement(ToolbarButton, {
-					title: 'Save',
-					onClick: this.onSave
-				})
-			);
+			children.push(React.createElement(ToolbarButton, {
+				title: "Save",
+				onClick: this.onSave
+			}));
 		}
-		
+
 		if (SettingsStore.getWantsViewHTMLFunctionality()) {
-			children.push(
-				React.createElement(ToolbarButton, {
-					title: 'See HTML',
-					onClick: this.onTogglePreview,
-					selected: PreviewStore.getIsPreviewing()
-				})
-			);
+			children.push(React.createElement(ToolbarButton, {
+				title: "See HTML",
+				onClick: this.onTogglePreview,
+				selected: PreviewStore.getIsPreviewing()
+			}));
 		}
-		
-		children.push(
-			this.createSelectForAvailableDocuments()
-		);
-		
-		return React.createElement('div', {
-			className: 'mainToolbar'
+
+		children.push(this.createSelectForAvailableDocuments());
+
+		return React.createElement("div", {
+			className: "mainToolbar"
 		}, children);
 	}
 });
@@ -24758,49 +26418,54 @@ var MainToolbar = React.createClass({
 var ElementToolbars = {
 	MainToolbar: MainToolbar,
 	BlockToolbar: BlockToolbar,
+	BlockTraitsToolbar: BlockTraitsToolbar,
 	TextItemEditor: TextItemEditor,
-	PlaceholderEditor: PlaceholderEditor,
+	ParticularEditor: ParticularEditor,
+	ChangeSubsectionElement: ChangeSubsectionElement,
 	ToolbarButton: ToolbarButton,
 	SecondaryButton: SecondaryButton
 };
 module.exports = ElementToolbars;
-},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"../stores/store-preview":165,"../stores/store-settings":166,"../ui/ui-mixins":167,"react":153}],160:[function(require,module,exports){
-var React = require('react');
-var ContentStore = require('../stores/store-content.js');
-var SettingsStore = require('../stores/store-settings.js');
-var ContentStoreSaving = require('../stores/store-content-saving.js');
-var ContentStoreLoading = require('../stores/store-content-loading.js');
-var ContentActions = require('../actions/actions-content.js');
-var EditorElementsCreator = require('./editor-elements');
-var PreviewElementsCreator = require('../preview/preview-elements');
-var Toolbars = require('./editor-toolbars');
-var PreviewStore = require('../stores/store-preview');
 
+},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"../assistants/block-types-assistant":157,"../stores/store-preview":168,"../stores/store-settings":169,"../ui/ui-mixins":171,"./editor-fields":161,"immutable":5,"react":153}],163:[function(require,module,exports){
+"use strict";
+
+var React = require("react");
+var ContentStore = require("../stores/store-content.js");
+var SettingsStore = require("../stores/store-settings.js");
+var ContentStoreSaving = require("../stores/store-content-saving.js");
+var ContentStoreLoading = require("../stores/store-content-loading.js");
+var ContentActions = require("../actions/actions-content.js");
+var EditorElementsCreator = require("./editor-elements");
+var PreviewElementsCreator = require("../preview/preview-elements");
+var Toolbars = require("./editor-toolbars");
+var PreviewStore = require("../stores/store-preview");
 
 var Editor = React.createClass({
-	componentDidMount: function() {
-		PreviewStore.on('didEnterPreview', this.previewStateChanged);
-		PreviewStore.on('didExitPreview', this.previewStateChanged);
+	displayName: "Editor",
+
+	componentDidMount: function componentDidMount() {
+		PreviewStore.on("didEnterPreview", this.previewStateChanged);
+		PreviewStore.on("didExitPreview", this.previewStateChanged);
 	},
-	
-	previewStateChanged: function() {
+
+	previewStateChanged: function previewStateChanged() {
 		this.forceUpdate();
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var isPreviewing = PreviewStore.getIsPreviewing();
-		
+
 		if (isPreviewing) {
 			return React.createElement(SectionPreview, {
-				key: 'preview',
+				key: "preview",
 				documentID: props.documentID,
 				sectionID: props.sectionID
 			});
-		}
-		else {
+		} else {
 			return React.createElement(SectionContent, {
-				key: 'content',
+				key: "content",
 				documentID: props.documentID,
 				sectionID: props.sectionID
 			});
@@ -24809,482 +26474,391 @@ var Editor = React.createClass({
 });
 
 var PreviewHTMLCode = React.createClass({
-	componentDidMount: function() {
+	displayName: "PreviewHTMLCode",
+
+	componentDidMount: function componentDidMount() {
 		if (window.hljs) {
 			var codeElement = this.refs.code.getDOMNode();
 			window.hljs.highlightBlock(codeElement);
 		}
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var previewHTML = props.previewHTML;
-		
-		return React.createElement('code', {
-			className: 'language-html',
-			ref: 'code'
+
+		return React.createElement("code", {
+			className: "language-html",
+			ref: "code"
 		}, previewHTML);
 	}
 });
 
 var SectionPreview = React.createClass({
-	render: function() {
+	displayName: "SectionPreview",
+
+	render: function render() {
 		var props = this.props;
 		var documentID = props.documentID;
 		var sectionID = props.sectionID;
-		
+
 		var actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
-		
+
 		var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-		var config = ContentStore.getConfigForDocumentSection(documentID, sectionID);
-		
+		var config = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
+
 		var mainToolbar = React.createElement(Toolbars.MainToolbar, {
-			key: 'mainToolbar',
+			key: "mainToolbar",
 			actions: actions
 		});
-		
+
 		var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, config);
-		
-		var previewDisplayElement = React.createElement('pre', {
-			key: 'pre',
-			className: 'previewHTMLHolder'
+
+		var previewDisplayElement = React.createElement("pre", {
+			key: "pre",
+			className: "previewHTMLHolder"
 		}, React.createElement(PreviewHTMLCode, {
 			previewHTML: previewHTML
 		}));
-		
-		return React.createElement('div', {
-			key: 'previewContent'
-		}, [
-			mainToolbar,
-			//previewElement
-			previewDisplayElement
-		]);
+
+		return React.createElement("div", {
+			key: "previewContent"
+		}, [mainToolbar,
+		//previewElement
+		previewDisplayElement]);
 	}
 });
 
 var SectionContent = React.createClass({
-	updateTextItemEditorPosition: function() {
+	displayName: "SectionContent",
+
+	updateTextItemEditorPosition: function updateTextItemEditorPosition() {
 		var masterNode = this.getDOMNode();
-		var activeTextItem = masterNode.getElementsByClassName('textItem-active')[0];
-		var textItemEditor = masterNode.getElementsByClassName('textItemEditor')[0];
-		
+		var activeTextItem = masterNode.getElementsByClassName("textItem-active")[0];
+		var textItemEditor = masterNode.getElementsByClassName("textItemEditor")[0];
+
 		if (activeTextItem && textItemEditor) {
 			var offsetTop = activeTextItem.offsetTop;
-			textItemEditor.style.top = offsetTop + 'px';
+			textItemEditor.style.top = offsetTop + "px";
 		}
 	},
-	
-	componentDidMount: function() {
-		ContentStore.on('contentChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.on('editedItemChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.on('editedBlockChangedForDocumentSection', this.contentChangedForDocumentSection);
+
+	componentDidMount: function componentDidMount() {
+		ContentStore.on("contentChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.on("editedItemChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.on("editedBlockChangedForDocumentSection", this.contentChangedForDocumentSection);
 	},
-	
-	componentWillUnmount: function() {  
-		ContentStore.off('contentChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.off('editedItemChangedForDocumentSection', this.contentChangedForDocumentSection);
-		ContentStore.off('editedBlockChangedForDocumentSection', this.contentChangedForDocumentSection);
+
+	componentWillUnmount: function componentWillUnmount() {
+		ContentStore.off("contentChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.off("editedItemChangedForDocumentSection", this.contentChangedForDocumentSection);
+		ContentStore.off("editedBlockChangedForDocumentSection", this.contentChangedForDocumentSection);
 	},
-	
-	componentDidUpdate: function(prevProps, prevState) {
+
+	componentDidUpdate: function componentDidUpdate(prevProps, prevState) {
 		this.updateTextItemEditorPosition();
 	},
-	
-	contentChangedForDocumentSection: function(documentID, sectionID) {
+
+	contentChangedForDocumentSection: function contentChangedForDocumentSection(documentID, sectionID) {
 		var props = this.props;
-		if (
-			(documentID === props.documentID) ||
-			(sectionID === props.sectionID)
-		) {
+		if (documentID === props.documentID || sectionID === props.sectionID) {
 			this.forceUpdate();
 		}
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var documentID = props.documentID;
 		var sectionID = props.sectionID;
-		
+
 		var actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
-		
+
 		var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-		var config = ContentStore.getConfigForDocumentSection(documentID, sectionID);
-		
+		var specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
+
 		var mainToolbar = React.createElement(Toolbars.MainToolbar, {
-			key: 'mainToolbar',
+			key: "mainToolbar",
 			actions: actions
 		});
-		
+
 		var editorElement = React.createElement(EditorElementsCreator.MainElement, {
 			contentImmutable: content,
-			specsImmutable: config,
+			specsImmutable: specs,
 			actions: actions
 		});
-		
-		return React.createElement('div', {
-			key: 'editorContent'
-		}, [
-			mainToolbar,
-			editorElement
-		]);
+
+		return React.createElement("div", {
+			key: "editorContent"
+		}, [mainToolbar, editorElement]);
 	}
 });
 
-
 module.exports = {
-	go: function() {
+	go: function go() {
 		var documentID = SettingsStore.getInitialDocumentID();
 		var sectionID = SettingsStore.getInitialDocumentSectionID();
-		
-		React.render(
-			React.createElement(Editor, {documentID: documentID, sectionID: sectionID}),
-			document.getElementById('burntIcingEditor')
-		);
-		
+
+		React.render(React.createElement(Editor, { documentID: documentID, sectionID: sectionID }), document.getElementById("burntIcingEditor"));
+
 		ContentStoreLoading.loadContentForDocument(documentID);
 	},
-	
-	onDocumentLoad: function(event) {
-		document.removeEventListener('DOMContentLoaded', this.onDocumentLoadBound);
+
+	onDocumentLoad: function onDocumentLoad(event) {
+		document.removeEventListener("DOMContentLoaded", this.onDocumentLoadBound);
 		this.onDocumentLoadBound = null;
-		
+
 		this.go();
 	},
-	
-	goOnDocumentLoad: function() {
-		if (document.readyState === 'loading') {
+
+	goOnDocumentLoad: function goOnDocumentLoad() {
+		if (document.readyState === "loading") {
 			this.onDocumentLoadBound = this.onDocumentLoad.bind(this);
-			document.addEventListener('DOMContentLoaded', this.onDocumentLoadBound);
-		}
-		else {
-			setTimeout(function() {
+			document.addEventListener("DOMContentLoaded", this.onDocumentLoadBound);
+		} else {
+			setTimeout(function () {
 				this.go();
 			}, 0);
 		}
 	}
 };
-},{"../actions/actions-content.js":155,"../preview/preview-elements":161,"../stores/store-content-loading.js":162,"../stores/store-content-saving.js":163,"../stores/store-content.js":164,"../stores/store-preview":165,"../stores/store-settings.js":166,"./editor-elements":158,"./editor-toolbars":159,"react":153}],161:[function(require,module,exports){
-var React = require('react');
-var UIMixins = require('../ui/ui-mixins');
+
+},{"../actions/actions-content.js":155,"../preview/preview-elements":164,"../stores/store-content-loading.js":165,"../stores/store-content-saving.js":166,"../stores/store-content.js":167,"../stores/store-preview":168,"../stores/store-settings.js":169,"./editor-elements":160,"./editor-toolbars":162,"react":153}],164:[function(require,module,exports){
+"use strict";
+
+var React = require("react");
+var UIMixins = require("../ui/ui-mixins");
 //var Toolbars = require('./editor-toolbars');
-var Immutable = require('immutable');
+var Immutable = require("immutable");
 
+var BlockTypesAssistant = require("../assistants/block-types-assistant");
+var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
 
-var PreviewBlockElement = React.createClass({
-	getInitialState: function() {
-		return {
-			active: false
-		};
-	},
-	
-	onToggleActive: function() {
-		this.setState({
-			active: !this.state.active
-		});
-	},
-	
-	beginEditing: function(event) {
-		var props = this.props;
-		var type = props.type;
-		if (type === 'placeholder') {
-			var actions = props.actions;
-			var keyPath = props.keyPath;
-			actions.editBlockWithKeyPath(keyPath);
-		}
-	},
-	
-	render: function() {
-		var props = this.props;
-		var state = this.state;
-		
-		var block = props.block;
-		var blockType = props.type;
-		var keyPath = props.keyPath;
-		var actions = props.actions;
-		var traitsConfig = props.traitsConfig;
-		var active = state.active;
-		var edited = props.edited;
-		
-		var childrenInfo = {};
-		var children;
-		if (blockType === 'placeholder') {
-			var placeholderID = block.placeholderID;
-			var placeholderElement = React.createElement('div', {
-				className: 'block-placeholder-content'
-			}, placeholderID);
-			children = [placeholderElement];
-		}
-		else {
-			var textItemsKeyPath = keyPath.concat('textItems');
-			children = PreviewElementCreator.reactElementsWithTextItems(props.textItems, textItemsKeyPath, actions, blockType, traitsConfig, childrenInfo);
-		}
-		
-		var classNames = ['block', 'block-' + blockType];
-		
-		if (active) {
-			classNames.push('block-active');
-		}
-		if (edited) {
-			classNames.push('block-edited');
-		}
-		
-		return React.createElement('div', {
-			className: classNames.join(' '),
-			onClick: this.beginEditing
-		}, children);
+var HTMLRepresentationAssistant = require("../assistants/html-representation-assistant");
+
+var PreviewElementCreator = {};
+
+PreviewElementCreator.reactElementForWrappingChildWithTraits = function (child, traits) {
+	var element = child;
+
+	if (traits.has("italic")) {
+		element = React.createElement("em", {}, element);
 	}
-});
 
+	if (traits.has("bold")) {
+		element = React.createElement("strong", {}, element);
+	}
 
-var PreviewElementCreator = {
-	
+	if (traits.has("link")) {
+		var link = traits.get("link");
+		var linkTypeChoice = link.get("typeChoice");
+		var linkType = linkTypeChoice.get("selectedChoiceID");
+		var selectedChoiceValues = linkTypeChoice.get("selectedChoiceValues");
+		if (linkType === "URL") {
+			element = React.createElement("a", {
+				href: selectedChoiceValues.get("URL")
+			}, element);
+		} else if (linkType === "email") {
+			element = React.createElement("a", {
+				href: "mailto:" + selectedChoiceValues.get("emailAddress")
+			}, element);
+		}
+	}
+
+	return element;
 };
 
-PreviewElementCreator.PreviewBlockElement = PreviewBlockElement;
-	
-PreviewElementCreator.reactElementsWithTextItems = function(textItems, keyPath, actions, blockType, traitsConfig, outputInfo) {
-	if (textItems) {
-		var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
-		
-		var editedItem = null;
-		
-		var elements = textItems.map(function(textItem, textItemIndex) {
-			var props = {
-				keyPath: keyPath.concat(textItemIndex),
-				actions: actions,
-				blockType: blockType,
-				traitsConfig: traitsConfig
-			};
-	
-			if (textItem.identifier) {
-				var identifier = textItem.identifier;
-				props.identifier = identifier;
-				props.key = identifier;
-				
-				if (editedTextItemIdentifier === identifier) {
-					props.edited = true;
-					editedItem = textItem;
-				}
-			}
-			if (textItem.traits) {
-				props.traits = textItem.traits || {};
-			}
-			if (textItem.text) {
-				props.text = textItem.text;
-			}
-			
-			return React.createElement('span', {}, textItem.text);
-			//return React.createElement(TextItem, props);
-		});
-		
-		if (outputInfo) {
-			outputInfo.editedItem = editedItem;
-			outputInfo.hasEditedItem = (editedItem !== null);
-		}
-		
-		return elements;
-	}
-	else {
-		return [];
-	}
-};
-
-PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
+PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function (subsectionType, subsectionElements) {
 	var subsectionTypesToHolderTagNames = {
-		"unorderedList": "ul",
-		"orderedList": "ol",
-		"quote": "blockquote"
+		unorderedList: "ul",
+		orderedList: "ol",
+		quote: "blockquote"
 	};
 	var elementsToReturn = [];
 	var tagName = subsectionTypesToHolderTagNames[subsectionType];
 	if (tagName) {
 		// Wrap elements in holder element.
-		elementsToReturn = [
-			React.createElement(tagName, {}, subsectionElements)
-		];
-	}
-	else {
+		elementsToReturn = [React.createElement(tagName, {}, subsectionElements)];
+	} else {
 		elementsToReturn = subsectionElements;
 	}
 	return elementsToReturn;
 };
 
-PreviewElementCreator.reactElementForSubsectionChild = function(subsectionType, blockType, contentElements) {
+PreviewElementCreator.reactElementsForSubsectionChild = function (subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions) {
 	var subsectionTypesToChildTagNames = {
-		"unorderedList": "li",
-		"orderedList": "li"
+		unorderedList: "li",
+		orderedList: "li"
 	};
 	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
-	var tagNameForBlock = PreviewElementCreator.tagNameForBlockType(blockType);
-	
-	if (tagNameForSubsectionChild) {
-		if (blockType === 'body') {
-			// Paragraph elements by default just use the, for example, <li> instead of <li><p>
-			return React.createElement(tagNameForSubsectionChild, {}, contentElements);
-		}
-		else {
-			return React.createElement(tagNameForSubsectionChild, {},
-				React.createElement(tagNameForBlock, {}, contentElements)
-			);
+
+	var tagNameForBlock = blockTypeOptions.get("HTMLTagNameForBlock", null);
+	if (blockTypeGroup === "text") {
+		tagNameForBlock = PreviewElementCreator.tagNameForTextBlockType(blockType);
+
+		// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
+		if (tagNameForSubsectionChild && blockType === "body") {
+			tagNameForBlock = null;
 		}
 	}
-	else {
-		return React.createElement(tagNameForBlock, {}, contentElements);
+
+	var innerElements;
+	if (tagNameForBlock) {
+		// Nest inside, e.g. <li><h2>
+		innerElements = [React.createElement(tagNameForBlock, {}, contentElements)];
+	} else {
+		innerElements = contentElements;
+	}
+
+	/*
+ if (traits) {
+ 	innerElements = [
+ 		PreviewElementCreator.reactElementForWrappingChildWithTraits(innerElements, traits)
+ 	];
+ }
+ */
+
+	if (tagNameForSubsectionChild) {
+		return [React.createElement(tagNameForSubsectionChild, {}, innerElements)];
+	} else {
+		return innerElements;
 	}
 };
-	
-PreviewElementCreator.tagNameForBlockType = function(blockType) {
+
+PreviewElementCreator.tagNameForTextBlockType = function (blockType) {
 	var tagNamesToBlockTypes = {
-		"body": "p",
-		"heading": "h1",
-		"subhead1": "h2",
-		"subhead2": "h3",
-		"subhead3": "h4"
+		body: "p",
+		heading: "h1",
+		subhead1: "h2",
+		subhead2: "h3",
+		subhead3: "h4"
 	};
 	var tagName = tagNamesToBlockTypes[blockType];
 	if (!tagName) {
-		tagName = 'div';
+		tagName = "div";
 	}
 	return tagName;
 };
-	
-PreviewElementCreator.reactElementsWithBlocks = function(blocks, traitsConfig) {
+
+PreviewElementCreator.reactElementsWithBlocks = function (blocksImmutable, specsImmutable) {
+	var traitsSpecs = specsImmutable.get("traits", Immutable.Map());
+	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroups", Immutable.Map());
+
 	var mainElements = [];
-	var currentSubsectionType = 'normal';
+	var currentSubsectionType = specsImmutable.get("defaultSectionType", "normal");
 	var currentSubsectionElements = [];
-	
-	blocks.forEach(function(block, blockIndex) {
-		var props = {
-			key: block.identifier,
-			block: block,
-			type: block.type,
-			subsectionType: currentSubsectionType,
-			traitsConfig: traitsConfig,
-			keyPath: ['blocks', blockIndex]
-		};
-		if (block.traits) {
-			props.traits = block.traits;
-		}
-		if (block.textItems) {
-			props.textItems = block.textItems;
-		}
-		
-		var elements = [];
-		if (block.textItems) {
-			elements = elements.concat(block.textItems.map(function(textItem, textItemIndex) {
-				var traits = textItem.traits;
-				
-				var element = textItem.text;
-				if (traits.italic) {
-					element = React.createElement('em', {}, element);
-				}
-				if (traits.bold) {
-					element = React.createElement('strong', {}, element);
-				}
-				
-				return element;
-			}));
-		}
-		
-		if (block.type === 'placeholder') {
-			return;
-		}
-		
-		if (block.type === 'subsection') {
+
+	blocksImmutable.forEach(function (block, blockIndex) {
+		var typeGroup = block.get("typeGroup");
+		var type = block.get("type");
+
+		if (typeGroup === "subsection") {
 			// Wrap last elements.
 			if (currentSubsectionElements.length > 0) {
-				mainElements = mainElements.concat(
-					PreviewElementCreator.reactElementsForWrappingSubsectionChildren(
-						currentSubsectionType, currentSubsectionElements
-					)
-				);
+				mainElements = mainElements.concat(PreviewElementCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements));
 				currentSubsectionElements = [];
 			}
-			
-			currentSubsectionType = block.subsectionType;
+
+			currentSubsectionType = type;
+		} else {
+			var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(typeGroup, type, blockGroupIDsToTypesMap);
+
+			var elements = [];
+
+			if (typeGroup === "particular" || typeGroup === "media") {
+				var value = block.get("value", Immutable.Map());
+				var HTMLRepresentation = blockTypeOptions.get("innerHTMLRepresentation");
+				if (HTMLRepresentation) {
+					elements = elements.concat(HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, value));
+				}
+			} else if (typeGroup === "text") {
+				elements = elements.concat(block.get("textItems").map(function (textItem) {
+					var element = textItem.get("text");
+					var traits = textItem.get("traits");
+
+					element = PreviewElementCreator.reactElementForWrappingChildWithTraits(element, traits);
+
+					return element;
+				}).toJS());
+			}
+
+			var traits = block.get("traits");
+			if (traits) {
+				elements = [PreviewElementCreator.reactElementForWrappingChildWithTraits(elements, traits)];
+			}
+
+			currentSubsectionElements = currentSubsectionElements.concat(PreviewElementCreator.reactElementsForSubsectionChild(currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions));
 		}
-		else {
-			currentSubsectionElements.push(
-				PreviewElementCreator.reactElementForSubsectionChild(
-					currentSubsectionType, block.type, elements
-				)
-			);
-		}
-		
-		//return React.createElement(PreviewBlockElement, props);
 	});
-	
+
 	if (currentSubsectionElements.length > 0) {
-		mainElements = mainElements.concat(
-			PreviewElementCreator.reactElementsForWrappingSubsectionChildren(
-				currentSubsectionType, currentSubsectionElements
-			)
-		);
+		mainElements = mainElements.concat(PreviewElementCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements));
 	}
-	
+
 	return mainElements;
 };
 
 PreviewElementCreator.MainElement = React.createClass({
-	getDefaultProps: function() {
+	displayName: "MainElement",
+
+	getDefaultProps: function getDefaultProps() {
 		return {
 			contentImmutable: null,
 			specsImmutable: null,
 			actions: {}
 		};
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;
-		
-		var classNames = ['blocks'];
-	
+
+		var classNames = ["blocks"];
+
 		var elements = [];
-	
+
 		if (contentImmutable) {
 			var content = contentImmutable.toJS();
 			var blocks = content.blocks;
-			var traitsConfig = specsImmutable.get('traits', Immutable.Map()).toJS();
-	
-			elements = PreviewElementCreator.reactElementsWithBlocks(blocks, traitsConfig);
+			var blocksImmutable = contentImmutable.get("blocks");
+
+			elements = PreviewElementCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
+		} else {
+			elements = React.createElement("div", {}, "Loading…");
 		}
-		else {
-			elements = React.createElement('div', {}, 'Loading…');
-		}
-	
-		return React.createElement('div', {
-			key: 'blocks',
-			className: classNames.join(' ')
+
+		return React.createElement("div", {
+			key: "blocks",
+			className: classNames.join(" ")
 		}, elements);
 	}
 });
 
-PreviewElementCreator.previewHTMLWithContent = function(contentImmutable, specsImmutable) {
+PreviewElementCreator.previewHTMLWithContent = function (contentImmutable, specsImmutable) {
 	var previewElement = React.createElement(PreviewElementCreator.MainElement, {
-		key: 'main',
+		key: "main",
 		contentImmutable: contentImmutable,
 		specsImmutable: specsImmutable
 	});
-	
+
 	var previewHTML = React.renderToStaticMarkup(previewElement);
-	
-	previewHTML = previewHTML.replace(/^<div class="blocks">|<\/div>$/gm, '');
-	
+
+	previewHTML = previewHTML.replace(/^<div class="blocks">|<\/div>$/gm, "");
+
 	var inlineTagNames = {
-		"span": true,
-		"strong": true,
-		"em": true
+		span: true,
+		strong: true,
+		em: true,
+		a: true
 	};
-	
+
 	var holdingTagNames = {
-		"ul": true,
-		"ol": true,
-		"blockquote": true
+		ul: true,
+		ol: true,
+		blockquote: true
 	};
-	
-	previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function(match, closingSlash, tagName, offset, string) {
+
+	previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function (match, closingSlash, tagName, offset, string) {
 		// Inline elements are kept as-is
 		if (inlineTagNames[tagName]) {
 			return match;
@@ -25292,26 +26866,24 @@ PreviewElementCreator.previewHTMLWithContent = function(contentImmutable, specsI
 		// Block elements are given line breaks for nicer presentation.
 		else {
 			if (closingSlash.length > 0) {
-				return '<' + closingSlash + tagName + '>' + "\n";
+				return "<" + closingSlash + tagName + ">" + "\n";
 				//return "\n" + '<' + closingSlash + tagName + '>' + "\n";
-			}
-			else {
+			} else {
 				if (holdingTagNames[tagName]) {
-					return '<' + tagName + '>' + "\n";
-				}
-				else {
-					return '<' + tagName + '>';
+					return "<" + tagName + ">" + "\n";
+				} else {
+					return "<" + tagName + ">";
 				}
 			}
 		}
 	});
-	
+
 	return previewHTML;
-}
-	
-PreviewElementCreator.reactElementWithContentAndActions = function(contentImmutable, specsImmutable, actions) {
+};
+
+PreviewElementCreator.reactElementWithContentAndActions = function (contentImmutable, specsImmutable, actions) {
 	return React.createElement(PreviewElementCreator.MainElement, {
-		key: 'main',
+		key: "main",
 		contentImmutable: contentImmutable,
 		specsImmutable: specsImmutable,
 		actions: actions
@@ -25319,16 +26891,18 @@ PreviewElementCreator.reactElementWithContentAndActions = function(contentImmuta
 };
 
 module.exports = PreviewElementCreator;
-},{"../ui/ui-mixins":167,"immutable":5,"react":153}],162:[function(require,module,exports){
-var AppDispatcher = require('../app-dispatcher');
-var Immutable = require('immutable');
-var MicroEvent = require('microevent');
-var ContentStore = require('./store-content');
-var SettingsStore = require('./store-settings');
-var qwest = require('qwest');
-var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
+},{"../assistants/block-types-assistant":157,"../assistants/html-representation-assistant":158,"../ui/ui-mixins":171,"immutable":5,"react":153}],165:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var ContentStore = require("./store-content");
+var SettingsStore = require("./store-settings");
+var qwest = require("qwest");
+var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 var documentSectionActivity = Immutable.Map({});
 
@@ -25338,58 +26912,57 @@ var ContentStoreLoading = {
 	off: MicroEvent.prototype.unbind
 };
 
-
-ContentStoreLoading.isLoadingContentForDocument = function(documentID, sectionID) {
-	var isLoading = documentSectionActivity.getIn([documentID, 'isLoading'], false);
+ContentStoreLoading.isLoadingContentForDocument = function (documentID, sectionID) {
+	var isLoading = documentSectionActivity.getIn([documentID, "isLoading"], false);
 	return isLoading;
 };
-	
+
 function setLoadingContentForDocument(documentID, isLoading) {
 	var isLoadingCurrent = isLoadingContentForDocument(documentID);
 	if (isLoadingCurrent === isLoading) {
 		return;
 	}
-	
-	documentSectionActivity = documentSectionActivity.setIn([documentID, 'isLoading'], isLoading);
-	
-	ContentStoreLoading.trigger('isLoadingDidChangeForDocument', documentID, isLoading);
+
+	documentSectionActivity = documentSectionActivity.setIn([documentID, "isLoading"], isLoading);
+
+	ContentStoreLoading.trigger("isLoadingDidChangeForDocument", documentID, isLoading);
 };
 
 function receiveLoadedContentForDocument(documentID, contentBySectionsJSON) {
-	for (sectionID in contentBySectionsJSON) {
+	for (var sectionID in contentBySectionsJSON) {
+		//for (let sectionID in contentBySectionsJSON) {
 		if (!contentBySectionsJSON.propertyIsEnumerable(sectionID)) {
 			continue;
 		}
-		
+
 		var shouldEditFirstTextItem = false;
 		var contentJSON = contentBySectionsJSON[sectionID];
-		
+
 		if (!contentJSON) {
 			contentJSON = {
-				"blocks": [
-					{
-						"type": "body",
-						"textItems": []
-					}
-				]
+				blocks: [{
+					typeGroup: "text",
+					type: "body",
+					textItems: []
+				}]
 			};
 			shouldEditFirstTextItem = true;
 		}
-		
+
 		ContentStore.setContentFromJSONForDocumentSection(documentID, sectionID, contentJSON);
-		
+
 		if (shouldEditFirstTextItem) {
 			ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, ["blocks", 0]);
 		}
 	};
 }
-	
-ContentStoreLoading.loadContentForDocument = function(documentID) {
+
+ContentStoreLoading.loadContentForDocument = function (documentID) {
 	var isLoading = ContentStoreLoading.isLoadingContentForDocument(documentID);
 	if (isLoading) {
 		return;
 	}
-	
+
 	var actionURL = SettingsStore.getActionURL();
 	if (actionURL == null) {
 		var initialContent = SettingsStore.getInitialContentJSONForDocument(documentID);
@@ -25398,47 +26971,44 @@ ContentStoreLoading.loadContentForDocument = function(documentID) {
 		}
 		return;
 	}
-	
+
 	setLoadingContentForDocument(documentID, true);
-	
-	qwest.get(actionURL + documentID + '/', {
-	}, {
-		dataType: 'json',
-		responseType: 'json'
-	})
-	.then(function(contentBySectionsJSON) {
+
+	qwest.get(actionURL + documentID + "/", {}, {
+		dataType: "json",
+		responseType: "json"
+	}).then(function (contentBySectionsJSON) {
 		receiveLoadedContentForDocument(documentID, contentBySectionsJSON);
-	})
-	.catch(function(message) {
-		ContentStoreLoading.trigger('loadContentDidFailForDocumentWithMessage', documentID, message);
-	})
-	.complete(function() {
+	})["catch"](function (message) {
+		ContentStoreLoading.trigger("loadContentDidFailForDocumentWithMessage", documentID, message);
+	}).complete(function () {
 		setLoadingContentForDocument(documentID, false);
 	});
 };
 
-
-AppDispatcher.register( function(payload) {
+AppDispatcher.register(function (payload) {
 	switch (payload.eventID) {
-		
-	case (documentSectionEventIDs.loadContent):
-		loadContentForDocument(payload.documentID);
-		break;
-	
+
+		case documentSectionEventIDs.loadContent:
+			loadContentForDocument(payload.documentID);
+			break;
+
 	}
 });
 
 module.exports = ContentStoreLoading;
-},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"./store-content":164,"./store-settings":166,"immutable":5,"microevent":6,"qwest":7}],163:[function(require,module,exports){
-var AppDispatcher = require('../app-dispatcher');
-var Immutable = require('immutable');
-var MicroEvent = require('microevent');
-var ContentStore = require('./store-content');
-var SettingsStore = require('./store-settings');
-var qwest = require('qwest');
-var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
+},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"./store-content":167,"./store-settings":169,"immutable":5,"microevent":6,"qwest":7}],166:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var ContentStore = require("./store-content");
+var SettingsStore = require("./store-settings");
+var qwest = require("qwest");
+var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 var documentSectionActivity = Immutable.Map({});
 
@@ -25448,700 +27018,689 @@ var ContentStoreSaving = {
 	off: MicroEvent.prototype.unbind
 };
 
-
-var isSavingContentForDocumentSection = function(documentID, sectionID) {
-	var isSaving = documentSectionActivity.getIn([documentID, sectionID, 'isSaving'], false);
+var isSavingContentForDocumentSection = function isSavingContentForDocumentSection(documentID, sectionID) {
+	var isSaving = documentSectionActivity.getIn([documentID, sectionID, "isSaving"], false);
 	return isSaving;
 };
 ContentStoreSaving.isSavingContentForDocumentSection = isSavingContentForDocumentSection;
-	
-var setSavingContentForDocumentSection = function(documentID, sectionID, isSaving) {
+
+var setSavingContentForDocumentSection = function setSavingContentForDocumentSection(documentID, sectionID, isSaving) {
 	var isSavingCurrent = isSavingContentForDocumentSection(documentID, sectionID);
 	if (isSavingCurrent === isSaving) {
 		return;
 	}
-	
-	documentSectionActivity = documentSectionActivity.setIn([documentID, sectionID, 'isSaving'], isSaving);
-	
-	ContentStoreSaving.trigger('isSavingDidChangeForDocumentSection', documentID, sectionID, isSaving);
+
+	documentSectionActivity = documentSectionActivity.setIn([documentID, sectionID, "isSaving"], isSaving);
+
+	ContentStoreSaving.trigger("isSavingDidChangeForDocumentSection", documentID, sectionID, isSaving);
 	//ContentStoreSaving.trigger('isSavingDidChangeForDocument', documentID, isSaving);
 };
-	
-var saveContentForDocumentSection = function(documentID, sectionID) {
+
+var saveContentForDocumentSection = function saveContentForDocumentSection(documentID, sectionID) {
 	var isSaving = isSavingContentForDocumentSection(documentID, sectionID);
 	if (isSaving) {
 		return;
 	}
-	
+
 	var actionURL = SettingsStore.getActionURL();
 	if (!actionURL) {
 		return;
 	}
-	
+
 	setSavingContentForDocumentSection(documentID, sectionID, true);
-	
+
 	var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
-	
-	qwest.post(actionURL + documentID + '/', {
+
+	qwest.post(actionURL + documentID + "/", {
 		sectionID: sectionID,
 		contentJSON: contentJSON
 	}, {
-		dataType: 'json',
-		responseType: 'json'
-	})
-	.then(function(response) {
-		
-	})
-	.catch(function(message) {
-		ContentStoreSaving.trigger('saveContentDidFailForDocumentSectionWithMessage', documentID, sectionID, message);
-	})
-	.complete(function() {
+		dataType: "json",
+		responseType: "json"
+	}).then(function (response) {})["catch"](function (message) {
+		ContentStoreSaving.trigger("saveContentDidFailForDocumentSectionWithMessage", documentID, sectionID, message);
+	}).complete(function () {
 		setSavingContentForDocumentSection(documentID, sectionID, false);
 	});
 };
 ContentStoreSaving.saveContentForDocumentSection = saveContentForDocumentSection;
 
-
-AppDispatcher.register( function(payload) {
+AppDispatcher.register(function (payload) {
 	switch (payload.eventID) {
-		
-	case (documentSectionEventIDs.saveChanges):
-		saveContentForDocumentSection(payload.documentID, payload.sectionID);
-		break;
-	
+
+		case documentSectionEventIDs.saveChanges:
+			saveContentForDocumentSection(payload.documentID, payload.sectionID);
+			break;
+
 	}
 });
 
 module.exports = ContentStoreSaving;
-},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"./store-content":164,"./store-settings":166,"immutable":5,"microevent":6,"qwest":7}],164:[function(require,module,exports){
-var AppDispatcher = require('../app-dispatcher');
-var Immutable = require('immutable');
-var MicroEvent = require('microevent');
-var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
+
+},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"./store-content":167,"./store-settings":169,"immutable":5,"microevent":6,"qwest":7}],167:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var SettingsStore = require("../stores/store-settings.js");
+var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+//TODO: renamed Section to Portion?
+
+var documentSectionSpecs = Immutable.Map();
 
 var ContentStore = {
 	baseConfig: null,
 	documentSectionContents: Immutable.Map({}),
 	documentSectionEditedTextItemIdentifiers: Immutable.Map({}),
-	
-	setUpInitialSpecs: function() {
-		//var dummyContentJSON = require('../dummy/dummy-content.json');
-		//this.setContentFromJSONForDocumentSection('dummy', 'main', dummyContentJSON);
-		
-		//var dummyContent = this.newContentForTextItems();
-		//this.setContentFromImmutableForDocumentSection('dummy', 'main', dummyContent);
-		
-		var specsJSON = require('../dummy/dummy-content-specs.json');
-		this.setBaseConfigFromJSON(specsJSON);
+
+	/*
+ newContentForTextItems: function() {
+ 	return Immutable.Map({
+ 		"type": "textItems",
+ 		"blocks": Immutable.List([
+ 			this.newBlockOfType('body')
+ 		])
+ 	});
+ },
+ */
+
+	newIdentifier: function newIdentifier() {
+		return "i-" + Math.random().toString().replace("0.", "");
 	},
-	
-	newContentForTextItems: function() {
-		return Immutable.Map({
-			"type": "textItems",
-			"blocks": Immutable.List([
-				this.newBlockOfType('body')
-			])
-		});
-	},
-	
-	newIdentifier: function() {
-		return 'i-' + (Math.random().toString().replace('0.', ''));
-	},
-	
-	newTextItem: function(options) {
+
+	newTextItem: function newTextItem(options) {
 		var textItem = Immutable.Map({
-			"type": "text",
-			"identifier": this.newIdentifier(),
-			"traits": Immutable.Map(),
-            "text": ""
+			type: "text",
+			identifier: this.newIdentifier(),
+			traits: Immutable.Map(),
+			text: ""
 		});
 		if (options) {
 			textItem = textItem.merge(options);
 		}
-		
+
 		return textItem;
 	},
-	
-	blockTypeHasTextItems: function(blockType) {
-		if (blockType === 'placeholder' || blockType === 'particular' || blockType === 'subsection') {
-			return false;
-		}
-		else {
-			return true;
-		}
+
+	newLineBreakTextItem: function newLineBreakTextItem() {
+		var textItem = Immutable.Map({
+			type: "lineBreak",
+			identifier: this.newIdentifier()
+		});
+
+		return textItem;
 	},
-	
-	newBlockOfType: function(blockType) {
+
+	blockGroupTypeHasTextItems: function blockGroupTypeHasTextItems(blockGroupType) {
+		return blockGroupType === "text";
+	},
+
+	newBlockOfType: function newBlockOfType(typeGroup, type) {
 		var blockJSON = {
-			"type": blockType,
-			"identifier": this.newIdentifier()
+			typeGroup: typeGroup,
+			type: type,
+			identifier: this.newIdentifier()
 		};
-		
-		if (this.blockTypeHasTextItems(blockType)) {
+
+		if (this.blockGroupTypeHasTextItems(typeGroup)) {
 			blockJSON.textItems = [];
 		}
-		
-		if (blockType === 'figure') {
-			
-		}
-		
+
 		return Immutable.Map(blockJSON);
 	},
-	
-	newBlockSubsectionOfType: function(subsectionType) {
-		var blockJSON = {
-			"type": "subsection",
-			"subsectionType": subsectionType,
-			"identifier": this.newIdentifier()
-		};
-		
-		return Immutable.Map(blockJSON);
+
+	newBlockWithSameType: function newBlockWithSameType(block) {
+		return this.newBlockOfType(block.get("typeGroup"), block.get("type"));
 	},
-	
-	blockKeyPathForItemKeyPath: function(itemKeyPath) {
+
+	newBlockSubsectionOfType: function newBlockSubsectionOfType(subsectionType) {
+		return Immutable.Map({
+			typeGroup: "subsection",
+			type: subsectionType,
+			identifier: this.newIdentifier()
+		});
+	},
+
+	blockKeyPathForItemKeyPath: function blockKeyPathForItemKeyPath(itemKeyPath) {
 		return itemKeyPath.slice(0, -2);
 	},
-	
-	prepareConfigFromJSON: function(configJSON) {
-		return Immutable.fromJS(configJSON);
+
+	getSpecsForDocumentSection: function getSpecsForDocumentSection(documentID, sectionID) {
+		var keyPath = [documentID, sectionID];
+		var specs = documentSectionSpecs.getIn(keyPath);
+		if (!specs) {
+			specs = SettingsStore.getContentSpecsForDocumentSection(documentID, sectionID);
+			documentSectionSpecs.setIn(keyPath, specs);
+		}
+		return specs;
 	},
-	
-	setBaseConfigFromJSON: function(configJSON) {
-		this.baseConfig = this.prepareConfigFromJSON(configJSON);
-	},
-	
-	getConfigForDocumentSection: function(documentID, sectionID) {
-		return this.baseConfig;
-	},
-	
-	prepareContentFromJSON: function(contentJSON) {
+
+	prepareContentFromJSON: function prepareContentFromJSON(contentJSON) {
 		var newItemIdentifier = this.newIdentifier.bind(this);
-		
-		return Immutable.fromJS(contentJSON, function(key, value) {
+
+		return Immutable.fromJS(contentJSON, function (key, value) {
 			var isIndexed = Immutable.Iterable.isIndexed(value);
 			var newValue = isIndexed ? value.toList() : value.toMap();
-			
-			if ((key === 'blocks') || (key === 'textItems')) {
-				newValue = newValue.map(function(textItem) {
-					return textItem.set('identifier', newItemIdentifier());
+
+			if (key === "blocks" || key === "textItems") {
+				newValue = newValue.map(function (textItem) {
+					return textItem.set("identifier", newItemIdentifier());
 				});
 			}
-			
+
 			return newValue;
 		});
 	},
-	
-	getContentForDocumentSection: function(documentID, sectionID) {
-		var content = this.documentSectionContents.getIn([documentID, sectionID]);
-		return content;
+
+	getContentForDocumentSection: function getContentForDocumentSection(documentID, sectionID) {
+		return this.documentSectionContents.getIn([documentID, sectionID]);
 	},
-	
-	getContentAsJSONForDocumentSection: function(documentID, sectionID) {
+
+	getContentAsJSONForDocumentSection: function getContentAsJSONForDocumentSection(documentID, sectionID) {
 		var content = this.getContentForDocumentSection(documentID, sectionID);
-		return content.toJS();
+		if (content) {
+			return content.toJS();
+		} else {
+			return null;
+		}
 	},
-	
-	setContentFromImmutableForDocumentSection: function(documentID, sectionID, content) {
+
+	setContentFromImmutableForDocumentSection: function setContentFromImmutableForDocumentSection(documentID, sectionID, content) {
 		this.documentSectionContents = this.documentSectionContents.setIn([documentID, sectionID], content);
-		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+
+		this.trigger("contentChangedForDocumentSection", documentID, sectionID);
 	},
-	
-	setContentFromJSONForDocumentSection: function(documentID, sectionID, contentJSON) {
+
+	setContentFromJSONForDocumentSection: function setContentFromJSONForDocumentSection(documentID, sectionID, contentJSON) {
 		var content = null;
 		if (contentJSON) {
 			content = this.prepareContentFromJSON(contentJSON);
 		}
 		this.setContentFromImmutableForDocumentSection(documentID, sectionID, content);
 	},
-	
-	getContentObjectAtKeyPathForDocumentSection: function(documentID, sectionID, keyPath) {
+
+	getContentObjectAtKeyPathForDocumentSection: function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
 		return this.documentSectionContents.getIn([documentID, sectionID].concat(keyPath));
 	},
-	
-	updateBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater) {
+
+	updateContentObjectAtKeyPathForDocumentSection: function updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options) {
 		var fullKeyPath = [documentID, sectionID].concat(keyPath);
 		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, updater);
-		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+
+		if (!options || options.trigger) {
+			this.trigger("contentChangedForDocumentSection", documentID, sectionID);
+		}
 	},
-	
-	removeBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, options) {
-		var blockIndex = keyPath.slice(-1)[0];
-		var blocksKeyPath = keyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(blocksKeyPath);
-		
-		console.log('REMOVE', fullKeyPath, blockIndex);
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(blocks) {
+
+	/*
+ updateBlocksAtKeyPathForDocumentSection: function(documentID, sectionID, updater, options) {
+ 	this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, ['blocks'], updater, options);
+ },
+ 	updateTextItemsAtKeyPathForDocumentSection: function(documentID, sectionID, textItemsKeyPath, updater, options) {
+ 	this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, updater, options);
+ },
+ */
+
+	updateBlockAtKeyPathInDocumentSection: function updateBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, updater, options) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
+	},
+
+	removeBlockAtKeyPathInDocumentSection: function removeBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, options) {
+		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		var isEditingThisBlock = editedBlockKeyPath == blockKeyPath;
+		if (isEditingThisBlock) {
+			this.finishEditingInDocumentSection(documentID, sectionID);
+		}
+
+		var blockIndex = blockKeyPath.slice(-1)[0];
+		var blocksKeyPath = blockKeyPath.slice(0, -1);
+
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
 			return blocks.remove(blockIndex);
 		});
-		
+
 		if (options && options.editPrevious) {
 			var precedingBlockIndex = blockIndex - 1;
 			var precedingBlockKeyPath = blocksKeyPath.concat(precedingBlockIndex);
 			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath);
 		}
-		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+
+		this.trigger("contentChangedForDocumentSection", documentID, sectionID);
 	},
-	
-	updateTextItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater) {
-		var fullKeyPath = [documentID, sectionID].concat(keyPath);
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, updater);
-		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+
+	updateTextItemAtKeyPathInDocumentSection: function updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, updater, options) {
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
 	},
-	
-	textItemIsEmptyAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath) {
-		var fullKeyPath = [documentID, sectionID].concat(keyPath).concat('text');
-		var text = this.documentSectionContents.getIn(fullKeyPath);
-		var isEmpty = (!text || text.length === 0);
+
+	textItemIsEmptyAtKeyPathInDocumentSection: function textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, keyPath) {
+		var text = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath.concat("text"));
+		//var fullKeyPath = [documentID, sectionID].concat(keyPath).concat('text');
+		//var text = this.documentSectionContents.getIn(fullKeyPath);
+		var isEmpty = !text || text.length === 0;
 		return isEmpty;
 	},
-	
-	removeTextItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath) {
+
+	removeTextItemAtKeyPathInDocumentSection: function removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath) {
 		var itemIndex = keyPath.slice(-1)[0];
 		var textItemsKeyPath = keyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(textItemsKeyPath);
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
 			return textItems.remove(itemIndex);
 		});
 	},
-	
-	insertItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, item, options) {
+
+	insertItemAtKeyPathInDocumentSection: function insertItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options) {
 		var insertIndex = keyPath.slice(-1)[0];
 		var textItemsKeyPath = keyPath.slice(0, -1); // Without the index
-		var fullKeyPath = [documentID, sectionID].concat(textItemsKeyPath);
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
 			// Insert the item.
 			return textItems.splice(insertIndex, 0, item);
 		});
-		
+
 		if (options && options.edit) {
 			var newItemKeyPath = textItemsKeyPath.concat(insertIndex);
 			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
 		}
 	},
-	
-	insertItemAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, item) {
+
+	insertItemAfterItemAtKeyPathInDocumentSection: function insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options) {
 		var textItemIndex = keyPath.slice(-1)[0];
 		var textItemsKeyPath = keyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(textItemsKeyPath);
-		
+
 		var newItemIndex = textItemIndex + 1;
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
 			// Insert the item.
 			return textItems.splice(newItemIndex, 0, item);
 		});
-		
-		var newItemKeyPath = textItemsKeyPath.concat(newItemIndex);
-		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
+
+		if (options && options.edit) {
+			var newItemKeyPath = textItemsKeyPath.concat(newItemIndex);
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
+		}
 	},
-	
-	addNewItemAfterItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath) {
+
+	addNewItemAfterItemAtKeyPathInDocumentSection: function addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, options) {
 		var newTextItem = this.newTextItem();
-		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, newTextItem);
+		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, newTextItem, options);
 	},
-	
-	insertBlockAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, block, options) {
+
+	addLineBreakAfterItemAtKeyPathInDocumentSection: function addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, options) {
+		var item = this.newLineBreakTextItem();
+		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options);
+	},
+
+	insertBlockAtKeyPathInDocumentSection: function insertBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, block, options) {
 		var insertIndex = keyPath.slice(-1)[0];
 		var blocksKeyPath = keyPath.slice(0, -1); // Without the index
-		var fullKeyPath = [documentID, sectionID].concat(blocksKeyPath);
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(textItems) {
+
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
 			// Insert the item.
-			return textItems.splice(insertIndex, 0, block);
+			return blocks.splice(insertIndex, 0, block);
 		});
-		
+
 		if (options && options.edit) {
 			var newBlockKeyPath = blocksKeyPath.concat(insertIndex);
-			
-			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, {editTextItemsIfPresent: true});
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, { editTextItemsIfPresent: true });
 		}
 	},
-	
-	insertSubsectionOfTypeAtBlockIndexInDocumentSection: function(documentID, sectionID, subsectionType, blockIndex, options) {
-		var keyPath = ['blocks', blockIndex];
+
+	insertSubsectionOfTypeAtBlockIndexInDocumentSection: function insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID, subsectionType, blockIndex, options) {
+		var keyPath = ["blocks", blockIndex];
 		var subsectionBlock = this.newBlockSubsectionOfType(subsectionType);
 		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, subsectionBlock);
-		
+
 		if (options && options.editFollowing) {
-			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, ['blocks', (blockIndex + 1)], {editTextItemsIfPresent: true});
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, ["blocks", blockIndex + 1], { editTextItemsIfPresent: true });
 		}
 	},
-	
-	changeTypeOfBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, newBlockType) {
-		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function(block) {
-			block = block.set('type', newBlockType);
-			if (newBlockType === 'placeholder') {
-				block = block.remove('textItems');
-			}
-			return block;
+
+	changeTypeOfBlockAtKeyPathInDocumentSection: function changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlockGroupType, newBlockType) {
+		// Finish editing, as changing to a different type may edit in a different way.
+		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		this.finishEditingInDocumentSection(documentID, sectionID);
+
+		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function (block) {
+			return block.withMutations(function (mutableBlock) {
+				mutableBlock.set("typeGroup", newBlockGroupType);
+				mutableBlock.set("type", newBlockType);
+
+				if (!ContentStore.blockGroupTypeHasTextItems(newBlockGroupType)) {
+					mutableBlock.remove("textItems");
+				}
+			});
+		});
+
+		if (editedBlockKeyPath) {
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, { editTextItemsIfPresent: true });
+		}
+	},
+
+	changeTypeOfSubsectionAtKeyPathInDocumentSection: function changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, newSubsectionType) {
+		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, function (block) {
+			return block.set("type", newSubsectionType);
 		});
 	},
-	
-	changeTypeOfSubsectionAtKeyPathInDocumentSection: function(documentID, sectionID, subsectionKeyPath, newSubsectionType) {
-		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, function(block) {
-			return block.set('subsectionType', newSubsectionType);
-		});
-	},
-	
-	insertBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, block, options) {
+
+	insertBlockAfterBlockAtKeyPathInDocumentSection: function insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, block, options) {
 		var blockIndex = blockKeyPath.slice(-1)[0];
 		var blocksKeyPath = blockKeyPath.slice(0, -1);
-		var fullKeyPath = [documentID, sectionID].concat(blocksKeyPath);
-		
 		var newBlockIndex = blockIndex + 1;
-		
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, function(blocks) {
-			return blocks.splice(newBlockIndex, 0, block);
-		});
-		
 		var newBlockKeyPath = blocksKeyPath.concat(newBlockIndex);
-		if (options && options.edit) {
-			if (this.blockTypeHasTextItems(block.get('type')) && block.get('textItems').count() > 0) {
-				var itemKeyPath = newBlockKeyPath.concat('textItems', 0);
-				this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
-			}
-			else {
-				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath);
-			}
-		}
+
+		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, block, options);
 	},
-	
-	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
+
+	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, options) {
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var blockType = currentBlock.get('type');
-		
-		var followingBlock = this.newBlockOfType(blockType);
-		
+
+		var followingBlock = this.newBlockWithSameType(currentBlock);
+
 		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, options);
 	},
-	
-	splitBlockBeforeItemAtKeyPathInDocumentSection: function(documentID, sectionID, itemKeyPath) {
+
+	splitBlockBeforeItemAtKeyPathInDocumentSection: function splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath) {
 		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var blockType = currentBlock.get('type');
-		
+
 		var textItemIndex = itemKeyPath.slice(-1)[0];
-		
+
 		var followingItems = [];
-		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function(block) {
-			var textItems = block.get('textItems');
+		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function (block) {
+			var textItems = block.get("textItems");
 			var precedingItems = textItems.slice(0, textItemIndex);
 			followingItems = textItems.slice(textItemIndex);
-			
-			block = block.set('textItems', precedingItems);
+
+			block = block.set("textItems", precedingItems);
 			return block;
 		});
-		
-		var followingBlock = this.newBlockOfType(blockType);
-		followingBlock = followingBlock.set('textItems', followingItems);
-		
-		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, {edit: true});
+
+		var followingBlock = this.newBlockWithSameType(currentBlock);
+		followingBlock = followingBlock.set("textItems", followingItems);
+
+		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, { edit: true });
 	},
-	
-	joinBlockAtKeyPathWithPreviousInDocumentSection: function(documentID, sectionID, currentBlockKeyPath) {
+
+	joinBlockAtKeyPathWithPreviousInDocumentSection: function joinBlockAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, currentBlockKeyPath) {
 		var currentBlockIndex = currentBlockKeyPath.slice(-1)[0];
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, currentBlockKeyPath);
-		var currentBlockType = currentBlock.get('type');
-		
-		if (currentBlockIndex === 0 || !this.blockTypeHasTextItems(currentBlockType)) {
+
+		var currentBlockGroupType = currentBlock.get("typeGroup");
+		if (currentBlockIndex === 0 || !this.blockGroupTypeHasTextItems(currentBlockGroupType)) {
 			return false;
 		}
-		
+
 		var precedingBlockIndex = currentBlockIndex - 1;
 		var precedingBlockKeyPath = currentBlockKeyPath.slice(0, -1).concat(precedingBlockIndex);
 		var precedingBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingBlockKeyPath);
-		var precedingBlockType = precedingBlock.get('type');
-		
-		if (!this.blockTypeHasTextItems(precedingBlockType)) {
+
+		var precedingBlockGroupType = precedingBlock.get("typeGroup");
+		if (!this.blockGroupTypeHasTextItems(precedingBlockGroupType)) {
 			return false;
 		}
-		
-		var followingTextItems = currentBlock.get('textItems');
-		var precedingTextItems = precedingBlock.get('textItems');
-		
-		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath, function(block) {
-			return block.update('textItems', function(textItems) {
+
+		var followingTextItems = currentBlock.get("textItems");
+		var precedingTextItems = precedingBlock.get("textItems");
+
+		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath, function (block) {
+			return block.update("textItems", function (textItems) {
 				return textItems.concat(followingTextItems);
 			});
 		});
-		
+
 		this.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, currentBlockKeyPath);
-		
-		var itemKeyPath = precedingBlockKeyPath.concat('textItems', precedingTextItems.count());
+
+		var itemKeyPath = precedingBlockKeyPath.concat("textItems", precedingTextItems.count());
 		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 	},
-	
-	joinItemAtKeyPathWithPreviousInDocumentSection: function(documentID, sectionID, itemKeyPath) {
+
+	joinItemAtKeyPathWithPreviousInDocumentSection: function joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, itemKeyPath) {
 		var itemIndex = itemKeyPath.slice(-1)[0];
 		if (itemIndex === 0) {
 			var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
 			this.joinBlockAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, blockKeyPath);
-		}
-		else {
+		} else {
 			var precedingItemIndex = itemIndex - 1;
 			var precedingItemKeyPath = itemKeyPath.slice(0, -1).concat(precedingItemIndex);
 			var precedingItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingItemKeyPath);
 			var followingItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath);
-			
-			var precedingText = precedingItem.get('text');
-			var followingText = followingItem.get('text');
+
+			var precedingText = precedingItem.get("text");
+			var followingText = followingItem.get("text");
 			var combinedText = precedingText + followingText;
-			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath, function(textItem) {
-				return textItem.set('text', combinedText);
+			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath, function (textItem) {
+				return textItem.set("text", combinedText);
 			});
-			
+
 			this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath);
 		}
 	},
-	
-	splitTextInRangeOfItemAtKeyPathInDocumentSection: function(documentID, sectionID, textSplitRange, itemKeyPath) {
+
+	splitTextInRangeOfItemAtKeyPathInDocumentSection: function splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, textSplitRange, itemKeyPath, insertedItem) {
 		var splitStart = textSplitRange.start;
 		var splitEnd = textSplitRange.end;
-		
+
 		var currentItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath);
-		var currentText = currentItem.get('text');
+		var currentText = currentItem.get("text");
 		var currentItemIndex = itemKeyPath.slice(-1)[0]; // Last item
 		var textItemsKeyPath = itemKeyPath.slice(0, -1); // Everything except last item
-		
+
 		// Just a caret
 		if (splitStart === splitEnd) {
-			var itemAText = currentText.slice(0, splitStart)
+			var itemAText = currentText.slice(0, splitStart);
 			var itemBText = currentText.slice(splitStart);
-			console.log('split 2', [itemAText, itemBText]);
-			
-			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function(textItem) {
-				return textItem.set('text', itemAText);
+
+			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function (textItem) {
+				return textItem.set("text", itemAText);
 			});
-			
-			var itemB = this.newTextItem({"text": itemBText});
+
+			if (insertedItem) {
+				this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, insertedItem);
+			}
+
+			var itemB = this.newTextItem({ text: itemBText });
 			//var itemBIndex = currentItemIndex + 1;
 			//var itemBKeyPath = textItemsKeyPath.concat(itemBIndex);
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB);
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, { edit: true });
 		}
 		// Actual selection range
 		else {
-			var itemAText = currentText.slice(0, splitStart)
+			var itemAText = currentText.slice(0, splitStart);
 			var itemBText = currentText.slice(splitStart, splitEnd);
 			var itemCText = currentText.slice(splitEnd);
-			console.log('split 3', [itemAText, itemBText, itemCText]);
-			
-			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function(textItem) {
-				return textItem.set('text', itemAText);
+
+			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function (textItem) {
+				return textItem.set("text", itemAText);
 			});
-			
-			var itemB = this.newTextItem({"text": itemBText});
-			var itemC = this.newTextItem({"text": itemCText});
-			
+
+			var itemB = this.newTextItem({ text: itemBText });
+			var itemC = this.newTextItem({ text: itemCText });
+
 			// Insert itemC then itemB, so that itemB is in front of itemC
 			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemC);
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB);
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, { edit: true });
 		}
-		
-		/*
-		this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function(textItem) {
-			return textItem.set('text', combinedText);
-		});
-		*/
 	},
-	
-	getEditedBlockIdentifierForDocumentSection: function(documentID, sectionID) {
+
+	getEditedBlockIdentifierForDocumentSection: function getEditedBlockIdentifierForDocumentSection(documentID, sectionID) {
 		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "identifier"], null);
 	},
-	
-	getEditedBlockKeyPathForDocumentSection: function(documentID, sectionID) {
+
+	getEditedBlockKeyPathForDocumentSection: function getEditedBlockKeyPathForDocumentSection(documentID, sectionID) {
 		var keyPath = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "keyPath"], null);
 		if (keyPath) {
 			keyPath = keyPath.toJS();
 		}
 		return keyPath;
 	},
-	
-	getEditedTextItemIdentifierForDocumentSection: function(documentID, sectionID) {
+
+	getEditedTextItemIdentifierForDocumentSection: function getEditedTextItemIdentifierForDocumentSection(documentID, sectionID) {
 		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "identifier"], null);
 	},
-	
-	getEditedTextItemKeyPathForDocumentSection: function(documentID, sectionID) {
+
+	getEditedTextItemKeyPathForDocumentSection: function getEditedTextItemKeyPathForDocumentSection(documentID, sectionID) {
 		var keyPath = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "keyPath"], null);
 		if (keyPath) {
 			keyPath = keyPath.toJS();
 		}
 		return keyPath;
 	},
-	
-	editingWillEndInDocumentSection: function(documentID, sectionID) {
+
+	editingWillEndInDocumentSection: function editingWillEndInDocumentSection(documentID, sectionID) {
 		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
 		if (!itemKeyPath) {
 			return;
 		}
-		
+
 		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var blockType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat('type'));
-		
-		if (this.blockTypeHasTextItems(blockType)) {
+		var blockGroupType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("typeGroup"));
+
+		if (this.blockGroupTypeHasTextItems(blockGroupType)) {
 			var isEmpty = this.textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 			if (isEmpty) {
 				this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 			}
 		}
-		
-		this.trigger('editedItemWillEndEditingForDocumentSection', documentID, sectionID);
+
+		this.trigger("editedItemWillEndEditingForDocumentSection", documentID, sectionID);
 	},
-	
-	editBlockWithKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
+
+	editBlockWithKeyPathInDocumentSection: function editBlockWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, options) {
 		this.editingWillEndInDocumentSection(documentID, sectionID);
-		
+
 		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var blockIdentifier = block.get('identifier');
-		
+		var blockIdentifier = block.get("identifier");
+
 		if (options && options.editTextItemsIfPresent) {
-			if (this.blockTypeHasTextItems(block.get('type')) && block.get('textItems').count() > 0) {
-				var itemKeyPath = blockKeyPath.concat('textItems', 0);
+			if (this.blockGroupTypeHasTextItems(block.get("typeGroup")) && block.has("textItems") && block.get("textItems").count() > 0) {
+				var itemKeyPath = blockKeyPath.concat("textItems", 0);
 				this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 				return;
 			}
 		}
-		
+
 		var state = Immutable.fromJS({
-			"block": {
+			block: {
 				keyPath: blockKeyPath,
 				identifier: blockIdentifier
 			}
 		});
-		
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn(
-			[documentID, sectionID], state
-		);
-		
-		this.trigger('editedBlockChangedForDocumentSection', documentID, sectionID);
+
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
+
+		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
 	},
-	
-	editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection: function(documentID, sectionID, blockKeyPath) {
+
+	editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection: function editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath) {
 		this.editingWillEndInDocumentSection(documentID, sectionID);
-		
+
 		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var textItems = block.get('textItems');
+		var textItems = block.get("textItems");
 		var textItemCount = textItems.count();
 		if (textItemCount === 0) {
 			// Insert an empty item and edit it.
 			var newTextItem = this.newTextItem();
-			this.insertItemAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat('textItems', 0), newTextItem, {edit: true});
-		}
-		else {
+			this.insertItemAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat("textItems", 0), newTextItem, { edit: true });
+		} else {
 			// Edit last item.
-			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat('textItems', textItemCount - 1));
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat("textItems", textItemCount - 1));
 		}
 	},
-	
-	editItemWithKeyPathInDocumentSection: function(documentID, sectionID, itemKeyPath) {
+
+	editItemWithKeyPathInDocumentSection: function editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath) {
 		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var blockIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat('identifier'));
-		
-		var itemIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath.concat('identifier'));
-		
+		var blockIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("identifier"));
+
+		var itemIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath.concat("identifier"));
+
 		var currentEditedItemIdentifier = this.getEditedTextItemIdentifierForDocumentSection();
 		if (itemIdentifier !== currentEditedItemIdentifier) {
 			this.editingWillEndInDocumentSection(documentID, sectionID);
 		}
-		
+
 		var state = Immutable.fromJS({
-			"block": {
+			block: {
 				keyPath: blockKeyPath,
 				identifier: blockIdentifier
 			},
-			"item": {
+			item: {
 				keyPath: itemKeyPath,
 				identifier: itemIdentifier
 			}
 		});
-		
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn(
-			[documentID, sectionID], state
-		);
-		
-		this.trigger('editedBlockChangedForDocumentSection', documentID, sectionID);
-		this.trigger('editedItemChangedForDocumentSection', documentID, sectionID);
+
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
+
+		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
+		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
 	},
-	
-	finishEditingInDocumentSection: function(documentID, sectionID) {
+
+	finishEditingInDocumentSection: function finishEditingInDocumentSection(documentID, sectionID) {
 		this.editingWillEndInDocumentSection(documentID, sectionID);
-		
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.removeIn(
-			[documentID, sectionID]
-		);
-		
-		this.trigger('editedBlockChangedForDocumentSection', documentID, sectionID);
-		this.trigger('editedItemChangedForDocumentSection', documentID, sectionID);
+
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.removeIn([documentID, sectionID]);
+
+		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
+		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
 	},
-	
-	registerSelectedTextRangeFunctionForEditedItemInDocumentSection: function(documentID, sectionID, selectedTextRangeFunction) {
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn(
-			[documentID, sectionID, "item", "selectedTextRangeFunction"], selectedTextRangeFunction
-		);
+
+	registerSelectedTextRangeFunctionForEditedItemInDocumentSection: function registerSelectedTextRangeFunctionForEditedItemInDocumentSection(documentID, sectionID, selectedTextRangeFunction) {
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID, "item", "selectedTextRangeFunction"], selectedTextRangeFunction);
 	},
-	
-	unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection: function(documentID, sectionID) {
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.deleteIn(
-			[documentID, sectionID, "item", "selectedTextRangeFunction"]
-		);
+
+	unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection: function unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection(documentID, sectionID) {
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.deleteIn([documentID, sectionID, "item", "selectedTextRangeFunction"]);
 	},
-	
-	getSelectedTextRangeForEditedItemInDocumentSection: function(documentID, sectionID, selectedTextRange) {
-		var selectedTextRangeFunction = this.documentSectionEditedTextItemIdentifiers.getIn(
-			[documentID, sectionID, "item", "selectedTextRangeFunction"], null
-		);
+
+	getSelectedTextRangeForEditedItemInDocumentSection: function getSelectedTextRangeForEditedItemInDocumentSection(documentID, sectionID, selectedTextRange) {
+		var selectedTextRangeFunction = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "selectedTextRangeFunction"], null);
 		if (selectedTextRangeFunction) {
 			var selectedTextRange = selectedTextRangeFunction();
-			console.log('selectedTextRange', selectedTextRange);
+			console.log("selectedTextRange", selectedTextRange);
 			return selectedTextRange;
 		}
-		
+
 		return null;
 	},
-	
-	setSelectedTextRangeForEditedItemInDocumentSection: function(documentID, sectionID, selectedTextRange) {
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn(
-			[documentID, sectionID, "item", "selectedTextRange"], selectedTextRange
-		);
+
+	setSelectedTextRangeForEditedItemInDocumentSection: function setSelectedTextRangeForEditedItemInDocumentSection(documentID, sectionID, selectedTextRange) {
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID, "item", "selectedTextRange"], selectedTextRange);
 	},
-	
-	editPreviousItemInDocumentSection: function(documentID, sectionID) {
+
+	editPreviousItemInDocumentSection: function editPreviousItemInDocumentSection(documentID, sectionID) {
 		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
 		var itemIndex = itemKeyPath.slice(-1)[0];
 		if (itemIndex === 0) {
 			return false;
 		}
-		
+
 		var previousItemKeyPath = itemKeyPath.slice(0, -1).concat(itemIndex - 1);
 		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, previousItemKeyPath);
 	},
-	
-	editNextItemInDocumentSection: function(documentID, sectionID) {
+
+	editNextItemInDocumentSection: function editNextItemInDocumentSection(documentID, sectionID) {
 		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
 		var itemIndex = itemKeyPath.slice(-1)[0];
-		
+
 		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var textItemsKeyPath = blockKeyPath.concat('textItems');
+		var textItemsKeyPath = blockKeyPath.concat("textItems");
 		var textItems = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath);
 		var itemCount = textItems.count();
-		
-		if (itemIndex === (itemCount - 1)) {
+
+		if (itemIndex === itemCount - 1) {
 			return false;
 		}
-		
+
 		var nextItemKeyPath = itemKeyPath.slice(0, -1).concat(itemIndex + 1);
 		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, nextItemKeyPath);
 	},
-	
-	getDocumentSection: function(documentID, sectionID) {
+
+	getDocumentSection: function getDocumentSection(documentID, sectionID) {
 		return {
 			getContent: this.getContentForDocumentSection.bind(this, documentID, sectionID),
 			setContentFromJSON: this.setContentFromJSONForDocumentSection.bind(this, documentID, sectionID),
@@ -26156,164 +27715,202 @@ var ContentStore = {
 		};
 	}
 };
-//MicroEvent.mixin(ContentStore);
-//EventMixin.mixin(ContentStore);
+
 ContentStore.on = MicroEvent.prototype.bind;
 ContentStore.trigger = MicroEvent.prototype.trigger;
 ContentStore.off = MicroEvent.prototype.unbind;
 
-AppDispatcher.register( function(payload) {
+AppDispatcher.register(function (payload) {
 	var documentID = null;
 	var sectionID = null;
+	// TODO: use these two variables.
+	var blockKeyPath = null;
+	var textItemKeyPath = null;
 	var editedBlockKeyPath = null;
 	var editedTextItemKeyPath = null;
+
 	if (payload.documentID) {
 		documentID = payload.documentID;
 		if (payload.sectionID) {
 			sectionID = payload.sectionID;
 			editedBlockKeyPath = ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
 			editedTextItemKeyPath = ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
+
+			// TODO: use these variables.
+			if (payload.useEditedBlockKeyPath) {
+				blockKeyPath = editedBlockKeyPath;
+			} else {
+				blockKeyPath = payload.blockKeyPath;
+			}
+			//var blockKeyPathIsEdited = (blockKeyPath === editedBlockKeyPath);
+
+			if (payload.useEditedTextItemKeyPath) {
+				textItemKeyPath = editedTextItemKeyPath;
+			} else {
+				textItemKeyPath = payload.textItemKeyPath;
+			}
 		}
 	}
-	
+
 	switch (payload.eventID) {
-		
-	case (documentSectionEventIDs.setContent):
-		ContentStore.setContentFromJSONForDocumentSection(
-			documentID,
-			sectionID,
-			payload.content
-		);
-		break;
-	
-	case (documentSectionEventIDs.edit.textItemWithKeyPath):
-		ContentStore.editItemWithKeyPathInDocumentSection(
-			documentID,
-			sectionID,
-			payload.textItemKeyPath
-		);
-		break;
-	
-	case (documentSectionEventIDs.edit.blockWithKeyPath):
-		ContentStore.editBlockWithKeyPathInDocumentSection(
-			documentID,
-			sectionID,
-			payload.blockKeyPath
-		);
-		break;
-	
-	case (documentSectionEventIDs.finishEditing):
-		ContentStore.finishEditingInDocumentSection(documentID, sectionID);
-		break;
-	
-	case (documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex):
-		ContentStore.insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID,
-			payload.subsectionType, payload.blockIndex, {editFollowing: true}
-		);
-		break;
-	
-	case (documentSectionEventIDs.subsectionAtKeyPath.changeType):
-		ContentStore.changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID,
-			payload.subsectionKeyPath, payload.subsectionType
-		);
-		
-		break;
-	
-	case (documentSectionEventIDs.blockAtKeyPath.changeType):
-		ContentStore.changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID,
-			payload.blockKeyPath, payload.blockType
-		);
-		break;
-		
-	case (documentSectionEventIDs.blockAtKeyPath.remove):
-		ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
-		break;
-	
-	case (documentSectionEventIDs.blockAtKeyPath.changePlaceholderID):
-		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function(block) {
-			return block.set('placeholderID', payload.placeholderID);
-		});
-		break;
-	
-	case (documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter):
-		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.keyPath);
-		break;
-	
-	case (documentSectionEventIDs.editedBlock.remove):
-		ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {editPrevious: true});
-		break;
-	
-	case (documentSectionEventIDs.editedBlock.insertRelatedBlockAfter):
-		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {edit: true});
-		break;
-		
-	case (documentSectionEventIDs.editedItem.remove):
-		ContentStore.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, {editPrevious: true});
-		break;
-		
-	case (documentSectionEventIDs.editedItem.setText):
-		var text = payload.textItemText;
-		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
-			return textItem.set('text', text);
-		});
-		break;
-	
-	case (documentSectionEventIDs.editedItem.changeTraitValue):
-		var attributeID = payload.attributeID;
-		var defaultValue = payload.defaultValue;
-		var newValueFunction = payload.newValueFunction;
-		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
-			return textItem.updateIn(['traits', attributeID], defaultValue, newValueFunction);
-		});
-		break;
-	
-	case (documentSectionEventIDs.editedItem.editPreviousItem):
-		ContentStore.editPreviousItemInDocumentSection(documentID, sectionID);
-		break;
-	
-	case (documentSectionEventIDs.editedItem.editNextItem):
-		ContentStore.editNextItemInDocumentSection(documentID, sectionID);
-		break;
-		
-	case (documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded):
-		ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, payload.blockKeyPath);
-		break;
-	
-	case (documentSectionEventIDs.editedItem.addNewTextItemAfter):
-		ContentStore.addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-		break;
-	
-	case (documentSectionEventIDs.editedItem.splitBlockBefore):
-		ContentStore.splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-		break;
-	
-	case (documentSectionEventIDs.editedItem.joinWithPreviousItem):
-		ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-		break;
-	
-	case (documentSectionEventIDs.editedItem.remove):
-		ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-		break;
-	
-	case (documentSectionEventIDs.editedItem.splitTextInRange):
-		ContentStore.splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, payload.textRange, editedTextItemKeyPath);
-		break;
-	
+
+		case documentSectionEventIDs.setContent:
+			ContentStore.setContentFromJSONForDocumentSection(documentID, sectionID, payload.content);
+			break;
+
+		case documentSectionEventIDs.edit.textItemWithKeyPath:
+			ContentStore.editItemWithKeyPathInDocumentSection(documentID, sectionID, payload.textItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.edit.blockWithKeyPath:
+			ContentStore.editBlockWithKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+			break;
+
+		case documentSectionEventIDs.finishEditing:
+			ContentStore.finishEditingInDocumentSection(documentID, sectionID);
+			break;
+
+		case documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex:
+			ContentStore.insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID, payload.subsectionType, payload.blockIndex, { editFollowing: true });
+			break;
+
+		case documentSectionEventIDs.subsectionAtKeyPath.changeType:
+			ContentStore.changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID, payload.subsectionKeyPath, payload.subsectionType);
+
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.changeType:
+			ContentStore.changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, payload.blockTypeGroup, payload.blockType);
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.remove:
+			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.changeValue:
+			var defaultValue = payload.defaultValue;
+			var newValueFunction = payload.newValueFunction;
+			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function (block) {
+				return block.updateIn(["value"], defaultValue, newValueFunction);
+			});
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.changePlaceholderID:
+			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function (block) {
+				return block.set("placeholderID", payload.placeholderID);
+			});
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter:
+			ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.keyPath);
+			break;
+
+		// EDITED BLOCK
+
+		case documentSectionEventIDs.editedBlock.remove:
+			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, { editPrevious: true });
+			break;
+
+		case documentSectionEventIDs.editedBlock.insertRelatedBlockAfter:
+			ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, { edit: true });
+			break;
+
+		case documentSectionEventIDs.editedBlock.changeTraitValue:
+			var traitID = payload.traitID;
+			var defaultValue = payload.defaultValue;
+			var newValueFunction = payload.newValueFunction;
+			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, function (block) {
+				return block.updateIn(["traits", traitID], defaultValue, newValueFunction);
+			});
+			break;
+
+		case documentSectionEventIDs.editedBlock.removeTrait:
+			var traitID = payload.traitID;
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (block) {
+				return block.removeIn(["traits", traitID]);
+			});
+			break;
+
+		// EDITED TEXT ITEM
+
+		case documentSectionEventIDs.editedItem.remove:
+			ContentStore.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { editPrevious: true });
+			break;
+
+		case documentSectionEventIDs.editedItem.setText:
+			var text = payload.textItemText;
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				return textItem.set("text", text);
+			});
+			break;
+
+		case documentSectionEventIDs.editedItem.changeTraitValue:
+			var traitID = payload.traitID;
+			var defaultValue = payload.defaultValue;
+			var newValueFunction = payload.newValueFunction;
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				return textItem.updateIn(["traits", traitID], defaultValue, newValueFunction);
+			});
+			break;
+
+		case documentSectionEventIDs.editedItem.removeTrait:
+			var traitID = payload.traitID;
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				return textItem.removeIn(["traits", traitID]);
+			});
+			break;
+
+		case documentSectionEventIDs.editedItem.editPreviousItem:
+			ContentStore.editPreviousItemInDocumentSection(documentID, sectionID);
+			break;
+
+		case documentSectionEventIDs.editedItem.editNextItem:
+			ContentStore.editNextItemInDocumentSection(documentID, sectionID);
+			break;
+
+		case documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded:
+			ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.addNewTextItemAfter:
+			ContentStore.addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { edit: true });
+			break;
+
+		case documentSectionEventIDs.editedItem.addNewLineBreakAfter:
+			ContentStore.addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { edit: true });
+			break;
+
+		case documentSectionEventIDs.editedItem.splitBlockBefore:
+			ContentStore.splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.joinWithPreviousItem:
+			ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.remove:
+			ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.splitTextInRange:
+			ContentStore.splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, payload.textRange, editedTextItemKeyPath);
+			break;
+
 	}
-	
+
 	return true;
 });
 
-ContentStore.setUpInitialSpecs();
-
 module.exports = ContentStore;
-},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"../dummy/dummy-content-specs.json":157,"immutable":5,"microevent":6}],165:[function(require,module,exports){
-var AppDispatcher = require('../app-dispatcher');
-var Immutable = require('immutable');
-var MicroEvent = require('microevent');
-var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
+},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"../stores/store-settings.js":169,"immutable":5,"microevent":6}],168:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 var documentSectionActivity = Immutable.Map({});
 
@@ -26323,47 +27920,48 @@ var StorePreview = {
 	off: MicroEvent.prototype.unbind
 };
 
-
 var isPreviewing = false;
-StorePreview.getIsPreviewing = function() {
+StorePreview.getIsPreviewing = function () {
 	return isPreviewing;
 };
-	
-StorePreview.enterPreview = function() {
+
+StorePreview.enterPreview = function () {
 	if (!isPreviewing) {
 		isPreviewing = true;
-		StorePreview.trigger('didEnterPreview');
+		StorePreview.trigger("didEnterPreview");
 	}
 };
 
-StorePreview.exitPreview = function() {
+StorePreview.exitPreview = function () {
 	if (isPreviewing) {
 		isPreviewing = false;
-		StorePreview.trigger('didExitPreview');
+		StorePreview.trigger("didExitPreview");
 	}
 };
 
-
-AppDispatcher.register( function(payload) {
+AppDispatcher.register(function (payload) {
 	switch (payload.eventID) {
-		
-	case (documentSectionEventIDs.enterHTMLPreview):
-		StorePreview.enterPreview();
-		break;
-	
-	case (documentSectionEventIDs.exitHTMLPreview):
-		StorePreview.exitPreview();
-		break;
-	
+
+		case documentSectionEventIDs.enterHTMLPreview:
+			StorePreview.enterPreview();
+			break;
+
+		case documentSectionEventIDs.exitHTMLPreview:
+			StorePreview.exitPreview();
+			break;
+
 	}
 });
 
 module.exports = StorePreview;
-},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"immutable":5,"microevent":6}],166:[function(require,module,exports){
-var AppDispatcher = require('../app-dispatcher');
-var MicroEvent = require('microevent');
-var qwest = require('qwest');
 
+},{"../actions/actions-content-eventIDs":154,"../app-dispatcher":156,"immutable":5,"microevent":6}],169:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var MicroEvent = require("microevent");
+var Immutable = require("immutable");
+var qwest = require("qwest");
 
 var SettingsStore = {
 	on: MicroEvent.prototype.bind,
@@ -26371,249 +27969,293 @@ var SettingsStore = {
 	off: MicroEvent.prototype.unbind
 };
 
-
-var getSettingsJSON = function() {
+var getSettingsJSON = function getSettingsJSON() {
 	if (window && window.burntIcing) {
 		return window.burntIcing.settingsJSON;
-	}
-	else {
+	} else {
 		return null;
 	}
 };
 
-var getKeyFromObject = function(object, key, fallback) {
-	if (typeof fallback === 'undefined') {
+var getKeyFromObject = function getKeyFromObject(object, key, fallback) {
+	if (typeof fallback === "undefined") {
 		fallback = null;
 	}
-	
-	if (!object || (typeof object[key] === 'undefined')) {
-		return fallback;
-	}
-	
-	return object[key];
-}
 
-var getKeyFromSettingsJSON = function(key, fallback) {
-	if (typeof fallback === 'undefined') {
-		fallback = null;
-	}
-	
-	var settingsJSON = getSettingsJSON();
-	if (!settingsJSON || (typeof settingsJSON[key] === 'undefined')) {
+	if (!object || typeof object[key] === "undefined") {
 		return fallback;
 	}
-	
+
+	return object[key];
+};
+
+var getKeyFromSettingsJSON = function getKeyFromSettingsJSON(key, fallback) {
+	if (typeof fallback === "undefined") {
+		fallback = null;
+	}
+
+	var settingsJSON = getSettingsJSON();
+	if (!settingsJSON || typeof settingsJSON[key] === "undefined") {
+		return fallback;
+	}
+
 	return settingsJSON[key];
 };
 
-SettingsStore.getActionURL = function() {
-	return getKeyFromSettingsJSON('actionURL');
+SettingsStore.getActionURL = function () {
+	return getKeyFromSettingsJSON("actionURL");
 };
 
-SettingsStore.getWantsSaveFunctionality = function() {
-	return getKeyFromSettingsJSON('wantsSaveFunctionality', true);
-};
-	
-SettingsStore.getWantsViewHTMLFunctionality = function() {
-	return getKeyFromSettingsJSON('wantsViewHTMLFunctionality', false);
+SettingsStore.getWantsSaveFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsSaveFunctionality", true);
 };
 
-SettingsStore.getWantsPlaceholderFunctionality = function() {
-	return getKeyFromSettingsJSON('wantsPlaceholderFunctionality', false);
+SettingsStore.getWantsViewHTMLFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsViewHTMLFunctionality", false);
 };
 
-SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{'id': 'body', 'title': 'Body'},
-		{'id': 'heading', 'title': 'Heading'},
-		{'id': 'subhead1', 'title': 'Subheading'},
-		{'id': 'subhead2', 'title': 'Subheading B'},
-		{'id': 'subhead3', 'title': 'Subheading C'},
-		//{'id': 'figure', 'title': 'Figure'},
-		//{'id': 'media', 'title': 'Media'},
-		//{'id': 'quote', 'title': 'Quote'},
-		{'id': 'placeholder', 'title': 'Particular'},
-		{'id': 'subsection', 'title': 'Subsection'}
-		//{'id': 'external', 'title': 'External Element'},
-		//{'id': 'placeholder', 'title': 'Placeholder'}
+SettingsStore.getWantsPlaceholderFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsPlaceholderFunctionality", false);
+};
+
+SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" },
+	//{'id': 'figure', 'title': 'Figure'},
+	//{'id': 'media', 'title': 'Media'},
+	//{'id': 'quote', 'title': 'Quote'},
+	{ id: "placeholder", title: "Particular" }, { id: "subsection", title: "Subsection" }
+	//{'id': 'external', 'title': 'External Element'},
+	//{'id': 'placeholder', 'title': 'Placeholder'}
 	];
 };
 
-SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{'id': 'body', 'title': 'Paragraph'},
-		{'id': 'heading', 'title': 'Heading 1'},
-		{'id': 'subhead1', 'title': 'Heading 2'},
-		{'id': 'subhead2', 'title': 'Heading 3'},
-		{'id': 'subhead3', 'title': 'Heading 4'},
-		{'id': 'placeholder', 'title': 'Particular'},
-		{'id': 'subsection', 'title': 'Subsection'}
-	];
+SettingsStore.getAvailableBlockTypesForDocumentSection = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{ id: "body", title: "Paragraph" }, { id: "heading", title: "Heading 1" }, { id: "subhead1", title: "Heading 2" }, { id: "subhead2", title: "Heading 3" }, { id: "subhead3", title: "Heading 4" }, { id: "placeholder", title: "Particular" }];
 };
 
-SettingsStore.getAvailableSubsectionTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{'id': 'normal', 'title': 'Normal'},
-		{'id': 'unorderedList', 'title': 'Unordered List'},
-		{'id': 'orderedList', 'title': 'Ordered List'}
-	];
+SettingsStore.getAvailableSubsectionTypesForDocumentSection = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{ id: "normal", title: "Normal" }, { id: "unorderedList", title: "Unordered List" }, { id: "orderedList", title: "Ordered List" }];
 };
 
-SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{
-			"id": "text",
-			"types": [
-				{'id': 'body', 'title': 'Body'},
-				{'id': 'heading', 'title': 'Heading'},
-				{'id': 'subhead1', 'title': 'Subheading'},
-				{'id': 'subhead2', 'title': 'Subheading B'},
-				{'id': 'subhead3', 'title': 'Subheading C'}
-			]
-		},
-		{
-			"id": "media",
-			"types": [
-				{"id": "externalImage", "title": "External Image"},
-				{"id": "youTubeVideo", "title": "YouTube Video"},
-				{"id": "vimeoVideo", "title": "Vimeo Video"}
-				//{"id": "iframe", "title": "HTML iframe"}
-			]
-		},
-		{
-			"id": "particular",
-			"types": [
-				{'id': 'placeholder', 'title': 'Placeholder'},
-				{'id': 'streetAddress', 'title': 'Street Address'}
-			]
-		},
-		{
-			"id": "section",
-			"types": [
-				{'id': 'list', 'title': 'List'},
-				{'id': 'quote', 'title': 'Quote'}
-			]
-		}
-		
-	];
+SettingsStore.getAvailableBlockTypesGroups = function () {
+	return Immutable.fromJS([{
+		id: "text",
+		title: "Text"
+	}, {
+		id: "media",
+		title: "Media"
+	}, {
+		id: "particular",
+		title: "Particular"
+	}]);
 };
 
-SettingsStore.getInitialDocumentState = function() {
-	return getKeyFromSettingsJSON('initialDocumentState', {});
+SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{
+		id: "text",
+		types: [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" }]
+	}, {
+		id: "media",
+		types: [{ id: "externalImage", title: "External Image" }, { id: "youTubeVideo", title: "YouTube Video" }, { id: "vimeoVideo", title: "Vimeo Video" }
+		//{"id": "iframe", "title": "HTML iframe"}
+		]
+	}, {
+		id: "particular",
+		types: [{ id: "streetAddress", title: "Street Address" }]
+	}, {
+		id: "section",
+		types: [{ id: "list", title: "List" }, { id: "quote", title: "Quote" }]
+	}];
 };
 
-SettingsStore.getInitialAvailableDocuments = function() {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), 'availableDocuments', []);
+SettingsStore.getInitialDocumentState = function () {
+	return getKeyFromSettingsJSON("initialDocumentState", {});
 };
 
-SettingsStore.getInitialDocumentID = function() {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), 'documentID');
+SettingsStore.getInitialAvailableDocuments = function () {
+	return getKeyFromObject(SettingsStore.getInitialDocumentState(), "availableDocuments", []);
 };
 
-SettingsStore.getInitialDocumentSectionID = function() {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), 'documentSectionID');
+SettingsStore.getInitialDocumentID = function () {
+	return getKeyFromObject(SettingsStore.getInitialDocumentState(), "documentID");
 };
 
-SettingsStore.getInitialContentJSONForDocument = function(documentID) {
-	var initialContentJSON = getKeyFromObject(SettingsStore.getInitialDocumentState(), 'contentJSONByDocumentID');
+SettingsStore.getInitialDocumentSectionID = function () {
+	return getKeyFromObject(SettingsStore.getInitialDocumentState(), "documentSectionID");
+};
+
+SettingsStore.getInitialContentJSONForDocument = function (documentID) {
+	var initialContentJSON = getKeyFromObject(SettingsStore.getInitialDocumentState(), "contentJSONByDocumentID");
 	//var initialContentJSON = getKeyFromSettingsJSON('initialContentJSONByDocumentID');
 	//return getKeyFromObject(initialContentJSON, documentID);
 	if (!initialContentJSON) {
 		return null;
 	}
-	
+
 	if (initialContentJSON[documentID]) {
 		return initialContentJSON[documentID];
 	}
-	
+
 	return null;
 };
 
 var availableDocuments = null;
-SettingsStore.getAvailableDocuments = function() {
+SettingsStore.getAvailableDocuments = function () {
 	if (!availableDocuments) {
 		availableDocuments = SettingsStore.getInitialAvailableDocuments();
 	}
-	
+
 	return availableDocuments;
 };
 
 var currentDocumentID = null;
-SettingsStore.getCurrentDocumentID = function() {
+SettingsStore.getCurrentDocumentID = function () {
 	if (!currentDocumentID) {
 		currentDocumentID = SettingsStore.getInitialDocumentID();
 	}
-	
+
 	return currentDocumentID;
 };
-SettingsStore.setCurrentDocumentID = function(newDocumentID) {
+SettingsStore.setCurrentDocumentID = function (newDocumentID) {
 	currentDocumentID = newDocumentID;
 };
 
-SettingsStore.getAvailableSectionIDsForDocumentID = function(documentID) {
+SettingsStore.getAvailableSectionIDsForDocumentID = function (documentID) {
 	return [];
 };
 
 var currentDocumentSectionID = null;
-SettingsStore.getCurrentSectionID = function() {
+SettingsStore.getCurrentSectionID = function () {
 	if (!currentDocumentSectionID) {
 		currentDocumentSectionID = SettingsStore.getInitialDocumentSectionID();
 	}
 	return currentDocumentSectionID;
 };
 
-
-SettingsStore.getContentSpecificationJSONForDocumentSection = function(documentID, sectionID) {
-	//var contentSpecs = require('./dummy-content-specs.json');
-	//return contentSpecs;
+SettingsStore.getContentSpecsForDocumentSection = function (documentID, sectionID) {
+	var contentSpecsJSON = require("../dummy/dummy-content-specs.json");
+	var contentSpecs = Immutable.fromJS(contentSpecsJSON);
+	return contentSpecs;
 };
 
-
 module.exports = SettingsStore;
-},{"../app-dispatcher":156,"microevent":6,"qwest":7}],167:[function(require,module,exports){
-var React = require('react');
+
+},{"../app-dispatcher":156,"../dummy/dummy-content-specs.json":159,"immutable":5,"microevent":6,"qwest":7}],170:[function(require,module,exports){
+"use strict";
+
+exports.KeyCodes = {
+	RETURN_OR_ENTER: 13,
+	DELETE_OR_BACKSPACE: 8,
+	TAB: 9,
+	SPACE: 32
+};
+
+},{}],171:[function(require,module,exports){
+"use strict";
+
+var React = require("react");
+
+function getClassNamesWithSuffixes(baseClassNames, suffixes) {
+	if (suffixes.length === 0) {
+		return [];
+	}
+
+	return baseClassNames.reduce(function (classNamesSoFar, className) {
+		classNamesSoFar.push.apply(classNamesSoFar, suffixes.map(function (suffix) {
+			return className + suffix;
+		}));
+		return classNamesSoFar;
+	}, []);
+};
+
+var BaseClassNamesMixin = {
+	getBaseClassNames: function getBaseClassNames() {
+		var props = this.props;
+		var baseClassNames = props.baseClassNames || [];
+
+		if (props.className) {
+			baseClassNames = baseClassNames.concat(props.className);
+		}
+
+		return baseClassNames;
+	},
+
+	getClassNamesWithExtensions: function getClassNamesWithExtensions(additionalExtensions) {
+		var props = this.props;
+		var baseClassNames = this.getBaseClassNames();
+
+		var extensions = [];
+		if (props.additionalClassNameExtensions) {
+			extensions = extensions.concat(props.additionalClassNameExtensions);
+		}
+		if (additionalExtensions) {
+			extensions = extensions.concat(additionalExtensions);
+		}
+
+		var classNamesWithExtensions = getClassNamesWithSuffixes(baseClassNames, extensions);
+		return baseClassNames.concat(classNamesWithExtensions);
+	},
+
+	getClassNameStringWithExtensions: function getClassNameStringWithExtensions(additionalExtensions) {
+		return this.getClassNamesWithExtensions(additionalExtensions).join(" ");
+	},
+
+	getClassNamesWithChildSuffixes: function getClassNamesWithChildSuffixes(childSuffixes) {
+		return getClassNamesWithSuffixes(this.getBaseClassNames(), childSuffixes);
+	},
+
+	getClassNameStringWithChildSuffixes: function getClassNameStringWithChildSuffixes(childSuffixes) {
+		return this.getClassNamesWithChildSuffixes(childSuffixes).join(" ");
+	},
+
+	getClassNamesWithChildSuffix: function getClassNamesWithChildSuffix(childSuffix) {
+		return getClassNamesWithSuffixes(this.getBaseClassNames(), [childSuffix]);
+	},
+
+	getClassNameStringWithChildSuffix: function getClassNameStringWithChildSuffix(childSuffix) {
+		return this.getClassNamesWithChildSuffix(childSuffix).join(" ");
+	}
+};
 
 var ButtonMixin = {
-	getDefaultProps: function() {
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
 		return {
 			selected: false
 			//baseClassNames: ['button']
 		};
 	},
-	
-	render: function() {
+
+	render: function render() {
 		var props = this.props;
 		var title = props.title;
-		
-		var baseClassNames = props.baseClassNames;
-		var classNames = baseClassNames.slice();
-		
-		if (props.className) {
-			classNames.push(props.className);
-		}
-		
-		var addClassNameExtension = function(extension) {
-			classNames.push.apply(classNames, baseClassNames.map(function(className) {
-				return className + extension;
-			}));
-		};
 
+		var extensions = [];
 		if (props.selected) {
-			addClassNameExtension('-selected');
+			extensions.push("-selected");
 		}
-		
-		return React.createElement('button', {
-			className: classNames.join(' '),
+
+		var classNames = this.getClassNamesWithExtensions(extensions);
+
+		return React.createElement("button", {
+			className: classNames.join(" "),
 			onClick: props.onClick
 		}, title);
 	}
 };
 
 var Mixins = {
-	ButtonMixin: ButtonMixin
+	ButtonMixin: ButtonMixin,
+	BaseClassNamesMixin: BaseClassNamesMixin
 };
 module.exports = Mixins;
-},{"react":153}],168:[function(require,module,exports){
+
+},{"react":153}],172:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};

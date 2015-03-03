@@ -43,9 +43,10 @@
   },
   "scripts": {
     "start": "gulp watch",
-	"prod": "gulp --production"
+    "prod": "gulp --production"
   },
   "devDependencies": {
+    "envify": "^3.2.0",
     "qwest": "^1.5.4"
   }
 }

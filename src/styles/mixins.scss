@@ -1,0 +1,106 @@
+%smallUIHeading
+{
+	margin: 0;
+	padding: 0;
+	font-family: $mainFontFamily;
+	font-size: 10px;
+	font-weight: normal;
+}
+
+
+%toolbarItem
+{
+	display: inline-block;
+	margin: 0;
+	padding: 3px 6px;
+	font-size: 12px;
+	white-space: nowrap;
+	border: none;
+	background: none;
+}
+%toolbarButton_small
+{
+	@extend %toolbarItem;
+	
+	padding: 3px 6px;
+	font-size: 10px;
+}
+%toolbarDivider
+{
+	@extend %toolbarItem;
+}
+%toolbarButton
+{
+	@extend %toolbarItem;
+	
+	border-radius: $boxBorderRadius;
+}
+%toolbarButton_light
+{
+	color: $toolbarButtonTextColor;
+	background-color: $toolbarButtonBackgroundColor;
+}
+%toolbarButton_light_hover
+{
+	background-color: lighten($toolbarButtonBackgroundColor, 5.5%);
+}
+%toolbarButton_dark
+{
+	color: $toolbarButtonSelectedTextColor;
+	background-color: $toolbarButtonSelectedBackgroundColor;
+}
+%toolbarButton_dark_hover
+{
+	background-color: darken($toolbarButtonSelectedBackgroundColor, 5.5%);
+}
+%toolbarButton_light_pressed
+{
+	@extend %toolbarButton_dark;
+	@extend %toolbarButton_dark_hover;
+}
+%toolbarButton_dark_pressed
+{
+	@extend %toolbarButton_light;
+	@extend %toolbarButton_light_hover;
+}
+
+@mixin toolbarButton_light() {
+	& {
+		@extend %toolbarButton;
+		@extend %toolbarButton_light;
+	}
+	&:hover {
+		@extend %toolbarButton_light_hover;
+	}
+	&:active {
+		@extend %toolbarButton_light_pressed;
+	}
+}
+@mixin toolbarButton_dark() {
+	& {
+		@extend %toolbarButton;
+		@extend %toolbarButton_dark;
+	}
+	&:hover {
+		@extend %toolbarButton_dark_hover;
+	}
+	&:active {
+		@extend %toolbarButton_dark_pressed;
+	}
+}
+
+%secondaryButton
+{
+	@extend %toolbarItem;
+	
+	font-size: 11px;
+	line-height: 1.2;
+	padding: 3px;
+	color: #888;
+	border-radius: 2px;
+}
+%secondaryButton-hover
+{
+	color: #444;
+	background-color: rgba(white, 0.3);
+}

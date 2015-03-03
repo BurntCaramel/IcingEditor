@@ -69,7 +69,7 @@ var SectionPreview = React.createClass({
 		var actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
 		
 		var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-		var config = ContentStore.getConfigForDocumentSection(documentID, sectionID);
+		var config = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
 		
 		var mainToolbar = React.createElement(Toolbars.MainToolbar, {
 			key: 'mainToolbar',
@@ -141,7 +141,7 @@ var SectionContent = React.createClass({
 		var actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
 		
 		var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-		var config = ContentStore.getConfigForDocumentSection(documentID, sectionID);
+		var specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
 		
 		var mainToolbar = React.createElement(Toolbars.MainToolbar, {
 			key: 'mainToolbar',
@@ -150,7 +150,7 @@ var SectionContent = React.createClass({
 		
 		var editorElement = React.createElement(EditorElementsCreator.MainElement, {
 			contentImmutable: content,
-			specsImmutable: config,
+			specsImmutable: specs,
 			actions: actions
 		});
 		

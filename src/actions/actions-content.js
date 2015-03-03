@@ -1,5 +1,6 @@
 var AppDispatcher = require('../app-dispatcher');
 var ContentStore = require('../stores/store-content');
+var Immutable = require('immutable');
 
 var eventIDs = require('./actions-content-eventIDs');
 var documentSectionEventIDs = eventIDs.documentSection;
@@ -108,12 +109,13 @@ var ActionsContent = {
 				});
 			},
 			
-			changeTypeOfBlockAtKeyPath: function(type, keyPath) {
+			changeTypeOfBlockAtKeyPath: function(typeGroup, type, keyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
 					documentID: documentID,
 					sectionID: sectionID,
 					blockKeyPath: keyPath,
+					blockTypeGroup: typeGroup,
 					blockType: type
 				});
 			},
@@ -152,6 +154,18 @@ var ActionsContent = {
 				});
 			},
 			
+			updateValueForBlockAtKeyPath: function(keyPath, defaultValue, newValueFunction)
+			{
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.blockAtKeyPath.changeValue,
+					documentID: documentID,
+					sectionID: sectionID,
+					blockKeyPath: keyPath,
+					defaultValue: defaultValue,
+					newValueFunction: newValueFunction
+				});
+			},
+			
 			changePlaceholderIDOfBlockAtKeyPath: function(placeholderID, keyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changePlaceholderID,
@@ -159,6 +173,40 @@ var ActionsContent = {
 					sectionID: sectionID,
 					blockKeyPath: keyPath,
 					placeholderID: placeholderID
+				});
+			},
+			
+			changeTraitUsingFunctionForEditedBlock: function(traitID, defaultValue, newValueFunction)
+			{
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedBlock.changeTraitValue,
+					documentID: documentID,
+					sectionID: sectionID,
+					traitID: traitID,
+					defaultValue: defaultValue,
+					newValueFunction: newValueFunction
+				});
+			},
+			
+			toggleBooleanTraitForEditedBlock: function(traitID)
+			{
+				this.changeTraitUsingFunctionForEditedBlock(traitID, false, function(valueBefore) {
+					return !valueBefore;
+				});
+			},
+			
+			changeMapTraitUsingFunctionForEditedBlock: function(traitID, changeFunction)
+			{
+				this.changeTraitUsingFunctionForEditedBlock(traitID, Immutable.Map(), changeFunction);
+			},
+			
+			removeTraitWithIDForEditedBlock: function(traitID)
+			{
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedBlock.removeTrait,
+					documentID: documentID,
+					sectionID: sectionID,
+					traitID: traitID
 				});
 			},
 			
@@ -179,36 +227,37 @@ var ActionsContent = {
 				});
 			},
 			
-			changeTraitValueForEditedTextItem: function(attributeID, defaultValue, newValueFunction)
+			changeTraitUsingFunctionForEditedTextItem: function(traitID, defaultValue, newValueFunction)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.changeTraitValue,
 					documentID: documentID,
 					sectionID: sectionID,
-					attributeID: attributeID,
+					traitID: traitID,
 					defaultValue: defaultValue,
 					newValueFunction: newValueFunction
 				});
 			},
 			
-			toggleBoldForEditedTextItem: function()
+			toggleBooleanTraitForEditedTextItem: function(traitID)
 			{
-				this.changeTraitValueForEditedTextItem('bold', false, function(valueBefore) {
+				this.changeTraitUsingFunctionForEditedTextItem(traitID, false, function(valueBefore) {
 					return !valueBefore;
 				});
 			},
 			
-			toggleItalicForEditedTextItem: function()
+			changeMapTraitUsingFunctionForEditedTextItem: function(traitID, changeFunction)
 			{
-				this.changeTraitValueForEditedTextItem('italic', false, function(valueBefore) {
-					return !valueBefore;
-				});
+				this.changeTraitUsingFunctionForEditedTextItem(traitID, Immutable.Map(), changeFunction);
 			},
 			
-			toggleTraitForEditedTextItem: function(traitID)
+			removeTraitWithIDForEditedTextItem: function(traitID)
 			{
-				this.changeTraitValueForEditedTextItem(traitID, false, function(valueBefore) {
-					return !valueBefore;
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedItem.removeTrait,
+					documentID: documentID,
+					sectionID: sectionID,
+					traitID: traitID
 				});
 			},
 			
@@ -241,7 +290,11 @@ var ActionsContent = {
 			
 			addLineBreakAfterEditedTextItem: function()
 			{
-				
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.editedItem.addLineBreakAfter,
+					documentID: documentID,
+					sectionID: sectionID
+				});
 			},
 			
 			splitBlockBeforeEditedTextItem: function()
@@ -263,9 +316,7 @@ var ActionsContent = {
 			},
 			
 			splitTextInRangeOfEditedTextItem: function(textRange)
-			{
-				console.log('splitTextOfEditedTextItem');
-				
+			{	
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.splitTextInRange,
 					documentID: documentID,

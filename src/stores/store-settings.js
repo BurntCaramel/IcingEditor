@@ -1,5 +1,6 @@
 var AppDispatcher = require('../app-dispatcher');
 var MicroEvent = require('microevent');
+var Immutable = require('immutable');
 var qwest = require('qwest');
 
 
@@ -84,8 +85,7 @@ SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, se
 		{'id': 'subhead1', 'title': 'Heading 2'},
 		{'id': 'subhead2', 'title': 'Heading 3'},
 		{'id': 'subhead3', 'title': 'Heading 4'},
-		{'id': 'placeholder', 'title': 'Particular'},
-		{'id': 'subsection', 'title': 'Subsection'}
+		{'id': 'placeholder', 'title': 'Particular'}
 	];
 };
 
@@ -96,6 +96,23 @@ SettingsStore.getAvailableSubsectionTypesForDocumentSection = function(documentI
 		{'id': 'orderedList', 'title': 'Ordered List'}
 	];
 };
+
+SettingsStore.getAvailableBlockTypesGroups = function() {
+	return Immutable.fromJS([
+		{
+			"id": "text",
+			"title": "Text"
+		},
+		{
+			"id": "media",
+			"title": "Media"
+		},
+		{
+			"id": "particular",
+			"title": "Particular"
+		}
+	]);
+}
 
 SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [
@@ -121,7 +138,6 @@ SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function(documen
 		{
 			"id": "particular",
 			"types": [
-				{'id': 'placeholder', 'title': 'Placeholder'},
 				{'id': 'streetAddress', 'title': 'Street Address'}
 			]
 		},
@@ -132,7 +148,6 @@ SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function(documen
 				{'id': 'quote', 'title': 'Quote'}
 			]
 		}
-		
 	];
 };
 
@@ -201,9 +216,10 @@ SettingsStore.getCurrentSectionID = function() {
 };
 
 
-SettingsStore.getContentSpecificationJSONForDocumentSection = function(documentID, sectionID) {
-	//var contentSpecs = require('./dummy-content-specs.json');
-	//return contentSpecs;
+SettingsStore.getContentSpecsForDocumentSection = function(documentID, sectionID) {
+	var contentSpecsJSON = require('../dummy/dummy-content-specs.json');
+	var contentSpecs = Immutable.fromJS(contentSpecsJSON);
+	return contentSpecs;
 };
 
 

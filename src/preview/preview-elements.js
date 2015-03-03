@@ -1,127 +1,52 @@
-var React = require('react');
-var UIMixins = require('../ui/ui-mixins');
+let React = require('react');
+let UIMixins = require('../ui/ui-mixins');
 //var Toolbars = require('./editor-toolbars');
-var Immutable = require('immutable');
+let Immutable = require('immutable');
 
+let BlockTypesAssistant = require('../assistants/block-types-assistant');
+let {
+	findParticularBlockTypeOptionsWithGroupAndTypeInList
+} = BlockTypesAssistant;
 
-var PreviewBlockElement = React.createClass({
-	getInitialState: function() {
-		return {
-			active: false
-		};
-	},
-	
-	onToggleActive: function() {
-		this.setState({
-			active: !this.state.active
-		});
-	},
-	
-	beginEditing: function(event) {
-		var props = this.props;
-		var type = props.type;
-		if (type === 'placeholder') {
-			var actions = props.actions;
-			var keyPath = props.keyPath;
-			actions.editBlockWithKeyPath(keyPath);
-		}
-	},
-	
-	render: function() {
-		var props = this.props;
-		var state = this.state;
-		
-		var block = props.block;
-		var blockType = props.type;
-		var keyPath = props.keyPath;
-		var actions = props.actions;
-		var traitsConfig = props.traitsConfig;
-		var active = state.active;
-		var edited = props.edited;
-		
-		var childrenInfo = {};
-		var children;
-		if (blockType === 'placeholder') {
-			var placeholderID = block.placeholderID;
-			var placeholderElement = React.createElement('div', {
-				className: 'block-placeholder-content'
-			}, placeholderID);
-			children = [placeholderElement];
-		}
-		else {
-			var textItemsKeyPath = keyPath.concat('textItems');
-			children = PreviewElementCreator.reactElementsWithTextItems(props.textItems, textItemsKeyPath, actions, blockType, traitsConfig, childrenInfo);
-		}
-		
-		var classNames = ['block', 'block-' + blockType];
-		
-		if (active) {
-			classNames.push('block-active');
-		}
-		if (edited) {
-			classNames.push('block-edited');
-		}
-		
-		return React.createElement('div', {
-			className: classNames.join(' '),
-			onClick: this.beginEditing
-		}, children);
-	}
-});
+let HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
 
 
 var PreviewElementCreator = {
 	
 };
 
-PreviewElementCreator.PreviewBlockElement = PreviewBlockElement;
+
+PreviewElementCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
+	let element = child;
 	
-PreviewElementCreator.reactElementsWithTextItems = function(textItems, keyPath, actions, blockType, traitsConfig, outputInfo) {
-	if (textItems) {
-		var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
-		
-		var editedItem = null;
-		
-		var elements = textItems.map(function(textItem, textItemIndex) {
-			var props = {
-				keyPath: keyPath.concat(textItemIndex),
-				actions: actions,
-				blockType: blockType,
-				traitsConfig: traitsConfig
-			};
+	if (traits.has('italic')) {
+		element = React.createElement('em', {}, element);
+	}
 	
-			if (textItem.identifier) {
-				var identifier = textItem.identifier;
-				props.identifier = identifier;
-				props.key = identifier;
-				
-				if (editedTextItemIdentifier === identifier) {
-					props.edited = true;
-					editedItem = textItem;
-				}
-			}
-			if (textItem.traits) {
-				props.traits = textItem.traits || {};
-			}
-			if (textItem.text) {
-				props.text = textItem.text;
-			}
-			
-			return React.createElement('span', {}, textItem.text);
-			//return React.createElement(TextItem, props);
-		});
-		
-		if (outputInfo) {
-			outputInfo.editedItem = editedItem;
-			outputInfo.hasEditedItem = (editedItem !== null);
+	if (traits.has('bold')) {
+		element = React.createElement('strong', {}, element);
+	}
+	
+	if (traits.has('link')) {
+		var link = traits.get('link');
+		var linkTypeChoice = link.get('typeChoice');
+		var linkType = linkTypeChoice.get('selectedChoiceID');
+		var selectedChoiceValues = linkTypeChoice.get('selectedChoiceValues');
+		if (linkType === 'URL') {
+			element = React.createElement('a', {
+				href: selectedChoiceValues.get('URL')
+			}, element);
 		}
-		
-		return elements;
+		else if (linkType === 'email') {
+			element = React.createElement('a', {
+				href: 'mailto:' + selectedChoiceValues.get('emailAddress')
+			}, element);
+		}
 	}
-	else {
-		return [];
-	}
+	
+	return element;
 };
+
 
 PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
 	var subsectionTypesToHolderTagNames = {
@@ -143,31 +68,55 @@ PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function(subs
 	return elementsToReturn;
 };
 
-PreviewElementCreator.reactElementForSubsectionChild = function(subsectionType, blockType, contentElements) {
+PreviewElementCreator.reactElementsForSubsectionChild = function(subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions) {
 	var subsectionTypesToChildTagNames = {
 		"unorderedList": "li",
 		"orderedList": "li"
 	};
 	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
-	var tagNameForBlock = PreviewElementCreator.tagNameForBlockType(blockType);
 	
-	if (tagNameForSubsectionChild) {
-		if (blockType === 'body') {
-			// Paragraph elements by default just use the, for example, <li> instead of <li><p>
-			return React.createElement(tagNameForSubsectionChild, {}, contentElements);
-		}
-		else {
-			return React.createElement(tagNameForSubsectionChild, {},
-				React.createElement(tagNameForBlock, {}, contentElements)
-			);
+	var tagNameForBlock = blockTypeOptions.get('HTMLTagNameForBlock', null);
+	if (blockTypeGroup === 'text') {
+		tagNameForBlock = PreviewElementCreator.tagNameForTextBlockType(blockType);
+		
+		// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
+		if (tagNameForSubsectionChild && blockType === 'body') {
+			tagNameForBlock = null;
 		}
 	}
+	
+	var innerElements;
+	if (tagNameForBlock) {
+		// Nest inside, e.g. <li><h2>
+		innerElements = [
+			React.createElement(tagNameForBlock, {}, contentElements)
+		]
+	}
 	else {
-		return React.createElement(tagNameForBlock, {}, contentElements);
+		innerElements = contentElements;
+	}
+	
+	/*
+	if (traits) {
+		innerElements = [
+			PreviewElementCreator.reactElementForWrappingChildWithTraits(innerElements, traits)
+		];
+	}
+	*/
+	
+	if (tagNameForSubsectionChild) {
+		return [
+			React.createElement(tagNameForSubsectionChild, {},
+				innerElements
+			)
+		];
+	}
+	else {
+		return innerElements;
 	}
 };
 	
-PreviewElementCreator.tagNameForBlockType = function(blockType) {
+PreviewElementCreator.tagNameForTextBlockType = function(blockType) {
 	var tagNamesToBlockTypes = {
 		"body": "p",
 		"heading": "h1",
@@ -182,49 +131,19 @@ PreviewElementCreator.tagNameForBlockType = function(blockType) {
 	return tagName;
 };
 	
-PreviewElementCreator.reactElementsWithBlocks = function(blocks, traitsConfig) {
+PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
+	var traitsSpecs = specsImmutable.get('traits', Immutable.Map());
+	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
+	
 	var mainElements = [];
-	var currentSubsectionType = 'normal';
+	var currentSubsectionType = specsImmutable.get('defaultSectionType', 'normal');
 	var currentSubsectionElements = [];
 	
-	blocks.forEach(function(block, blockIndex) {
-		var props = {
-			key: block.identifier,
-			block: block,
-			type: block.type,
-			subsectionType: currentSubsectionType,
-			traitsConfig: traitsConfig,
-			keyPath: ['blocks', blockIndex]
-		};
-		if (block.traits) {
-			props.traits = block.traits;
-		}
-		if (block.textItems) {
-			props.textItems = block.textItems;
-		}
+	blocksImmutable.forEach(function(block, blockIndex) {
+		var typeGroup = block.get('typeGroup');
+		var type = block.get('type');
 		
-		var elements = [];
-		if (block.textItems) {
-			elements = elements.concat(block.textItems.map(function(textItem, textItemIndex) {
-				var traits = textItem.traits;
-				
-				var element = textItem.text;
-				if (traits.italic) {
-					element = React.createElement('em', {}, element);
-				}
-				if (traits.bold) {
-					element = React.createElement('strong', {}, element);
-				}
-				
-				return element;
-			}));
-		}
-		
-		if (block.type === 'placeholder') {
-			return;
-		}
-		
-		if (block.type === 'subsection') {
+		if (typeGroup === 'subsection') {
 			// Wrap last elements.
 			if (currentSubsectionElements.length > 0) {
 				mainElements = mainElements.concat(
@@ -235,17 +154,50 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocks, traitsConfig) {
 				currentSubsectionElements = [];
 			}
 			
-			currentSubsectionType = block.subsectionType;
+			currentSubsectionType = type;
 		}
 		else {
-			currentSubsectionElements.push(
-				PreviewElementCreator.reactElementForSubsectionChild(
-					currentSubsectionType, block.type, elements
+			var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+				typeGroup, type, blockGroupIDsToTypesMap
+			);
+		
+			var elements = [];
+		
+			if (typeGroup === 'particular' || typeGroup === 'media') {
+				var value = block.get('value', Immutable.Map());
+				var HTMLRepresentation = blockTypeOptions.get('innerHTMLRepresentation');
+				if (HTMLRepresentation) {
+					elements = elements.concat(
+						HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, value)
+					);
+				}
+			}
+			else if (typeGroup === 'text') {
+				elements = elements.concat(block.get('textItems').map(function(textItem) {
+					let element = textItem.get('text');
+					let traits = textItem.get('traits');
+					
+					element = PreviewElementCreator.reactElementForWrappingChildWithTraits(element, traits);
+				
+					return element;
+				}).toJS());
+			}
+			
+			
+			let traits = block.get('traits');
+			if (traits) {
+				elements = [
+					PreviewElementCreator.reactElementForWrappingChildWithTraits(elements, traits)
+				];
+			}
+			
+		
+			currentSubsectionElements = currentSubsectionElements.concat(
+				PreviewElementCreator.reactElementsForSubsectionChild(
+					currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions
 				)
 			);
 		}
-		
-		//return React.createElement(PreviewBlockElement, props);
 	});
 	
 	if (currentSubsectionElements.length > 0) {
@@ -280,9 +232,9 @@ PreviewElementCreator.MainElement = React.createClass({
 		if (contentImmutable) {
 			var content = contentImmutable.toJS();
 			var blocks = content.blocks;
-			var traitsConfig = specsImmutable.get('traits', Immutable.Map()).toJS();
+			var blocksImmutable = contentImmutable.get('blocks');
 	
-			elements = PreviewElementCreator.reactElementsWithBlocks(blocks, traitsConfig);
+			elements = PreviewElementCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
 		}
 		else {
 			elements = React.createElement('div', {}, 'Loading…');
@@ -309,7 +261,8 @@ PreviewElementCreator.previewHTMLWithContent = function(contentImmutable, specsI
 	var inlineTagNames = {
 		"span": true,
 		"strong": true,
-		"em": true
+		"em": true,
+		"a": true
 	};
 	
 	var holdingTagNames = {

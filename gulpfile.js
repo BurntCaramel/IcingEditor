@@ -13,8 +13,7 @@ guilty.requireTask('images');
 
 // SCSS compiled using Compass and Autoprefixer.
 guilty.requireTask('compass', {
-	srcFilePath: 'styles/main.scss',
-	destCSSPath: './'
+	srcFilePath: 'styles/main.scss'
 });
 
 // Browserify, for javascript use 'js-browserify'

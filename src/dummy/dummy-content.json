@@ -16,7 +16,8 @@
                     "type": "text"
                 }
             ],
-            "type": "subhead2"
+			"typeGroup": "text",
+			"type": "subhead2"
         },
         {
             "textItems": [

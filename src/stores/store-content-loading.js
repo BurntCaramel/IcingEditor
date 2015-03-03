@@ -34,7 +34,8 @@ function setLoadingContentForDocument(documentID, isLoading) {
 };
 
 function receiveLoadedContentForDocument(documentID, contentBySectionsJSON) {
-	for (sectionID in contentBySectionsJSON) {
+	for (let sectionID in contentBySectionsJSON) {
+	//for (let sectionID in contentBySectionsJSON) {
 		if (!contentBySectionsJSON.propertyIsEnumerable(sectionID)) {
 			continue;
 		}
@@ -46,6 +47,7 @@ function receiveLoadedContentForDocument(documentID, contentBySectionsJSON) {
 			contentJSON = {
 				"blocks": [
 					{
+						"typeGroup": "text",
 						"type": "body",
 						"textItems": []
 					}
