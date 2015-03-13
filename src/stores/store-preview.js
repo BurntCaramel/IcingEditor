@@ -5,7 +5,7 @@ var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 
-var documentSectionActivity = Immutable.Map({});
+//var documentSectionActivity = Immutable.Map({});
 
 var StorePreview = {
 	on: MicroEvent.prototype.bind,

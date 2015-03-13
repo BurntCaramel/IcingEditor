@@ -11,6 +11,8 @@
 window.burntIcing = {
 	delayed: true,
 	settingsJSON: {
+		wantsSaveFunctionality: false,
+		wantsViewHTMLFunctionality: true,
 		actionFunctions: {
 			saveContentJSONForDocumentSection: function(documentID, sectionID, contentJSON) {
 				window.webkit.messageHandlers.icingSaveContent.postMessage({
@@ -19,6 +21,23 @@ window.burntIcing = {
 					contentJSON: contentJSON
 				});
 			}
+		},
+		initialDocumentState: {
+			availableDocuments: [
+				{
+					"ID": "untitled",
+					"title": "Untitled",
+					"sections": [
+						{
+							"ID": "main",
+							"title": "Main"
+						}
+					]
+				}
+			],
+			documentID: 'untitled',
+			documentSectionID: 'main',
+			contentJSONByDocumentID: {}
 		}
 	}
 };

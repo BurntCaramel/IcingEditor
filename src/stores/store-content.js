@@ -72,7 +72,7 @@ var ContentStore = {
 		return Immutable.Map(blockJSON);
 	},
 	
-	newBlockWithSameType: function(block) {
+	newBlockWithSameTypeAs: function(block) {
 		return this.newBlockOfType(block.get('typeGroup'), block.get('type'));
 	},
 	
@@ -107,7 +107,11 @@ var ContentStore = {
 			
 			if ((key === 'blocks') || (key === 'textItems')) {
 				newValue = newValue.map(function(textItem) {
-					return textItem.set('identifier', newItemIdentifier());
+					// Set an identifier, if there isn't one already.
+					return textItem.update('identifier', newItemIdentifier(), function(identifier) {
+						return identifier;
+					});
+					//return textItem.set('identifier', newItemIdentifier());
 				});
 			}
 			
@@ -320,9 +324,46 @@ var ContentStore = {
 	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
 		
-		var followingBlock = this.newBlockWithSameType(currentBlock);
+		var followingBlock = this.newBlockWithSameTypeAs(currentBlock);
 		
 		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, options);
+	},
+	
+	insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, pastedText, options) {
+		pastedText = pastedText.replace(/\r\n/g, "\n");
+		let textParagraphs = pastedText.split("\n");
+		let whiteSpaceRE = /^[\s\n]+$/;
+		textParagraphs = textParagraphs.filter(function(paragraphText) {
+			if (whiteSpaceRE.test(paragraphText)) {
+				return false;
+			}
+			
+			return true;
+		});
+		
+		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+		
+		let newBlocks = textParagraphs.map(function(paragraphText) {
+			let textItem = this.newTextItem({text: paragraphText});
+			let block = this.newBlockWithSameTypeAs(currentBlock);
+			block = block.set('textItems', Immutable.List([textItem]));
+			return block;
+		}, this);
+		
+		var sourceIndex = blockKeyPath.slice(-1)[0];
+		var insertIndex = sourceIndex + 1;
+		var blocksKeyPath = blockKeyPath.slice(0, -1); // Without the index
+		
+		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function(blocks) {
+			// Insert the blocks.
+			return blocks.splice.bind(blocks, insertIndex, 0).apply(blocks, newBlocks);
+		});
+		
+		if (options && options.edit) {
+			let insertedBlockCount = newBlocks.length;
+			var lastBlockKeyPath = blocksKeyPath.concat(insertIndex + insertedBlockCount - 1);
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, lastBlockKeyPath, {editTextItemsIfPresent: true});
+		}
 	},
 	
 	splitBlockBeforeItemAtKeyPathInDocumentSection: function(documentID, sectionID, itemKeyPath) {
@@ -341,7 +382,7 @@ var ContentStore = {
 			return block;
 		});
 		
-		var followingBlock = this.newBlockWithSameType(currentBlock);
+		var followingBlock = this.newBlockWithSameTypeAs(currentBlock);
 		followingBlock = followingBlock.set('textItems', followingItems);
 		
 		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, {edit: true});
@@ -761,6 +802,12 @@ AppDispatcher.register( function(payload) {
 	
 	case (documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter):
 		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.keyPath);
+		break;
+	
+	case (documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText):
+		ContentStore.insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID,
+			blockKeyPath, payload.pastedText, {edit: true}
+		);
 		break;
 	
 	// EDITED BLOCK

@@ -17,9 +17,14 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 					return attributeValueRepresentation;
 				}
 				else if (Immutable.List.isList(attributeValueRepresentation)) {
-					var attributeKeyPath = attributeValueRepresentation;
-					return value.getIn(attributeKeyPath);
+					let attributeKeyPath = attributeValueRepresentation;
+					if (attributeKeyPath.get(0) === 'fields') {
+						let attributeKeyPathForFields = attributeKeyPath.slice(1);
+						return value.getIn(attributeKeyPathForFields);
+					}
 				}
+				
+				return '';
 			}).toJS();
 		}
 		

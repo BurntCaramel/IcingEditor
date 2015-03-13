@@ -1,10 +1,12 @@
 {
-	"namespace": "com.burntcaramel",
+	"namespace": "burntcaramel",
+	"version": "1.0.0",
+	"standard": {"id": "burnticing", "version": "0.1.0"},
 	"sectionTypes": [
 		{"id": "normal", "title": "Normal"},
-		{"id": "unorderedList", "title": "Unordered List", "allowedChildren": "*"},
-		{"id": "orderedList", "title": "Ordered List", "allowedChildren": "*"},
-		{"id": "quote", "title": "Quote", "allowedChildren": "*"}
+		{"id": "unorderedList", "title": "Unordered List"},
+		{"id": "orderedList", "title": "Ordered List"},
+		{"id": "quote", "title": "Quote"}
 	],
 	"defaultSectionType": "normal",
 	"blockTypesByGroups": {
@@ -13,7 +15,7 @@
 			{"id": "heading", "title": "Heading 1"},
 			{"id": "subhead1", "title": "Heading 2"},
 			{"id": "subhead2", "title": "Heading 3"},
-			{"id": "subhead3", "title": "Heading 4"},
+			{"id": "subhead3", "title": "Heading 4"}
 		],
 		"media": [
 			{
@@ -28,13 +30,13 @@
 					},
 					{
 						"id": "width",
-						"title": "Displayed Width",
-						"type": "number-integer"
+						"type": "number-integer",
+						"title": "Displayed Width"
 					},
 					{
 						"id": "height",
-						"title": "Displayed Height",
-						"type": "number-integer"
+						"type": "number-integer",
+						"title": "Displayed Height"
 					}
 				],
 				"HTMLTagNameForBlock": "p",
@@ -42,24 +44,25 @@
 					{
 						"tagName": "img",
 						"attributes": {
-							"src": ["url"],
-							"width": ["width"],
-							"height": ["height"]
+							"src": ["fields", "url"],
+							"width": ["fields", "width"],
+							"height": ["fields", "height"]
 						}
 					}
 				]
 			}
 		],
-		"particular": [
+		"particular[OFF]": [
 			{
-				"id": "contactRichSnippet",
-				"title": "Contact Details (Rich Snippet)",
+				"id": "contactDetails",
+				"title": "Contact Details",
 				"fieldsAreRequired": false,
 				"fields": [
 					{"id": "businessName", "title": "Business Name"},
 					{"id": "streetAddress", "title": "Street Address"},
-					{"id": "suburb", "title": "Suburb"},
-					{"id": "province", "title": "Province"},
+					{"id": "locality", "title": "Locality"},
+					{"id": "region", "title": "Region"},
+					{"id": "postalCode", "title": "Postal Code"},
 					{"id": "country", "title": "Country"}
 				],
 				"innerHTMLRepresentation": [
@@ -77,7 +80,7 @@
 								},
 								"children": [
 									{
-										"textFromFields": ["businessName"]
+										"textFromField": ["businessName"]
 									}
 								]
 							},
@@ -93,7 +96,17 @@
 										"tagName": "div",
 										"children": [
 											{
-												"textFromFields": ["streetAddress"]
+												"textFromField": ["streetAddress"]
+											},
+											{
+												"text": ",",
+												"checkFieldPresent": ["streetAddress"]
+											},
+											{
+												"textFromField": ["suburb"]
+											},
+											{
+												"textFromField": ["province"]
 											}
 										]
 									}
@@ -101,7 +114,11 @@
 							}
 						]
 					}
-				]
+				],
+				"onlineHTMLRepresentationCreator": {
+					"POST": "contactDetails/1.0/",
+					"JavaScript": "http://representations.burnticing.org/blocks/contactDetails/1.0/contactDetails.1.0.js"
+				}
 			},
 			{
 				"id": "blikPlaceholder",
@@ -116,7 +133,7 @@
 						"id": "mac-app-store-link",
 						"title": "Blik Mac App Store Link",
 						"description": "The official-style black button linking to the Mac App Store."
-					},
+					}
 				]
 			},
 			{

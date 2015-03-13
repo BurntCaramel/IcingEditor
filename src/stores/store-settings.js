@@ -49,6 +49,10 @@ SettingsStore.getActionURL = function() {
 	return getKeyFromSettingsJSON('actionURL');
 };
 
+SettingsStore.getActionsFunctions = function() {
+	return getKeyFromSettingsJSON('actionFunctions');
+};
+
 SettingsStore.getWantsSaveFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsSaveFunctionality', true);
 };
@@ -169,8 +173,8 @@ SettingsStore.getInitialDocumentSectionID = function() {
 
 SettingsStore.getInitialContentJSONForDocument = function(documentID) {
 	var initialContentJSON = getKeyFromObject(SettingsStore.getInitialDocumentState(), 'contentJSONByDocumentID');
-	//var initialContentJSON = getKeyFromSettingsJSON('initialContentJSONByDocumentID');
-	//return getKeyFromObject(initialContentJSON, documentID);
+	//console.log('initialContentJSON', initialContentJSON);
+	
 	if (!initialContentJSON) {
 		return null;
 	}
@@ -182,6 +186,7 @@ SettingsStore.getInitialContentJSONForDocument = function(documentID) {
 	return null;
 };
 
+
 var availableDocuments = null;
 SettingsStore.getAvailableDocuments = function() {
 	if (!availableDocuments) {
@@ -191,7 +196,14 @@ SettingsStore.getAvailableDocuments = function() {
 	return availableDocuments;
 };
 
+SettingsStore.getAvailableSectionIDsForDocumentID = function(documentID) {
+	return [];
+};
+
+
 var currentDocumentID = null;
+var currentDocumentSectionID = null;
+
 SettingsStore.getCurrentDocumentID = function() {
 	if (!currentDocumentID) {
 		currentDocumentID = SettingsStore.getInitialDocumentID();
@@ -201,14 +213,11 @@ SettingsStore.getCurrentDocumentID = function() {
 };
 SettingsStore.setCurrentDocumentID = function(newDocumentID) {
 	currentDocumentID = newDocumentID;
+	
+	this.trigger('currentDocumentDidChange');
 };
 
-SettingsStore.getAvailableSectionIDsForDocumentID = function(documentID) {
-	return [];
-};
-
-var currentDocumentSectionID = null;
-SettingsStore.getCurrentSectionID = function() {
+SettingsStore.getCurrentDocumentSectionID = function() {
 	if (!currentDocumentSectionID) {
 		currentDocumentSectionID = SettingsStore.getInitialDocumentSectionID();
 	}

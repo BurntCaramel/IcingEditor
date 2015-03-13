@@ -6,7 +6,7 @@ var eventIDs = require('./actions-content-eventIDs');
 var documentSectionEventIDs = eventIDs.documentSection;
 
 var ActionsContent = {
-	getActionsForDocumentSection: function(documentID, sectionID) {
+	getActionsForDocumentSection(documentID, sectionID) {
 		var documentSectionStore = ContentStore.getDocumentSection(documentID, sectionID);
 		
 		function dispatchForDocumentSection(payload) {
@@ -17,330 +17,343 @@ var ActionsContent = {
 		};
 		
 		return {
-			setContent: function(content) {
+			setContent(content) {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.setContent,
-					content: content
+					content
 				});
 			},
 			
-			saveChanges: function() {
+			saveChanges() {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.saveChanges
 				});
 			},
 			
-			enterHTMLPreview: function() {
+			enterHTMLPreview() {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.enterHTMLPreview
 				});
 			},
 			
-			exitHTMLPreview: function() {
+			exitHTMLPreview() {
 				dispatchForDocumentSection({
 					eventID: documentSectionEventIDs.exitHTMLPreview
 				});
 			},
 			
-			getEditedBlockIdentifier: function() {
-				return documentSectionStore.getEditedBlockIdentifier();
+			beginReordering() {
+				this.finishEditing();
+				
+				dispatchForDocumentSection({
+					eventID: documentSectionEventIDs.beginReordering
+				});
 			},
 			
-			getEditedTextItemIdentifier: function() {
-				return ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID);
+			finishReordering() {
+				dispatchForDocumentSection({
+					eventID: documentSectionEventIDs.finishReordering
+				});
 			},
 			
-			getEditedTextItemKeyPath: function() {
-				return ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
-			},
-			
-			editBlockWithKeyPath: function(blockKeyPath) {
+			editBlockWithKeyPath(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.blockWithKeyPath,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath
+					blockKeyPath,
+					documentID,
+					sectionID
 				});
 			},
 			
-			editTextItemWithKeyPath: function(textItemKeyPath) {
+			editTextItemWithKeyPath(textItemKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.textItemWithKeyPath,
-					documentID: documentID,
-					sectionID: sectionID,
-					textItemKeyPath: textItemKeyPath
+					documentID,
+					sectionID,
+					textItemKeyPath
 				});
 			},
 			
-			editTextItemBasedBlockWithKeyPathAddingIfNeeded: function(blockKeyPath) {
+			editTextItemBasedBlockWithKeyPathAddingIfNeeded(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath
+					documentID,
+					sectionID,
+					blockKeyPath
 				});
 			},
 			
-			finishEditing: function() {
+			finishEditing() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.finishEditing,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			insertSubsectionOfTypeAtBlockIndex: function(subsectionType, blockIndex) {
+			insertSubsectionOfTypeAtBlockIndex(subsectionType, blockIndex) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex,
-					documentID: documentID,
-					sectionID: sectionID,
-					subsectionType: subsectionType,
-					blockIndex: blockIndex
+					documentID,
+					sectionID,
+					subsectionType,
+					blockIndex
 				})
 			},
 			
-			changeTypeOfSubsectionAtKeyPath: function(subsectionKeyPath, subsectionType) {
+			changeTypeOfSubsectionAtKeyPath(subsectionKeyPath, subsectionType) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.subsectionAtKeyPath.changeType,
-					documentID: documentID,
-					sectionID: sectionID,
-					subsectionKeyPath: subsectionKeyPath,
-					subsectionType: subsectionType
+					documentID,
+					sectionID,
+					subsectionKeyPath,
+					subsectionType
 				});
 			},
 			
-			changeTypeOfBlockAtKeyPath: function(typeGroup, type, keyPath) {
+			changeTypeOfBlockAtKeyPath(blockTypeGroup, blockType, blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: keyPath,
-					blockTypeGroup: typeGroup,
-					blockType: type
+					documentID,
+					sectionID,
+					blockKeyPath,
+					blockTypeGroup,
+					blockType
 				});
 			},
 			
-			removeBlockAtKeyPath: function(keyPath) {
+			removeBlockAtKeyPath(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.remove,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: keyPath
+					documentID,
+					sectionID,
+					blockKeyPath
 				});
 			},
 			
-			insertRelatedBlockAfterBlockAtKeyPath: function(keyPath) {
+			insertRelatedBlockAfterBlockAtKeyPath(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: keyPath
+					documentID,
+					sectionID,
+					blockKeyPath
 				});
 			},
 			
-			removeEditedBlock: function() {
+			removeEditedBlock() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedBlock.remove,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			insertRelatedBlockAfterEditedBlock: function() {
+			insertRelatedBlockAfterEditedBlock() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedBlock.insertRelatedBlockAfter,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			updateValueForBlockAtKeyPath: function(keyPath, defaultValue, newValueFunction)
+			insertRelatedTextItemBlocksAfterEditedBlockWithPastedText(pastedText)
+			{
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText,
+					useEditedBlockKeyPath: true,
+					pastedText,
+					documentID,
+					sectionID
+				});
+			},
+			
+			updateValueForBlockAtKeyPath(blockKeyPath, defaultValue, newValueFunction)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changeValue,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: keyPath,
-					defaultValue: defaultValue,
-					newValueFunction: newValueFunction
+					documentID,
+					sectionID,
+					blockKeyPath,
+					defaultValue,
+					newValueFunction
 				});
 			},
 			
-			changePlaceholderIDOfBlockAtKeyPath: function(placeholderID, keyPath) {
+			changePlaceholderIDOfBlockAtKeyPath(placeholderID, blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changePlaceholderID,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: keyPath,
-					placeholderID: placeholderID
+					documentID,
+					sectionID,
+					blockKeyPath,
+					placeholderID
 				});
 			},
 			
-			changeTraitUsingFunctionForEditedBlock: function(traitID, defaultValue, newValueFunction)
+			changeTraitUsingFunctionForEditedBlock(traitID, defaultValue, newValueFunction)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedBlock.changeTraitValue,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID,
-					defaultValue: defaultValue,
-					newValueFunction: newValueFunction
+					documentID,
+					sectionID,
+					traitID,
+					defaultValue,
+					newValueFunction
 				});
 			},
 			
-			toggleBooleanTraitForEditedBlock: function(traitID)
+			toggleBooleanTraitForEditedBlock(traitID)
 			{
 				this.changeTraitUsingFunctionForEditedBlock(traitID, false, function(valueBefore) {
 					return !valueBefore;
 				});
 			},
 			
-			changeMapTraitUsingFunctionForEditedBlock: function(traitID, changeFunction)
+			changeMapTraitUsingFunctionForEditedBlock(traitID, changeFunction)
 			{
 				this.changeTraitUsingFunctionForEditedBlock(traitID, Immutable.Map(), changeFunction);
 			},
 			
-			removeTraitWithIDForEditedBlock: function(traitID)
+			removeTraitWithIDForEditedBlock(traitID)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedBlock.removeTrait,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID
+					documentID,
+					sectionID,
+					traitID
 				});
 			},
 			
-			removeEditedTextItem: function() {
+			removeEditedTextItem() {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.remove,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			setTextForEditedTextItem: function(text) {
+			setTextForEditedTextItem(text) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.setText,
-					documentID: documentID,
-					sectionID: sectionID,
+					documentID,
+					sectionID,
 					textItemText: text
 				});
 			},
 			
-			changeTraitUsingFunctionForEditedTextItem: function(traitID, defaultValue, newValueFunction)
+			changeTraitUsingFunctionForEditedTextItem(traitID, defaultValue, newValueFunction)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.changeTraitValue,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID,
-					defaultValue: defaultValue,
-					newValueFunction: newValueFunction
+					documentID,
+					sectionID,
+					traitID,
+					defaultValue,
+					newValueFunction
 				});
 			},
 			
-			toggleBooleanTraitForEditedTextItem: function(traitID)
+			toggleBooleanTraitForEditedTextItem(traitID)
 			{
 				this.changeTraitUsingFunctionForEditedTextItem(traitID, false, function(valueBefore) {
 					return !valueBefore;
 				});
 			},
 			
-			changeMapTraitUsingFunctionForEditedTextItem: function(traitID, changeFunction)
+			changeMapTraitUsingFunctionForEditedTextItem(traitID, changeFunction)
 			{
 				this.changeTraitUsingFunctionForEditedTextItem(traitID, Immutable.Map(), changeFunction);
 			},
 			
-			removeTraitWithIDForEditedTextItem: function(traitID)
+			removeTraitWithIDForEditedTextItem(traitID)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.removeTrait,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID
+					traitID,
+					documentID,
+					sectionID
 				});
 			},
 			
-			editPreviousItemBeforeEditedTextItem: function()
+			editPreviousItemBeforeEditedTextItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.editPreviousItem,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			editNextItemAfterEditedTextItem: function()
+			editNextItemAfterEditedTextItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.editNextItem,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			addNewTextItemAfterEditedTextItem: function()
+			addNewTextItemAfterEditedTextItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.addNewTextItemAfter,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			addLineBreakAfterEditedTextItem: function()
+			addLineBreakAfterEditedTextItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.addLineBreakAfter,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			splitBlockBeforeEditedTextItem: function()
+			splitBlockBeforeEditedTextItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.splitBlockBefore,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			joinEditedTextItemWithPreviousItem: function()
+			joinEditedTextItemWithPreviousItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.joinWithPreviousItem,
-					documentID: documentID,
-					sectionID: sectionID
+					documentID,
+					sectionID
 				});
 			},
 			
-			splitTextInRangeOfEditedTextItem: function(textRange)
+			splitTextInRangeOfEditedTextItem(textRange)
 			{	
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.splitTextInRange,
-					documentID: documentID,
-					sectionID: sectionID,
-					textRange: textRange
+					textRange,
+					documentID,
+					sectionID
 				});
 			},
 			
-			registerSelectedTextRangeFunctionForEditedItem: function(selectedTextRangeFunction)
+			registerSelectedTextRangeFunctionForEditedItem(selectedTextRangeFunction)
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.registerSelectedTextRangeFunction,
-					documentID: documentID,
-					sectionID: sectionID,
-					selectedTextRangeFunction: selectedTextRangeFunction
+					selectedTextRangeFunction,
+					documentID,
+					sectionID
 				});
 			},
 			
-			unregisterSelectedTextRangeFunctionForEditedItem: function()
+			unregisterSelectedTextRangeFunctionForEditedItem()
 			{
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.unregisterSelectedTextRangeFunction,
-					documentID: documentID,
-					sectionID: sectionID,
+					documentID,
+					sectionID
 				});
 			}
 		};

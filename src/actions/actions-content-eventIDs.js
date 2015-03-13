@@ -2,8 +2,6 @@ var ActionsContentEventIDs = {
 	documentSection: {
 		setContent: 'documentSection.setContent',
 		saveChanges: 'documentSection.saveChanges',
-		enterHTMLPreview: 'documentSection.enterHTMLPreview',
-		exitHTMLPreview: 'documentSection.exitHTMLPreview',
 		edit: {
 			blockWithKeyPath: 'documentSection.edit.blockWithKeyPath',
 			textItemWithKeyPath: 'documentSection.edit.textItemWithKeyPath',
@@ -21,13 +19,16 @@ var ActionsContentEventIDs = {
 			changePlaceholderID: 'documentSection.blockAtKeyPath.changePlaceholderID',
 			changeValue: 'documentSection.blockAtKeyPath.changeValue',
 			remove: 'documentSection.blockAtKeyPath.remove',
-			insertRelatedBlockAfter: 'documentSection.blockAtKeyPath.insertRelatedBlockAfter'
+			insertRelatedBlockAfter: 'documentSection.blockAtKeyPath.insertRelatedBlockAfter',
+			insertRelatedTextItemBlocksAfterWithPastedText: 'documentSection.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText',
+			makeActiveForReordering: 'documentSection.editedBlock.reorderToIndex',
+			reorderMovingToIndex: 'documentSection.editedBlock.reorderMovingToIndex'
 		},
 		editedBlock: {
 			remove: 'documentSection.editedBlock.remove',
 			insertRelatedBlockAfter: 'documentSection.editedBlock.insertRelatedBlockAfter',
 			changeTraitValue: 'documentSection.editedBlock.changeTraitValue',
-			removeTrait: 'documentSection.editedBlock.removeTrait',
+			removeTrait: 'documentSection.editedBlock.removeTrait'
 		},
 		editedItem: {
 			remove: 'documentSection.editedItem.remove',
@@ -44,7 +45,11 @@ var ActionsContentEventIDs = {
 			unregisterSelectedTextRangeFunction: 'documentSection.editedItem.unregisterSelectedTextRangeFunction',
 			splitTextAtSelectedTextRange: 'documentSection.editedItem.splitTextAtSelectedTextRange',
 			splitTextInRange: 'documentSection.editedItem.splitTextInRange'
-		}
+		},
+		enterHTMLPreview: 'documentSection.enterHTMLPreview',
+		exitHTMLPreview: 'documentSection.exitHTMLPreview',
+		beginReordering: 'documentSection.beginReordering',
+		finishReordering: 'documentSection.finishReordering'
 	}
 };
 

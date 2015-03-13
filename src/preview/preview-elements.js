@@ -177,7 +177,9 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsI
 					let element = textItem.get('text');
 					let traits = textItem.get('traits');
 					
-					element = PreviewElementCreator.reactElementForWrappingChildWithTraits(element, traits);
+					if (traits) {
+						element = PreviewElementCreator.reactElementForWrappingChildWithTraits(element, traits);
+					}
 				
 					return element;
 				}).toJS());

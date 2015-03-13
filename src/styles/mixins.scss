@@ -64,10 +64,14 @@
 	@extend %toolbarButton_light_hover;
 }
 
-@mixin toolbarButton_light() {
+@mixin toolbarButton_light($small: false) {
 	& {
 		@extend %toolbarButton;
 		@extend %toolbarButton_light;
+		
+		@if $small {
+			@extend %toolbarButton_small;
+		}
 	}
 	&:hover {
 		@extend %toolbarButton_light_hover;

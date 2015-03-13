@@ -1,8 +1,10 @@
 $mainFontFamily: 'Helvetica Neue', sans-serif;
 
+$darkColor: #111;
+$darkLiftColor: #555;
 $backgroundColor: #f8f8f8;
 $backgroundColor: #eee;
-$toolbarButtonTextColor: #111;
+$toolbarButtonTextColor: $darkColor;
 $toolbarButtonBackgroundColor: #f7f7f7;
 $toolbarButtonSelectedTextColor: white;
 //$toolbarButtonSelectedBackgroundColor: #404040;
@@ -20,10 +22,8 @@ $zIndexMainToolbar: 1000;
 $zIndexActiveMenu: 2000;
 
 
-$editorMainToolbarHeight: 48px;
+$editorMainToolbarHeight: 40px;
 $editorPreviewWidth: 400px;
 $editorInputWidth: 500px;
-
-$editorMainToolbarFontSize: 14px;
 
 $fieldsPadding: 10px;

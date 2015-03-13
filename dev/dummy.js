@@ -33,10 +33,12 @@ module.exports={
 	"type": "textItems",
     "blocks": [
         {
+			"typeGroup": "particular",
             "type": "placeholder",
 			"placeholderID": "blik.header"
         },
         {
+			"typeGroup": "particular",
             "type": "placeholder",
 			"placeholderID": "blik.macAppStoreLink"
         },
@@ -69,6 +71,7 @@ module.exports={
                     "type": "text"
                 }
             ],
+			"typeGroup": "text",
             "type": "body"
         },
         {
@@ -78,6 +81,7 @@ module.exports={
                     "type": "text"
                 }
             ],
+			"typeGroup": "text",
             "type": "body"
         },
         {
@@ -87,6 +91,7 @@ module.exports={
                     "type": "text"
                 }
             ],
+			"typeGroup": "text",
             "type": "body"
         },
         {
@@ -107,6 +112,7 @@ module.exports={
                     "type": "text"
                 }
             ],
+			"typeGroup": "text",
             "type": "subhead2"
         }
     ]

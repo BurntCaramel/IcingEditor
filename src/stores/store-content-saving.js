@@ -42,7 +42,8 @@ var saveContentForDocumentSection = function(documentID, sectionID) {
 	}
 	
 	var actionURL = SettingsStore.getActionURL();
-	if (!actionURL) {
+	var actionsFunctions = SettingsStore.getActionsFunctions();
+	if (!actionURL && !actionsFunctions) {
 		return;
 	}
 	
@@ -50,22 +51,34 @@ var saveContentForDocumentSection = function(documentID, sectionID) {
 	
 	var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
 	
-	qwest.post(actionURL + documentID + '/', {
-		sectionID: sectionID,
-		contentJSON: contentJSON
-	}, {
-		dataType: 'json',
-		responseType: 'json'
-	})
-	.then(function(response) {
+	if (actionURL) {
+		qwest.post(actionURL + documentID + '/', {
+			sectionID: sectionID,
+			contentJSON: contentJSON
+		}, {
+			dataType: 'json',
+			responseType: 'json'
+		})
+		.then(function(response) {
 		
-	})
-	.catch(function(message) {
-		ContentStoreSaving.trigger('saveContentDidFailForDocumentSectionWithMessage', documentID, sectionID, message);
-	})
-	.complete(function() {
-		setSavingContentForDocumentSection(documentID, sectionID, false);
-	});
+		})
+		.catch(function(message) {
+			ContentStoreSaving.trigger('saveContentDidFailForDocumentSectionWithMessage', documentID, sectionID, message);
+		})
+		.complete(function() {
+			setSavingContentForDocumentSection(documentID, sectionID, false);
+		});
+	}
+	else {
+		if (actionsFunctions.saveContentJSONForDocumentSection) {
+			actionsFunctions.saveContentJSONForDocumentSection(
+				documentID, sectionID, contentJSON
+			);
+		}
+		else {
+			console.error("Icing actions functions must include 'saveContentJSONForDocumentSection'.");
+		}
+	}
 };
 ContentStoreSaving.saveContentForDocumentSection = saveContentForDocumentSection;
 
