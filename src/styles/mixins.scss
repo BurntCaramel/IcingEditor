@@ -7,6 +7,14 @@
 	font-weight: normal;
 }
 
+@mixin slightBoxShadow() {
+	box-shadow: $slightBoxShadow;
+}
+
+@mixin holderBorderRadius() {
+	border-radius: $holderBorderRadius;
+}
+
 
 %toolbarItem
 {
@@ -24,6 +32,7 @@
 	
 	padding: 3px 6px;
 	font-size: 10px;
+	border-radius: 2px;
 }
 %toolbarDivider
 {
@@ -51,20 +60,28 @@
 }
 %toolbarButton_dark_hover
 {
-	background-color: darken($toolbarButtonSelectedBackgroundColor, 5.5%);
+	background-color: lighten($toolbarButtonSelectedBackgroundColor, 3.5%);
 }
 %toolbarButton_light_pressed
+{
+	background-color: darken($toolbarButtonBackgroundColor, 1.1%);
+}
+%toolbarButton_light_pressed_dark
 {
 	@extend %toolbarButton_dark;
 	@extend %toolbarButton_dark_hover;
 }
 %toolbarButton_dark_pressed
 {
+	background-color: darken($toolbarButtonSelectedBackgroundColor, 5.5%);
+}
+%toolbarButton_dark_pressed_light
+{
 	@extend %toolbarButton_light;
 	@extend %toolbarButton_light_hover;
 }
 
-@mixin toolbarButton_light($small: false) {
+@mixin toolbarButton_light($small: false, $pressedIsDark: false, $shadow: true) {
 	& {
 		@extend %toolbarButton;
 		@extend %toolbarButton_light;
@@ -72,18 +89,35 @@
 		@if $small {
 			@extend %toolbarButton_small;
 		}
+		
+		@if $shadow {
+			@include slightBoxShadow();
+		}
 	}
 	&:hover {
 		@extend %toolbarButton_light_hover;
 	}
 	&:active {
-		@extend %toolbarButton_light_pressed;
+		@if $pressedIsDark {
+			@extend %toolbarButton_light_pressed_dark;
+		}
+		@else {
+			@extend %toolbarButton_light_pressed;
+		}
 	}
 }
-@mixin toolbarButton_dark() {
+@mixin toolbarButton_dark($small: false, $shadow: false) {
 	& {
 		@extend %toolbarButton;
 		@extend %toolbarButton_dark;
+		
+		@if $small {
+			@extend %toolbarButton_small;
+		}
+		
+		@if $shadow {
+			@include slightBoxShadow();
+		}
 	}
 	&:hover {
 		@extend %toolbarButton_dark_hover;

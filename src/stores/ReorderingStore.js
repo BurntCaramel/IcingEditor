@@ -4,6 +4,10 @@ var MicroEvent = require('microevent');
 var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
+let ContentStore = require('./store-content');
+
+console.log('dfgdfgdfg ContentStore', ContentStore);
+
 
 //var documentSectionActivity = Immutable.Map({});
 
@@ -18,7 +22,15 @@ var isReordering = false;
 ReorderingStore.getIsReordering = function() {
 	return isReordering;
 };
-	
+
+let FocusStateRecord = Immutable.Record({
+	documentID: null,
+	sectionID: null,
+	blockKeyPath: null,
+	blockIdentifier: null
+});
+var focusState = new FocusStateRecord();
+
 let beginReordering = function() {
 	if (!isReordering) {
 		isReordering = true;
@@ -26,9 +38,53 @@ let beginReordering = function() {
 	}
 };
 
+let focusOnBlockAtKeyPathInDocumentSection = function(documentID, sectionID, blockKeyPath) {
+	//let block = ContentStore.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+	let blockIdentifier = ContentStore.getIdentifierOfObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+	
+	focusState = focusState.merge({
+		documentID,
+		sectionID,
+		blockKeyPath,
+		blockIdentifier
+	});
+	
+	ReorderingStore.trigger('focusedBlockDidChange');
+};
+
+let finishFocusingOnBlock = function() {
+	focusState = new FocusStateRecord();
+};
+
+let keepFocusedBlockAtCurrentSpot = function() {
+	finishFocusingOnBlock();
+	
+	ReorderingStore.trigger('focusedBlockDidChange');
+};
+
+ReorderingStore.getFocusedBlockKeyPathForDocumentSection = function(documentID, sectionID) {
+	if (focusState.documentID == documentID && focusState.sectionID == sectionID) {
+		return focusState.blockKeyPath.toArray();
+	}
+	else {
+		return null;
+	}
+};
+
+ReorderingStore.getFocusedBlockIdentifierForDocumentSection = function(documentID, sectionID) {
+	if (focusState.documentID == documentID && focusState.sectionID == sectionID) {
+		return focusState.blockIdentifier;
+	}
+	else {
+		return null;
+	}
+};
+
 let finishReordering = function() {
 	if (isReordering) {
 		isReordering = false;
+		finishFocusingOnBlock();
+		
 		ReorderingStore.trigger('didFinishReordering');
 	}
 };
@@ -43,6 +99,19 @@ ReorderingStore.dispatchToken = AppDispatcher.register( function(payload) {
 	
 	case (documentSectionEventIDs.finishReordering):
 		finishReordering();
+		break;
+	
+	case (documentSectionEventIDs.blockAtKeyPath.focusOnForReordering):
+		focusOnBlockAtKeyPathInDocumentSection(payload.documentID, payload.sectionID, payload.blockKeyPath);
+		break;
+	
+	case (documentSectionEventIDs.focusedBlockForReordering.keepAtCurrentSpot):
+		keepFocusedBlockAtCurrentSpot();
+		break;
+	
+	case (documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex):
+		AppDispatcher.waitFor([ContentStore.dispatchToken]);
+		finishFocusingOnBlock();
 		break;
 	
 	}

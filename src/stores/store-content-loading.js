@@ -46,11 +46,7 @@ function receiveLoadedContentForDocument(documentID, contentBySectionsJSON) {
 		if (!contentJSON) {
 			contentJSON = {
 				"blocks": [
-					{
-						"typeGroup": "text",
-						"type": "body",
-						"textItems": []
-					}
+					ContentStore.newBlockOfType('text', 'body').toJSON()
 				]
 			};
 			shouldEditFirstTextItem = true;

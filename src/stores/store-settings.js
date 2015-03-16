@@ -53,6 +53,10 @@ SettingsStore.getActionsFunctions = function() {
 	return getKeyFromSettingsJSON('actionFunctions');
 };
 
+SettingsStore.wantsMainToolbar = function() {
+	return getKeyFromSettingsJSON('wantsMainToolbar', true);
+};
+
 SettingsStore.getWantsSaveFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsSaveFunctionality', true);
 };
@@ -63,6 +67,10 @@ SettingsStore.getWantsViewHTMLFunctionality = function() {
 
 SettingsStore.getWantsPlaceholderFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsPlaceholderFunctionality', false);
+};
+
+SettingsStore.getShowsDocumentTitle = function() {
+	return false;
 };
 
 SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function(documentID, sectionID) { //TODO: documentID, sectionID

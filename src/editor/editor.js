@@ -28,6 +28,9 @@ let getInitialState = function() {
 	};
 }
 
+/*
+* State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
+*/
 let latestStateWithPreviousState = function(
 	previousState = null, {
 		updateAll = false,
@@ -54,6 +57,8 @@ let latestStateWithPreviousState = function(
 	} = previousState;
 	
 	if (updateDocumentState) {
+		let editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
+		
 		let previousDocumentState = documentState;
 		documentState = documentState.merge({
 			documentID,
@@ -63,10 +68,10 @@ let latestStateWithPreviousState = function(
 			editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID),
 			editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID),
 			editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID),
-			editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID)
+			editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID),
+			focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, sectionID),
+			focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID)
 		});
-		
-		//console.log('updated document state', previousDocumentState !== documentState);
 	}
 	
 	if (updateViewingState) {
@@ -99,8 +104,9 @@ var Editor = React.createClass({
 		let method = on ? 'on' : 'off';
 		
 		ContentStore[method]('contentChangedForDocumentSection', this.updateDocumentState);
-		ContentStore[method]('editedItemChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('editedBlockChangedForDocumentSection', this.updateDocumentState);
+		ContentStore[method]('editedItemChangedForDocumentSection', this.updateDocumentState);
+		ReorderingStore[method]('focusedBlockDidChange', this.updateDocumentState);
 		
 		SettingsStore[method]('currentDocumentDidChange', this.currentDocumentDidChange);
 		
@@ -113,16 +119,43 @@ var Editor = React.createClass({
 	
 	componentDidMount() {
 		this.listenToStores(true);
+		
+		document.body.addEventListener('click', this.bodyBackgroundWasClicked);
 	},
 	
 	componentWillUnmount() {
 		this.listenToStores(false);
+		
+		document.body.removeEventListener('click', this.bodyBackgroundWasClicked);
+	},
+	
+	bodyBackgroundWasClicked(event) {
+		if (event.target === document.body) {
+			console.log('backgroundWasClicked');
+			this.finishEditing();
+		}
+	},
+	
+	editorBackgroundWasClicked(event) {
+		console.log('editorBackgroundWasClicked');
+		this.finishEditing();
+	},
+	
+	finishEditing() {
+		let {
+			actions
+		} = this.state;
+		if (actions) {
+			actions.finishEditing();
+		}
 	},
 	
 	updateState(options = {}) {
-		this.setState(latestStateWithPreviousState(
-			this.state, options
-		));
+		this.setState(function(previousState, props) {
+			return latestStateWithPreviousState(
+				previousState, options
+			);
+		});
 	},
 	
 	updateDocumentState() {
@@ -174,23 +207,29 @@ var Editor = React.createClass({
 			editedBlockIdentifier,
 			editedBlockKeyPath,
 			editedTextItemIdentifier,
-			editedTextItemKeyPath
+			editedTextItemKeyPath,
+			focusedBlockIdentifierForReordering,
+			focusedBlockKeyPathForReordering
 		} = documentState.toObject();
+		
+		if (editedBlockKeyPath) {
+			editedBlockKeyPath = editedBlockKeyPath.toArray();
+		}
+		if (editedTextItemKeyPath) {
+			editedTextItemKeyPath = editedTextItemKeyPath.toArray();
+		}
+		if (focusedBlockKeyPathForReordering) {
+			focusedBlockKeyPathForReordering = focusedBlockKeyPathForReordering.toArray();
+		}
+		
 		let {
 			isPreviewing,
 			isReordering
 		} = viewingState.toObject();
 		
-		//console.log('documentState', documentState, 'viewingState', viewingState);
-		
-		var mainToolbar = React.createElement(Toolbars.MainToolbar, {
-			key: 'mainToolbar',
-			actions
-		});
-		
 		var innerElement;
 		if (isPreviewing) {
-			innerElement = React.createElement(SectionContentPreview, {
+			innerElement = React.createElement(PreviewElementsCreator.ViewHTMLElement, {
 				key: 'preview',
 				documentID,
 				sectionID,
@@ -209,95 +248,29 @@ var Editor = React.createClass({
 				editedBlockKeyPath,
 				editedTextItemIdentifier,
 				editedTextItemKeyPath,
-				isReordering
+				isReordering,
+				focusedBlockIdentifierForReordering,
+				focusedBlockKeyPathForReordering
 			});
-			/*
-			innerElement = React.createElement(SectionContentEditor, {
-				key: 'content',
-				documentID,
-				sectionID,
-				content,
-				specs,
-				actions,
-				editedBlockIdentifier,
-				editedBlockKeyPath,
-				editedTextItemIdentifier,
-				editedTextItemKeyPath,
-				isReordering
-			});
-			*/
 		}
+		
+		let children = [];
+		
+		if (SettingsStore.wantsMainToolbar()) {
+			children.push(
+				React.createElement(Toolbars.MainToolbar, {
+					key: 'mainToolbar',
+					actions
+				})
+			);
+		}
+		
+		children.push(innerElement);
 		
 		return React.createElement('div', {
-			key: 'previewContent'
-		}, [
-			mainToolbar,
-			innerElement
-		]);
-	}
-});
-
-var PreviewHTMLCode = React.createClass({
-	componentDidMount() {
-		// Syntax highlighting
-		if (window.hljs) {
-			let codeElement = this.refs.code.getDOMNode();
-			window.hljs.highlightBlock(codeElement);
-		}
-	},
-	
-	render() {
-		let {
-			previewHTML
-		} = this.props;
-		
-		return React.createElement('code', {
-			className: 'language-html',
-			ref: 'code'
-		}, previewHTML);
-	}
-});
-
-var SectionContentPreview = React.createClass({
-	render() {
-		var {
-			documentID,
-			sectionID,
-			content,
-			specs,
-			actions
-		} = this.props;
-		
-		var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
-		
-		return React.createElement('pre', {
-			key: 'pre',
-			className: 'previewHTMLHolder'
-		}, React.createElement(PreviewHTMLCode, {
-			previewHTML: previewHTML
-		}));
-	}
-});
-
-var SectionContentEditor = React.createClass({
-	render() {
-		var {
-			documentID,
-			sectionID,
-			content,
-			specs,
-			actions,
-			isReordering
-		} = this.props;
-		
-		//console.log('SectionContentEditor actions', actions);
-		
-		return React.createElement(EditorElementsCreator.MainElement, {
-			contentImmutable: content,
-			specsImmutable: specs,
-			actions,
-			isReordering
-		});
+			key: 'editor',
+			onClick: this.editorBackgroundWasClicked
+		}, children);
 	}
 });
 
@@ -308,7 +281,9 @@ let EditorController = {
 		ContentStoreLoading.loadContentForDocument(documentID);
 		
 		React.render(
-			React.createElement(Editor),
+			React.createElement(Editor, {
+				key: 'editor'
+			}),
 			document.getElementById('burntIcingEditor')
 		);
 		

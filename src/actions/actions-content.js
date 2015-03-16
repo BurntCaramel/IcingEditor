@@ -42,20 +42,6 @@ var ActionsContent = {
 				});
 			},
 			
-			beginReordering() {
-				this.finishEditing();
-				
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.beginReordering
-				});
-			},
-			
-			finishReordering() {
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.finishReordering
-				});
-			},
-			
 			editBlockWithKeyPath(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.edit.blockWithKeyPath,
@@ -90,6 +76,50 @@ var ActionsContent = {
 					sectionID
 				});
 			},
+			
+			// REORDERING
+			
+			beginReordering() {
+				this.finishEditing();
+				
+				dispatchForDocumentSection({
+					eventID: documentSectionEventIDs.beginReordering
+				});
+			},
+			
+			finishReordering() {
+				dispatchForDocumentSection({
+					eventID: documentSectionEventIDs.finishReordering
+				});
+			},
+			
+			focusOnBlockAtKeyPathForReordering(blockKeyPath) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.blockAtKeyPath.focusOnForReordering,
+					documentID,
+					sectionID,
+					blockKeyPath
+				});
+			},
+			
+			keepFocusedBlockForReorderingInCurrentSpot() {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.focusedBlockForReordering.keepAtCurrentSpot,
+					documentID,
+					sectionID
+				});
+			},
+			
+			moveFocusedBlockForReorderingToBeforeBlockAtIndex(blockIndex) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex,
+					documentID,
+					sectionID,
+					beforeBlockAtIndex: blockIndex
+				});
+			},
+			
+			// INSERTING
 			
 			insertSubsectionOfTypeAtBlockIndex(subsectionType, blockIndex) {
 				AppDispatcher.dispatch({
@@ -350,6 +380,10 @@ var ActionsContent = {
 			
 			unregisterSelectedTextRangeFunctionForEditedItem()
 			{
+				/*
+				if (AppDispatcher.isDispatching) {
+					AppDispatcher.waitFor([ContentStore.dispatchToken]);
+				}*/
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.editedItem.unregisterSelectedTextRangeFunction,
 					documentID,

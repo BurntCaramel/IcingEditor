@@ -11,12 +11,12 @@ let {
 let HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
 
 
-var PreviewElementCreator = {
+var PreviewElementsCreator = {
 	
 };
 
 
-PreviewElementCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
+PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
 	let element = child;
 	
 	if (traits.has('italic')) {
@@ -48,7 +48,7 @@ PreviewElementCreator.reactElementForWrappingChildWithTraits = function(child, t
 };
 
 
-PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
+PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
 	var subsectionTypesToHolderTagNames = {
 		"unorderedList": "ul",
 		"orderedList": "ol",
@@ -68,7 +68,7 @@ PreviewElementCreator.reactElementsForWrappingSubsectionChildren = function(subs
 	return elementsToReturn;
 };
 
-PreviewElementCreator.reactElementsForSubsectionChild = function(subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions) {
+PreviewElementsCreator.reactElementsForSubsectionChild = function(subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions) {
 	var subsectionTypesToChildTagNames = {
 		"unorderedList": "li",
 		"orderedList": "li"
@@ -77,7 +77,7 @@ PreviewElementCreator.reactElementsForSubsectionChild = function(subsectionType,
 	
 	var tagNameForBlock = blockTypeOptions.get('HTMLTagNameForBlock', null);
 	if (blockTypeGroup === 'text') {
-		tagNameForBlock = PreviewElementCreator.tagNameForTextBlockType(blockType);
+		tagNameForBlock = PreviewElementsCreator.tagNameForTextBlockType(blockType);
 		
 		// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
 		if (tagNameForSubsectionChild && blockType === 'body') {
@@ -99,7 +99,7 @@ PreviewElementCreator.reactElementsForSubsectionChild = function(subsectionType,
 	/*
 	if (traits) {
 		innerElements = [
-			PreviewElementCreator.reactElementForWrappingChildWithTraits(innerElements, traits)
+			PreviewElementsCreator.reactElementForWrappingChildWithTraits(innerElements, traits)
 		];
 	}
 	*/
@@ -116,7 +116,7 @@ PreviewElementCreator.reactElementsForSubsectionChild = function(subsectionType,
 	}
 };
 	
-PreviewElementCreator.tagNameForTextBlockType = function(blockType) {
+PreviewElementsCreator.tagNameForTextBlockType = function(blockType) {
 	var tagNamesToBlockTypes = {
 		"body": "p",
 		"heading": "h1",
@@ -131,7 +131,7 @@ PreviewElementCreator.tagNameForTextBlockType = function(blockType) {
 	return tagName;
 };
 	
-PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
+PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
 	var traitsSpecs = specsImmutable.get('traits', Immutable.Map());
 	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
 	
@@ -147,7 +147,7 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsI
 			// Wrap last elements.
 			if (currentSubsectionElements.length > 0) {
 				mainElements = mainElements.concat(
-					PreviewElementCreator.reactElementsForWrappingSubsectionChildren(
+					PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(
 						currentSubsectionType, currentSubsectionElements
 					)
 				);
@@ -178,7 +178,7 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsI
 					let traits = textItem.get('traits');
 					
 					if (traits) {
-						element = PreviewElementCreator.reactElementForWrappingChildWithTraits(element, traits);
+						element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits);
 					}
 				
 					return element;
@@ -189,13 +189,13 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsI
 			let traits = block.get('traits');
 			if (traits) {
 				elements = [
-					PreviewElementCreator.reactElementForWrappingChildWithTraits(elements, traits)
+					PreviewElementsCreator.reactElementForWrappingChildWithTraits(elements, traits)
 				];
 			}
 			
 		
 			currentSubsectionElements = currentSubsectionElements.concat(
-				PreviewElementCreator.reactElementsForSubsectionChild(
+				PreviewElementsCreator.reactElementsForSubsectionChild(
 					currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions
 				)
 			);
@@ -204,7 +204,7 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsI
 	
 	if (currentSubsectionElements.length > 0) {
 		mainElements = mainElements.concat(
-			PreviewElementCreator.reactElementsForWrappingSubsectionChildren(
+			PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(
 				currentSubsectionType, currentSubsectionElements
 			)
 		);
@@ -213,7 +213,7 @@ PreviewElementCreator.reactElementsWithBlocks = function(blocksImmutable, specsI
 	return mainElements;
 };
 
-PreviewElementCreator.MainElement = React.createClass({
+PreviewElementsCreator.MainElement = React.createClass({
 	getDefaultProps: function() {
 		return {
 			contentImmutable: null,
@@ -236,10 +236,12 @@ PreviewElementCreator.MainElement = React.createClass({
 			var blocks = content.blocks;
 			var blocksImmutable = contentImmutable.get('blocks');
 	
-			elements = PreviewElementCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
+			elements = PreviewElementsCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
 		}
 		else {
-			elements = React.createElement('div', {}, 'Loading…');
+			elements = React.createElement('div', {
+				key: 'loading'
+			}, 'Loading…');
 		}
 	
 		return React.createElement('div', {
@@ -249,8 +251,8 @@ PreviewElementCreator.MainElement = React.createClass({
 	}
 });
 
-PreviewElementCreator.previewHTMLWithContent = function(contentImmutable, specsImmutable) {
-	var previewElement = React.createElement(PreviewElementCreator.MainElement, {
+PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specsImmutable) {
+	var previewElement = React.createElement(PreviewElementsCreator.MainElement, {
 		key: 'main',
 		contentImmutable: contentImmutable,
 		specsImmutable: specsImmutable
@@ -298,8 +300,8 @@ PreviewElementCreator.previewHTMLWithContent = function(contentImmutable, specsI
 	return previewHTML;
 }
 	
-PreviewElementCreator.reactElementWithContentAndActions = function(contentImmutable, specsImmutable, actions) {
-	return React.createElement(PreviewElementCreator.MainElement, {
+PreviewElementsCreator.reactElementWithContentAndActions = function(contentImmutable, specsImmutable, actions) {
+	return React.createElement(PreviewElementsCreator.MainElement, {
 		key: 'main',
 		contentImmutable: contentImmutable,
 		specsImmutable: specsImmutable,
@@ -307,4 +309,46 @@ PreviewElementCreator.reactElementWithContentAndActions = function(contentImmuta
 	});
 };
 
-module.exports = PreviewElementCreator;
+var PreviewHTMLCode = React.createClass({
+	componentDidMount() {
+		// Syntax highlighting
+		if (window.hljs) {
+			let codeElement = this.refs.code.getDOMNode();
+			window.hljs.highlightBlock(codeElement);
+		}
+	},
+	
+	render() {
+		let {
+			previewHTML
+		} = this.props;
+		
+		return React.createElement('code', {
+			className: 'language-html',
+			ref: 'code'
+		}, previewHTML);
+	}
+});
+
+PreviewElementsCreator.ViewHTMLElement = React.createClass({
+	render() {
+		var {
+			documentID,
+			sectionID,
+			content,
+			specs,
+			actions
+		} = this.props;
+		
+		var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
+		
+		return React.createElement('pre', {
+			key: 'pre',
+			className: 'previewHTMLHolder'
+		}, React.createElement(PreviewHTMLCode, {
+			previewHTML: previewHTML
+		}));
+	}
+});
+
+module.exports = PreviewElementsCreator;

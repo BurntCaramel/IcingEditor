@@ -68,6 +68,7 @@ var InputLabel = React.createClass({
 		
 		children = [
 			React.createElement('span', {
+				key: 'title',
 				className: this.getClassNameStringWithChildSuffix('_title')
 			}, title)
 		].concat(children);
@@ -76,19 +77,7 @@ var InputLabel = React.createClass({
 			className: this.getClassNameStringWithExtensions()
 		}, children);
 	}
-})
-
-EditorFields.createInputLabel = function(title, children) {	
-	var labelChildren = [
-		React.createElement('span', {
-			className: 'inputLabel_title'
-		}, title)
-	].concat(children);
-	
-	return React.createElement('label', {
-		className: 'inputLabel'
-	}, labelChildren);
-};
+});
 
 var ChoiceInput = React.createClass({
 	getDefaultProps: function() {
@@ -99,11 +88,13 @@ var ChoiceInput = React.createClass({
 				selectedChoiceValues: null
 			},
 			keyPath: [],
-			onChangeInfo: null
+			onChangeInfo: null,
+			tabIndex: 0
 		};
 	},
 	
 	getDefaultSelectedChoiceID: function() {
+		// Choose first item by default.
 		var choiceInfos = this.props.choiceInfos;
 		return choiceInfos[0].id;
 	},
@@ -140,10 +131,13 @@ var ChoiceInput = React.createClass({
 	},
 	
 	render: function() {
-		var props = this.props;
-		var choiceInfos = props.choiceInfos;
-		var value = props.value;
-		var title = props.title;
+		let {
+			choiceInfos,
+			value,
+			title,
+			ID,
+			tabIndex
+		} = this.props;
 		
 		var selectedChoiceID = this.getSelectedChoiceID();
 		var selectedChoiceInfo = null;
@@ -160,11 +154,16 @@ var ChoiceInput = React.createClass({
 		});
 		
 		var children = [
-			EditorFields.createInputLabel(title, [
+			React.createElement(InputLabel, {
+				key: 'label',
+				title
+			}, [
 				React.createElement('select', {
+					key: 'select',
 					value: selectedChoiceID,
 					onChange: this.onSelectChange,
-					className: 'choice_select'
+					className: 'choice_select',
+					tabIndex
 				}, optionElements)
 			])
 		];
@@ -172,6 +171,7 @@ var ChoiceInput = React.createClass({
 		if (selectedChoiceInfo) {
 			children = children.concat(
 				React.createElement(EditorFields.FieldsHolder, {
+					key: 'fields',
 					fields: selectedChoiceInfo.fields,
 					values: value ? value.selectedChoiceValues : null,
 					onChangeInfo: this.onChildFieldChangeInfo,
@@ -199,10 +199,12 @@ EditorFields.createElementForField = function(fieldJSON, value, onChangeInfo) {
 		var inputType = type;
 		
 		return React.createElement(InputLabel, {
+			key: ID,
 			title,
 			additionalClassNameExtensions: [`-inputType-${type}`]
 		}, [
 			React.createElement('input', {
+				key: ID,
 				type: inputType,
 				value: value,
 				onChange: function(event) {
@@ -211,7 +213,8 @@ EditorFields.createElementForField = function(fieldJSON, value, onChangeInfo) {
 						changeInfoWithIDAndValue(ID, newValue)
 					);
 				},
-				className: 'input-textual input-' + type
+				className: 'input-textual input-' + type,
+				tabIndex: 0
 			})
 		]);
 		
@@ -233,6 +236,8 @@ EditorFields.createElementForField = function(fieldJSON, value, onChangeInfo) {
 	}
 	else if (type === 'choice') {
 		return React.createElement(ChoiceInput, {
+			key: ID,
+			ID,
 			choiceInfos: fieldJSON.choices,
 			value: value,
 			title: title,

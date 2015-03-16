@@ -63,9 +63,10 @@ var SubsectionElement = React.createClass({
 		var children = [];
 		children.push(
 			React.createElement(Toolbars.ChangeSubsectionElement, {
+				key: 'changeSubsection',
 				selectedSubsectionType: subsectionType,
-				keyPath: keyPath,
-				actions: actions
+				keyPath,
+				actions
 			})
 		)
 		
@@ -92,10 +93,30 @@ var BlockElement = React.createClass({
 	},
 	
 	onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event) {
-		var props = this.props;
-		var actions = props.actions;
-		var keyPath = props.keyPath;
+		let {
+			keyPath,
+			actions
+		} = this.props;
+		
 		actions.changeTypeOfBlockAtKeyPath(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), keyPath);
+	},
+	
+	focusOnForReordering(event) {
+		let {
+			keyPath,
+			actions
+		} = this.props;
+		
+		actions.focusOnBlockAtKeyPathForReordering(keyPath);
+	},
+	
+	keepInCurrentSpot(event) {
+		let {
+			keyPath,
+			actions
+		} = this.props;
+		
+		actions.keepFocusedBlockForReorderingInCurrentSpot();
 	},
 	
 	beginEditing(event) {
@@ -151,7 +172,9 @@ var BlockElement = React.createClass({
 			edited,
 			editedTextItemIdentifier,
 			editedTextItemKeyPath,
-			isReordering
+			isReordering,
+			isFocusedForReordering,
+			anotherBlockIsFocusedForReordering
 		} = props;
 		var blockType = props.type;
 		
@@ -180,6 +203,7 @@ var BlockElement = React.createClass({
 					);
 					children = [
 						React.createElement('div', {
+							key: 'HTMLRepresentation',
 							className: 'block-' + typeGroup + '-' + blockType + '-HTMLRepresentation'
 						}, elementsForHTMLRepresentation)
 					];
@@ -189,6 +213,7 @@ var BlockElement = React.createClass({
 			if (!hasHTMLRepresentation) {
 				children = [
 					React.createElement('div', {
+						key: 'noRepresentationForContent',
 						className: 'block-noRepresentationForContent'
 					}, '(No Preview)')
 				];
@@ -204,13 +229,18 @@ var BlockElement = React.createClass({
 				classNameExtensions.push(
 					'-textItemsIsEmpty'
 				);
-				children.push(React.createElement('span'));
+				children.push(
+					React.createElement('span', {
+						key: 'noItems'
+					})
+				);
 			}
 		}
 		
 		var toolbarActions = {
-			onToggleActive: this.onToggleActive,
-			onChangeChosenBlockType: this.onChangeChosenBlockType
+			onChangeChosenBlockType: this.onChangeChosenBlockType,
+			focusOnForReordering: this.focusOnForReordering,
+			keepInCurrentSpot: this.keepInCurrentSpot
 		};
 		
 		children.push(
@@ -221,7 +251,9 @@ var BlockElement = React.createClass({
 				blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
 				blockGroupIDsToTypesMap,
 				actions: toolbarActions,
-				isReordering
+				isReordering,
+				isFocusedForReordering,
+				anotherBlockIsFocusedForReordering
 			})
 		);
 		
@@ -230,15 +262,15 @@ var BlockElement = React.createClass({
 				children.push(
 					React.createElement(Toolbars.ParticularEditor, {
 						key: 'particularEditor',
-						block: block,
-						typeGroup: typeGroup,
+						block,
+						typeGroup,
 						type: blockType,
 						blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
 						blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
 						traitSpecs,
 						traits: block.get('traits', Immutable.Map()).toJS(),
-						actions: actions,
-						keyPath: keyPath
+						actions,
+						keyPath
 					})
 				);
 			}
@@ -277,21 +309,26 @@ var TextItem = React.createClass({
 	},
 	
 	beginEditing: function(event) {
-		var props = this.props;
-		var actions = props.actions;
-		var keyPath = props.keyPath;
+		let {
+			actions,
+			keyPath
+		} = this.props;
 		actions.editTextItemWithKeyPath(keyPath);
 		
 		event.stopPropagation(); // Don't bubble to block
 	},
 	
 	render: function() {
-		var props = this.props;
 		var {
 			text,
 			traits,
+			traitSpecs,
+			block,
+			blockTypeGroup,
+			blockType,
+			actions,
 			edited
-		} = props;
+		} = this.props;
 		
 		var classNameExtensions = [];
 		var id = null;
@@ -313,13 +350,13 @@ var TextItem = React.createClass({
 			contentChildren.push(
 				React.createElement(Toolbars.TextItemEditor, {
 					key: 'itemEditor',
-					text: text,
-					traits: props.traits,
-					traitSpecs: props.traitSpecs,
-					block: props.block,
-					blockTypeGroup: props.blockTypeGroup,
-					blockType: props.blockType,
-					actions: props.actions
+					text,
+					traits,
+					traitSpecs,
+					block,
+					blockTypeGroup,
+					blockType,
+					actions
 				})
 			);
 		}
@@ -434,7 +471,9 @@ EditorElementCreator.reactElementsWithBlocks = function(
 		editedBlockKeyPath,
 		editedTextItemIdentifier,
 		editedTextItemKeyPath,
-		isReordering = false
+		isReordering = false,
+		focusedBlockIdentifierForReordering,
+		focusedBlockKeyPathForReordering
 	}
 ) {
 	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
@@ -467,12 +506,16 @@ EditorElementCreator.reactElementsWithBlocks = function(
 			actions,
 			traitSpecs,
 			blockGroupIDsToTypesMap,
-			edited: (blockIdentifier === editedBlockIdentifier),
+			edited: (blockIdentifier == editedBlockIdentifier),
 			editedBlockIdentifier,
 			editedBlockKeyPath,
 			editedTextItemIdentifier,
 			editedTextItemKeyPath,
 			isReordering,
+			isFocusedForReordering: (blockIdentifier == focusedBlockIdentifierForReordering),
+			anotherBlockIsFocusedForReordering: (
+				focusedBlockIdentifierForReordering != null && blockIdentifier != focusedBlockIdentifierForReordering
+			),
 			keyPath: ['blocks', blockIndex]
 		};
 		
@@ -495,36 +538,56 @@ EditorElementCreator.reactElementsWithBlocks = function(
 		return elementToReturn;
 	});
 	
+	let focusedBlockIndexForReordering = null;
+	if (focusedBlockKeyPathForReordering) {
+		focusedBlockIndexForReordering = ContentStore.getIndexForObjectKeyPath(focusedBlockKeyPathForReordering);
+	}
+	
 	var elements = [];
 	var blockCount = blocksImmutable.count();
 	var previousBlockWasSubsection = false;
-	for (var blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+	for (var blockIndex = 0; blockIndex < (blockCount + 1); blockIndex++) {
 		var blockTypeGroup = blocksImmutable.getIn([blockIndex, 'typeGroup']);
 		var currentBlockIsSubsection = (blockTypeGroup === 'subsection');
 		
 		if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 			if (isReordering) {
+				let hidden = true;
+				if (focusedBlockIndexForReordering !== null) {
+					if (focusedBlockIndexForReordering !== blockIndex && (focusedBlockIndexForReordering + 1) !== blockIndex) {
+						hidden = false;
+					}
+				}
+				
 				elements.push(
 					React.createElement(Toolbars.RearrangeBlockMoveHere, {
+						key: `moveHere-${blockIndex}`,
 						followingBlockIndex: blockIndex,
-						actions: actions
+						actions,
+						hidden
 					})	
 				);
 			}
 			else {
-				elements.push(
-					React.createElement(Toolbars.ChangeSubsectionElement, {
-						isCreate: true,
-						followingBlockIndex: blockIndex,
-						actions: actions
-					})	
-				);
+				if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
+					elements.push(
+						React.createElement(Toolbars.ChangeSubsectionElement, {
+							key: `changeSubsection-${blockIndex}`,
+							isCreate: true,
+							followingBlockIndex: blockIndex,
+							actions
+						})	
+					);
+				}
 			}
 		}
 		
 		previousBlockWasSubsection = currentBlockIsSubsection;
 		
-		elements.push(elementsForBlocks.get(blockIndex));
+		let blockElement = elementsForBlocks.get(blockIndex);
+		if (blockElement) {
+			elements.push(blockElement);
+		}
 	}
 	
 	return elements;
@@ -536,17 +599,25 @@ EditorElementCreator.MainElement = React.createClass({
 			contentImmutable: null,
 			specsImmutable: null,
 			actions: {},
-			isReordering: false
+			editedBlockIdentifier: null,
+			editedBlockKeyPath: null,
+			editedTextItemIdentifier: null,
+			editedTextItemKeyPath: null,
+			isReordering: false,
+			focusedBlockIdentifierForReordering: null,
+			focusedBlockKeyPathForReordering: null
 		};
 	},
 	
 	onClick(event) {
 		event.stopPropagation();
 		
-		//console.log('main element clicked', event);
+		//if (event.target === React.findDOMNode(this)) {
+			console.log('main element clicked', event);
 		
-		let actions = this.props.actions;
-		actions.finishEditing();
+			let actions = this.props.actions;
+			actions.finishEditing();
+		//}
 	},
 	
 	onKeyPress(event) {
@@ -581,7 +652,9 @@ EditorElementCreator.MainElement = React.createClass({
 			editedBlockKeyPath,
 			editedTextItemIdentifier,
 			editedTextItemKeyPath,
-			isReordering
+			isReordering,
+			focusedBlockIdentifierForReordering,
+			focusedBlockKeyPathForReordering
 		} = this.props;
 		
 		var classNames = ['blocks'];
@@ -598,7 +671,9 @@ EditorElementCreator.MainElement = React.createClass({
 					editedBlockKeyPath,
 					editedTextItemIdentifier,
 					editedTextItemKeyPath,
-					isReordering
+					isReordering,
+					focusedBlockIdentifierForReordering,
+					focusedBlockKeyPathForReordering
 				}
 			);
 		}
@@ -610,7 +685,7 @@ EditorElementCreator.MainElement = React.createClass({
 	
 		var isEditingBlock = (editedBlockIdentifier != null);
 		if (isEditingBlock) {
-			classNames.push('blocks-hasEditedBlock')
+			classNames.push('blocks-hasEditedBlock');
 		}
 	
 		return React.createElement('div', {

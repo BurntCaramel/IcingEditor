@@ -21,8 +21,8 @@ var ActionsContentEventIDs = {
 			remove: 'documentSection.blockAtKeyPath.remove',
 			insertRelatedBlockAfter: 'documentSection.blockAtKeyPath.insertRelatedBlockAfter',
 			insertRelatedTextItemBlocksAfterWithPastedText: 'documentSection.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText',
-			makeActiveForReordering: 'documentSection.editedBlock.reorderToIndex',
-			reorderMovingToIndex: 'documentSection.editedBlock.reorderMovingToIndex'
+			focusOnForReordering: 'documentSection.blockAtKeyPath.focusOnForReordering',
+			reorderMovingToIndex: 'documentSection.blockAtKeyPath.reorderMovingToIndex'
 		},
 		editedBlock: {
 			remove: 'documentSection.editedBlock.remove',
@@ -45,6 +45,10 @@ var ActionsContentEventIDs = {
 			unregisterSelectedTextRangeFunction: 'documentSection.editedItem.unregisterSelectedTextRangeFunction',
 			splitTextAtSelectedTextRange: 'documentSection.editedItem.splitTextAtSelectedTextRange',
 			splitTextInRange: 'documentSection.editedItem.splitTextInRange'
+		},
+		focusedBlockForReordering: {
+			keepAtCurrentSpot: 'documentSection.focusedBlockForReordering.keepAtCurrentSpot',
+			moveToBeforeBlockAtIndex: 'documentSection.focusedBlockForReordering.moveToBeforeBlockAtIndex'
 		},
 		enterHTMLPreview: 'documentSection.enterHTMLPreview',
 		exitHTMLPreview: 'documentSection.exitHTMLPreview',

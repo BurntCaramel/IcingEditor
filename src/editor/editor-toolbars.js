@@ -18,6 +18,13 @@ var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.f
 
 
 var TextItemTextArea = React.createClass({
+	getDefaultProps() {
+		return {
+			text: '',
+			tabIndex: 0
+		};
+	},
+	
 	getInitialState() {
 		return {
 			spaceWasJustPressed: false
@@ -40,7 +47,7 @@ var TextItemTextArea = React.createClass({
 	
 	componentWillMount() {
 		var actions = this.props.actions;
-		actions.registerSelectedTextRangeFunctionForEditedItem(this.getTextSelectionRange);
+		//actions.registerSelectedTextRangeFunctionForEditedItem(this.getTextSelectionRange);
 	},
 	
 	componentDidMount() {
@@ -49,7 +56,7 @@ var TextItemTextArea = React.createClass({
 	
 	componentWillUnmount() {
 		let actions = this.props.actions;
-		actions.unregisterSelectedTextRangeFunctionForEditedItem();
+		//actions.unregisterSelectedTextRangeFunctionForEditedItem();
 	},
 	
 	onChange() {
@@ -59,17 +66,24 @@ var TextItemTextArea = React.createClass({
 	},
 	
 	onPaste(event) {
+		event.stopPropagation();
+		
 		let actions = this.props.actions;
 		
 		let pastedText = event.clipboardData.getData('text/plain');
-		actions.insertRelatedTextItemBlocksAfterEditedBlockWithPastedText(pastedText);
+		// If has multiple lines:
+		if (pastedText.indexOf("\n") !== -1) {
+			// Create blocks for each line.
+			actions.insertRelatedTextItemBlocksAfterEditedBlockWithPastedText(pastedText);
 		
-		event.preventDefault();
-		event.stopPropagation();
+			event.preventDefault();
+		}
+		// Else let the textarea paste the text as normal.
 	},
 	
 	hasNoText() {
-		var text = this.getTextAreaDOMNode().value;
+		//var text = this.getTextAreaDOMNode().value;
+		var text = this.props.text;
 		return (text.length === 0);
 	},
 	
@@ -168,7 +182,10 @@ var TextItemTextArea = React.createClass({
 	},
 	
 	render() {
-		var text = this.props.text;
+		let {
+			text,
+			tabIndex
+		} = this.props;
 		
 		return React.createElement('textarea', {
 			ref: 'textarea',
@@ -181,7 +198,8 @@ var TextItemTextArea = React.createClass({
 			onChange: this.onChange,
 			onKeyDown: this.onKeyDown,
 			onKeyPress: this.onKeyPress,
-			onPaste: this.onPaste
+			onPaste: this.onPaste,
+			tabIndex
 		});
 	}
 });
@@ -262,11 +280,13 @@ var TraitButton = React.createClass({
 	},
 	
 	render() {
-		var props = this.props;
+		let {
+			traitSpec,
+			traitValue
+		} = this.props;
 		
-		var traitSpec = props.traitSpec;
 		var traitID = traitSpec.get('id');
-		var traitValue = props.traitValue;
+		var title = traitSpec.get('title');
 		var isFields = traitSpec.has('fields');
 		
 		var isSelected = (traitValue != null && traitValue != false);
@@ -274,6 +294,7 @@ var TraitButton = React.createClass({
 		var showFields = this.state.showFields;
 		var buttonClassNameExtensions = [];
 		if (isFields) {
+			title += ' ▾';
 			onClick = this.toggleShowFields;
 			if (showFields) {
 				buttonClassNameExtensions.push('-showingFields');
@@ -285,9 +306,9 @@ var TraitButton = React.createClass({
 		
 		var mainButton = React.createElement(ToolbarButton, {
 			key: ('button-' + traitID),
-			title: traitSpec.get('title'),
+			title,
 			selected: isSelected,
-			onClick: onClick,
+			onClick,
 			additionalClassNameExtensions: buttonClassNameExtensions
 		});
 		
@@ -298,9 +319,11 @@ var TraitButton = React.createClass({
 		if (showFields) {
 			children.push(
 				React.createElement('div', {
+					key: 'traitFieldsHolder',
 					className: 'traitFieldsHolder',
 				}, [
 					React.createElement(EditorFields.FieldsHolder, {
+						key: 'fields',
 						fields: traitSpec.get('fields').toJS(),
 						values: traitValue,
 						onChangeInfo: this.changeTraitInfo
@@ -507,8 +530,8 @@ var TextItemEditor = React.createClass({
 				className: 'textItemEditor_instructions'
 			}, [
 				React.createElement('div', {
-					key: 'instructions-split',
-					className: 'textItemEditor_instructions_split'
+					key: 'keyShortcuts',
+					className: 'textItemEditor_instructions_keyShortcuts'
 				}, textEditorInstructions)
 			]),
 			React.createElement(ItemTraitsToolbar, {
@@ -706,17 +729,20 @@ var BlockTypeChooser = React.createClass({
 				var groupTitle = groupOptions.get('title');
 				typeElements.splice(0, 0,
 					React.createElement('h5', {
+						key: 'groupTitle',
 						className: this.getClassNameStringWithChildSuffix('_choices_group_title'),
 					}, groupTitle)
 				);
 				
 				return React.createElement('div', {
+					key: `group-${groupID}`,
 					className: this.getClassNameStringWithChildSuffix('_choices_group'),
 				}, typeElements);
 			}, this).toJS();
 			
 			children.push(
 				React.createElement('div', {
+					key: 'choices',
 					className: this.getClassNameStringWithChildSuffix('_choices'),
 				}, groupElements)
 			);
@@ -740,8 +766,25 @@ var BlockToolbar = React.createClass({
 			chosenBlockTypeGroup: "text",
 			chosenBlockType: "body",
 			isReordering: false,
+			isFocusedForReordering: false,
 			baseClassNames: ["blockItemToolbar"]
 		};
+	},
+	
+	onMakeFocusForReordering() {
+		let {
+			actions
+		} = this.props;
+		
+		actions.focusOnForReordering();
+	},
+	
+	onKeepHereForReordering() {
+		let {
+			actions
+		} = this.props;
+		
+		actions.keepInCurrentSpot();
 	},
 	
 	onClick(event) {
@@ -755,18 +798,47 @@ var BlockToolbar = React.createClass({
 			blockTypeGroups,
 			blockGroupIDsToTypesMap,
 			actions,
-			isReordering
+			isReordering,
+			isFocusedForReordering,
+			anotherBlockIsFocusedForReordering
 		} = this.props;
 		
 		var children = [];
 		
 		if (isReordering) {
-			children.push(
-				React.createElement(SecondaryButton, {
-					title: 'Move This',
-					actions: actions
-				})
-			);
+			if (isFocusedForReordering) {
+				children.push(
+					React.createElement(SecondaryButton, {
+						key: 'keepHereButton',
+						className: 'block_reorder_keepHereButton',
+						title: 'Keep Here',
+						onClick: this.onKeepHereForReordering
+					})
+				);
+			}
+			else {
+				let hidden = false;
+				if (anotherBlockIsFocusedForReordering) {
+					hidden = true;
+				}
+				
+				children.push(
+					React.createElement(RearrangeBlockFocusOnThis, {
+						key: 'moveThis',
+						onClick: this.onMakeFocusForReordering,
+						hidden
+					})
+					/*
+					React.createElement(SecondaryButton, {
+						key: 'moveThisButton',
+						className: 'block_reorder_moveThisButton',
+						title: 'Move This',
+						onClick: this.onMakeFocusForReordering,
+						hidden
+					})
+					*/
+				);
+			}
 		}
 		else {
 			children.push(
@@ -802,7 +874,11 @@ var ChangeSubsectionElement = React.createClass({
 		};
 	},
 	
-	onToggleActive() {
+	onToggleActive(event) {
+		if (event) {
+			event.stopPropagation();
+		}
+		
 		this.setState({
 			active: !this.state.active
 		});
@@ -901,6 +977,7 @@ var ChangeSubsectionElement = React.createClass({
 			
 			children.push(
 				React.createElement('div', {
+					key: 'choices',
 					className: 'blocks_makeSubsection_choices',
 				}, subsectionChoices)
 			);
@@ -919,31 +996,85 @@ var ChangeSubsectionElement = React.createClass({
 
 
 var RearrangeBlockMoveHere = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			hidden: false,
+			baseClassNames: ['block_reorder_moveHere']
+		};
+	},
+	
 	onMoveHere() {
+		let {
+			followingBlockIndex,
+			actions
+		} = this.props;
 		
+		actions.moveFocusedBlockForReorderingToBeforeBlockAtIndex(followingBlockIndex);
 	},
 	
 	render() {
-		var props = this.props;
+		let {
+			followingBlockIndex,
+			hidden
+		} = this.props;
 		
 		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
 		
-		var classNames = ['blocks_rearrange'];
+		var classNames = ['block_reorder'];
+		var classNameExtensions = [];
 		var children = [];
 		
 		children.push(
 			React.createElement(SecondaryButton, {
 				key: 'moveHereButton',
-				className: 'blocks_rearrange_moveHereButton',
+				//className: 'block_reorder_moveHereButton',
+				className: this.getClassNameStringWithChildSuffix('_button'),
 				title: 'Move Here',
 				onClick: this.onMoveHere
 			})
 		);
 		
+		if (hidden) {
+			classNameExtensions.push('-hidden');
+		}
+		
 		return React.createElement('div', {
-			key: ('rearrange_moveHere-' + props.followingBlockIndex),
-			className: classNames.join(' ')
+			key: ('reorder_moveHere-' + followingBlockIndex),
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
+	}
+});
+
+var RearrangeBlockFocusOnThis = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			hidden: false,
+			baseClassNames: ['block_reorder_moveThisButton']
+		};
+	},
+	
+	render() {
+		let {
+			hidden,
+			onClick
+		} = this.props;
+		
+		let classNameExtensions = [];
+		
+		if (hidden) {
+			classNameExtensions.push('-hidden');
+		}
+		
+		return React.createElement(SecondaryButton, {
+			className: this.getClassNameStringWithExtensions(classNameExtensions),
+			title: 'Move This',
+			onClick,
+			hidden
+		})
 	}
 });
 
@@ -1031,6 +1162,7 @@ var MainToolbar = React.createClass({
 		if (SettingsStore.getWantsSaveFunctionality()) {
 			children.push(
 				React.createElement(ToolbarButton, {
+					key: 'save',
 					title: 'Save',
 					onClick: this.onSave
 				})
@@ -1040,6 +1172,7 @@ var MainToolbar = React.createClass({
 		if (true) {
 			children.push(
 				React.createElement(ToolbarButton, {
+					key: 'reorder',
 					title: 'Reorder',
 					onClick: this.onToggleReordering,
 					selected: this.getIsReordering()
@@ -1050,6 +1183,7 @@ var MainToolbar = React.createClass({
 		if (SettingsStore.getWantsViewHTMLFunctionality()) {
 			children.push(
 				React.createElement(ToolbarButton, {
+					key: 'html',
 					title: 'See HTML',
 					onClick: this.onTogglePreview,
 					selected: this.getIsPreviewing()
@@ -1057,9 +1191,11 @@ var MainToolbar = React.createClass({
 			);
 		}
 		
-		children.push(
-			this.createSelectForAvailableDocuments()
-		);
+		if (SettingsStore.getShowsDocumentTitle()) {
+			children.push(
+				this.createSelectForAvailableDocuments()
+			);
+		}
 		
 		return React.createElement('div', {
 			className: 'mainToolbar'

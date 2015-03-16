@@ -36,9 +36,9 @@
     "express": "3.x",
     "flux": "^2.0.1",
     "gulp": "^3.8.10",
-    "immutable": "^3.3.0",
+    "immutable": "^3.6.4",
     "microevent": "^1.0.0",
-    "react": "^0.12.1",
+    "react": "^0.13.0",
     "underscore": "^1.6.0"
   },
   "scripts": {
