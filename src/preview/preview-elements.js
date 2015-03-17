@@ -1,4 +1,5 @@
 let React = require('react');
+let objectAssign = require('object-assign');
 let UIMixins = require('../ui/ui-mixins');
 //var Toolbars = require('./editor-toolbars');
 let Immutable = require('immutable');
@@ -15,16 +16,73 @@ var PreviewElementsCreator = {
 	
 };
 
+function createElementFactoryMergingProps(type, originalProps, children) {
+	return function (additionalAttributes) {
+		let mergedProps = objectAssign({}, originalProps, additionalAttributes);
+		return React.createElement(type, mergedProps, children);
+	}
+}
 
+PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
+	// Factory for child, tries to keep as is if not attributes passed.
+	let elementFactory = (additionalAttributes) => {
+		if (additionalAttributes && Object.keys(additionalAttributes).length > 0) {
+			return createElementFactoryMergingProps('span', {key: 'span'}, child)(additionalAttributes);
+		}
+		else {
+			return child;
+		}
+	};
+	
+	if (traits.has('italic')) {
+		elementFactory = createElementFactoryMergingProps('em', {key: 'italic'}, elementFactory());
+	}
+	
+	if (traits.has('bold')) {
+		elementFactory = createElementFactoryMergingProps('strong', {key: 'bold'}, elementFactory());
+	}
+	
+	if (traits.has('link')) {
+		var link = traits.get('link');
+		var linkTypeChoice = link.get('typeChoice');
+		var linkType = linkTypeChoice.get('selectedChoiceID');
+		var values = linkTypeChoice.get('selectedChoiceValues');
+		if (linkType === 'URL') {
+			elementFactory = createElementFactoryMergingProps('a', {
+				key: 'link/URL',
+				href: values.get('URL')
+			}, elementFactory());
+		}
+		else if (linkType === 'email') {
+			elementFactory = createElementFactoryMergingProps('a', {
+				key: 'link/email',
+				href: 'mailto:' + values.get('emailAddress')
+			}, elementFactory());
+		}
+	}
+	
+	let additionalAttributes = {};
+	
+	if (traits.has('class')) {
+		var classNames = traits.getIn(['class', 'classNames']);
+		if (classNames && classNames !== '') {
+			additionalAttributes.className = classNames;
+		}
+	}
+	
+	return elementFactory(additionalAttributes);
+};
+
+/*
 PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
 	let element = child;
 	
 	if (traits.has('italic')) {
-		element = React.createElement('em', {}, element);
+		element = React.createElement('em', {key: 'italic'}, element);
 	}
 	
 	if (traits.has('bold')) {
-		element = React.createElement('strong', {}, element);
+		element = React.createElement('strong', {key: 'bold'}, element);
 	}
 	
 	if (traits.has('link')) {
@@ -34,19 +92,31 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 		var selectedChoiceValues = linkTypeChoice.get('selectedChoiceValues');
 		if (linkType === 'URL') {
 			element = React.createElement('a', {
+				key: 'link/URL',
 				href: selectedChoiceValues.get('URL')
 			}, element);
 		}
 		else if (linkType === 'email') {
 			element = React.createElement('a', {
+				key: 'link/email',
 				href: 'mailto:' + selectedChoiceValues.get('emailAddress')
 			}, element);
 		}
 	}
 	
+	if (traits.has('class')) {
+		var classNames = traits.get('classNames');
+		
+		if (typeof element === 'string') {
+			element = React.createElement('span', {key: 'class'}, element);
+		}
+		
+		element.props.className = classNames;
+	}
+	
 	return element;
 };
-
+*/
 
 PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
 	var subsectionTypesToHolderTagNames = {

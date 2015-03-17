@@ -856,6 +856,10 @@ ContentStore.trigger = MicroEvent.prototype.trigger;
 ContentStore.off = MicroEvent.prototype.unbind;
 
 ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
+	if (!payload.eventID) {
+		return;
+	}
+	
 	var documentID = null;
 	var sectionID = null;
 	// TODO: use these two variables.

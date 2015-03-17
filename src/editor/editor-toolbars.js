@@ -16,6 +16,8 @@ let {
 var BlockTypesAssistant = require('../assistants/block-types-assistant');
 var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
 
+var MicroEvent = require('microevent');
+
 
 var TextItemTextArea = React.createClass({
 	getDefaultProps() {
@@ -272,25 +274,53 @@ var TraitButton = React.createClass({
 		}
 	},
 	
-	toggleShowFields(event) {
-		if (event) {
-			event.stopPropagation();
+	statics: {
+		events: {
+			on: MicroEvent.prototype.bind,
+			trigger: MicroEvent.prototype.trigger,
+			off: MicroEvent.prototype.unbind
+		},
+		eventIDs: {
+			didToggle: 'didToggle'
+		}
+	},
+	
+	componentDidMount() {
+		this.didToggleFunction = (sourceComponent, showing) => {
+			if (sourceComponent !== this) {
+				if (showing) {
+					this.toggleShowFields(null, false);
+				}
+			}
+		};
+		
+		TraitButton.events.on(TraitButton.eventIDs.didToggle, this.didToggleFunction);
+	},
+	
+	componentWillUnmount() {
+		TraitButton.events.off(this.didToggleFunction);
+		this.didToggleFunction = null;
+	},
+	
+	toggleShowFields(event, flag) {
+		let currentShowFields = this.state.showFields;
+		let newShowFields = typeof flag !== 'undefined' ? flag : !currentShowFields;
+		if (newShowFields == currentShowFields) {
+			return;
 		}
 		
 		this.setState({
-			showFields: !this.state.showFields
+			showFields: newShowFields
 		});
+		
+		TraitButton.events.trigger(TraitButton.eventIDs.didToggle, this, newShowFields);
 	},
 	
 	close() {
-		this.setState({
-			showFields: false
-		});
+		this.toggleShowFields(null, false);
 	},
 	
 	toggleTrait(event) {
-		event.stopPropagation();
-		
 		var props = this.props;
 		props.toggleTrait();
 	},
@@ -301,12 +331,10 @@ var TraitButton = React.createClass({
 	},
 	
 	removeTrait(event) {
-		event.stopPropagation();
-		
 		var props = this.props;
 		props.removeTrait();
 		
-		this.toggleShowFields();
+		this.toggleShowFields(null, false);
 	},
 	
 	render() {
@@ -402,9 +430,9 @@ var TraitsToolbarMixin = {
 			
 			return React.createElement(TraitButton, {
 				key: `trait-${traitID}`,
-				traitSpec: traitSpec,
-				traitValue: traitValue,
-				actions: actions,
+				traitSpec,
+				traitValue,
+				actions,
 				className: 'buttonHolder',
 				toggleTrait: this.toggleTraitWithID.bind(this, traitID),
 				changeTraitInfo: this.changeTraitInfoWithID.bind(this, traitID),

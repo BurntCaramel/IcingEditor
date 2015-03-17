@@ -37,6 +37,11 @@
 						"id": "height",
 						"type": "number-integer",
 						"title": "Displayed Height"
+					},
+					{
+						"id": "description",
+						"type": "text",
+						"title": "Description"
 					}
 				],
 				"HTMLTagNameForBlock": "p",
@@ -46,7 +51,8 @@
 						"attributes": {
 							"src": ["fields", "url"],
 							"width": ["fields", "width"],
-							"height": ["fields", "height"]
+							"height": ["fields", "height"],
+							"alt": ["fields", "description"]
 						}
 					}
 				]
@@ -221,6 +227,19 @@
 							"textFromField": ["typeChoice", "email", "emailAddress"]
 						}
 					]
+				}
+			]
+		},
+		{
+			"id": "class",
+			"title": "Class",
+			"allowedForAnyTextItems": true,
+			"type": "fields",
+			"fields": [
+				{
+					"id": "classNames",
+					"title": "Class Names",
+					"type": "text"
 				}
 			]
 		},
