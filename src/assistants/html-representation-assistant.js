@@ -7,7 +7,9 @@ var HTMLRepresentationAssistant = {
 };
 
 HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(HTMLRepresentation, value) {
-	var reactElementForElementOptions = function(elementOptions) {
+	var reactElementForElementOptions = function(elementOptions, index) {
+		let indexPath = this;
+		
 		var tagName = elementOptions.get('tagName');
 		var attributes = elementOptions.get('attributes');
 		var attributesReady = {};
@@ -31,13 +33,16 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 		var children = elementOptions.get('children');
 		var childrenReady = null;
 		if (children) {
-			childrenReady = children.map(reactElementForElementOptions).toJS();
+			childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
 		}
+		
+		let indexPathString = indexPath.join('/')
+		attributesReady.key = `indexPath-${indexPath.join()}`
 		
 		return React.createElement(tagName, attributesReady, childrenReady);
 	};
 	
-	return HTMLRepresentation.map(reactElementForElementOptions).toJS();
+	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();
 };
 
 module.exports = HTMLRepresentationAssistant;

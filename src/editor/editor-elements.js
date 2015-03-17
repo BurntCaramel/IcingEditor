@@ -92,13 +92,22 @@ var BlockElement = React.createClass({
 		};
 	},
 	
-	onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event) {
+	onChooseBlockType(typeGroupOptions, typeExtensionOptions) {
 		let {
 			keyPath,
 			actions
 		} = this.props;
 		
 		actions.changeTypeOfBlockAtKeyPath(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), keyPath);
+	},
+	
+	onCreateBlockOfType(typeGroupOptions, typeExtensionOptions) {
+		let {
+			keyPath,
+			actions
+		} = this.props;
+		
+		actions.insertBlockOfTypeAfterBlockAtKeyPath(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), keyPath);
 	},
 	
 	focusOnForReordering(event) {
@@ -168,6 +177,7 @@ var BlockElement = React.createClass({
 			keyPath,
 			actions,
 			traitSpecs,
+			blockTypeGroups,
 			blockGroupIDsToTypesMap,
 			edited,
 			editedTextItemIdentifier,
@@ -238,7 +248,8 @@ var BlockElement = React.createClass({
 		}
 		
 		var toolbarActions = {
-			onChangeChosenBlockType: this.onChangeChosenBlockType,
+			onChooseBlockType: this.onChooseBlockType,
+			onCreateBlockOfType: this.onCreateBlockOfType,
 			focusOnForReordering: this.focusOnForReordering,
 			keepInCurrentSpot: this.keepInCurrentSpot
 		};
@@ -248,7 +259,7 @@ var BlockElement = React.createClass({
 				key: 'blockToolbar',
 				chosenBlockTypeGroup: typeGroup,
 				chosenBlockType: blockType,
-				blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+				blockTypeGroups,
 				blockGroupIDsToTypesMap,
 				actions: toolbarActions,
 				isReordering,
@@ -265,7 +276,7 @@ var BlockElement = React.createClass({
 						block,
 						typeGroup,
 						type: blockType,
-						blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+						blockTypeGroups,
 						blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
 						traitSpecs,
 						traits: block.get('traits', Immutable.Map()).toJS(),
@@ -331,6 +342,7 @@ var TextItem = React.createClass({
 		} = this.props;
 		
 		var classNameExtensions = [];
+		var dataAttributes = [];
 		var id = null;
 		
 		if (edited) {
@@ -341,6 +353,8 @@ var TextItem = React.createClass({
 		for (var traitID in traits) {
 			if (traits.hasOwnProperty(traitID) && !!traits[traitID]) {
 				classNameExtensions.push(`-hasTrait-${traitID}`);
+				
+				
 			}
 		}
 		
@@ -464,9 +478,10 @@ EditorElementCreator.reactElementsWithTextItems = function(
 };
 
 EditorElementCreator.reactElementsWithBlocks = function(
-	blocksImmutable,
-	specsImmutable,
-	actions, {
+	blocksImmutable, {
+		specsImmutable,
+		actions,
+		blockTypeGroups,
 		editedBlockIdentifier,
 		editedBlockKeyPath,
 		editedTextItemIdentifier,
@@ -505,6 +520,7 @@ EditorElementCreator.reactElementsWithBlocks = function(
 			subsectionChildIndex: currentSubsectionChildIndex,
 			actions,
 			traitSpecs,
+			blockTypeGroups,
 			blockGroupIDsToTypesMap,
 			edited: (blockIdentifier == editedBlockIdentifier),
 			editedBlockIdentifier,
@@ -590,6 +606,20 @@ EditorElementCreator.reactElementsWithBlocks = function(
 		}
 	}
 	
+	let createBlockOfTypeAtEnd = function(typeGroupOptions, typeExtensionOptions) {
+		actions.insertBlockOfTypeAtIndex(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), blockCount);
+	};
+	
+	elements.push(
+		React.createElement(Toolbars.AddBlockElement, {
+			key: `addBlock-end`,
+			addAtEnd: true,
+			blockTypeGroups,
+			blockGroupIDsToTypesMap,
+			onCreateBlockOfType: createBlockOfTypeAtEnd
+		})	
+	);
+	
 	return elements;
 };
 
@@ -647,14 +677,15 @@ EditorElementCreator.MainElement = React.createClass({
 		let {
 			contentImmutable,
 			specsImmutable,
-			actions,
+			blockTypeGroups,
 			editedBlockIdentifier,
 			editedBlockKeyPath,
 			editedTextItemIdentifier,
 			editedTextItemKeyPath,
 			isReordering,
 			focusedBlockIdentifierForReordering,
-			focusedBlockKeyPathForReordering
+			focusedBlockKeyPathForReordering,
+			actions
 		} = this.props;
 		
 		var classNames = ['blocks'];
@@ -663,17 +694,17 @@ EditorElementCreator.MainElement = React.createClass({
 	
 		if (contentImmutable && contentImmutable.has('blocks')) {
 			var blocksImmutable = contentImmutable.get('blocks');
-			elements = EditorElementCreator.reactElementsWithBlocks(
-				blocksImmutable,
-				specsImmutable,
-				actions, {
+			elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
+					specsImmutable,
+					blockTypeGroups,
 					editedBlockIdentifier,
 					editedBlockKeyPath,
 					editedTextItemIdentifier,
 					editedTextItemKeyPath,
 					isReordering,
 					focusedBlockIdentifierForReordering,
-					focusedBlockKeyPathForReordering
+					focusedBlockKeyPathForReordering,
+					actions
 				}
 			);
 		}

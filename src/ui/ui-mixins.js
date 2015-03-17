@@ -47,20 +47,13 @@ var BaseClassNamesMixin = {
 		return this.getClassNamesWithExtensions(additionalExtensions).join(' ');
 	},
 	
-	getClassNamesWithChildSuffixes(childSuffixes) {
-		return getClassNamesWithSuffixes(this.getBaseClassNames(), childSuffixes);
-	},
 	
-	getClassNameStringWithChildSuffixes(childSuffixes) {
-		return this.getClassNamesWithChildSuffixes(childSuffixes).join(' ');
-	},
-	
-	getClassNamesWithChildSuffix(childSuffix) {
+	getChildClassNamesWithSuffix(childSuffix) {
 		return getClassNamesWithSuffixes(this.getBaseClassNames(), [childSuffix]);
 	},
 	
-	getClassNameStringWithChildSuffix(childSuffix) {
-		return this.getClassNamesWithChildSuffix(childSuffix).join(' ');
+	getChildClassNameStringWithSuffix(childSuffix) {
+		return this.getChildClassNamesWithSuffix(childSuffix).join(' ');
 	}
 };
 
@@ -75,12 +68,20 @@ var ButtonMixin = {
 		};
 	},
 	
+	onClick(event) {
+		event.stopPropagation();
+		
+		this.props.onClick(event);
+	},
+	
 	render() {
-		var props = this.props;
-		var title = props.title;
+		let {
+			title,
+			selected
+		} = this.props;
 		
 		var extensions = [];
-		if (props.selected) {
+		if (selected) {
 			extensions.push('-selected');
 		}
 		
@@ -88,7 +89,7 @@ var ButtonMixin = {
 		
 		return React.createElement('button', {
 			className: classNames.join(' '),
-			onClick: props.onClick
+			onClick: this.onClick
 		}, title);
 	}
 };

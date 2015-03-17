@@ -68,7 +68,9 @@ PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(sub
 	return elementsToReturn;
 };
 
-PreviewElementsCreator.reactElementsForSubsectionChild = function(subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions) {
+PreviewElementsCreator.reactElementsForSubsectionChild = function(
+	subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions, blockIndex
+) {
 	var subsectionTypesToChildTagNames = {
 		"unorderedList": "li",
 		"orderedList": "li"
@@ -89,7 +91,9 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(subsectionType
 	if (tagNameForBlock) {
 		// Nest inside, e.g. <li><h2>
 		innerElements = [
-			React.createElement(tagNameForBlock, {}, contentElements)
+			React.createElement(tagNameForBlock, {
+				key: `block-${blockIndex}`
+			}, contentElements)
 		]
 	}
 	else {
@@ -106,7 +110,9 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(subsectionType
 	
 	if (tagNameForSubsectionChild) {
 		return [
-			React.createElement(tagNameForSubsectionChild, {},
+			React.createElement(tagNameForSubsectionChild, {
+				key: `subsectionChild-${blockIndex}`
+			},
 				innerElements
 			)
 		];
@@ -196,7 +202,7 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 		
 			currentSubsectionElements = currentSubsectionElements.concat(
 				PreviewElementsCreator.reactElementsForSubsectionChild(
-					currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions
+					currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex
 				)
 			);
 		}

@@ -224,12 +224,36 @@ var SecondaryButton = React.createClass({
 	}
 });
 
+var ButtonDivider = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			baseClassNames: ['divider']
+		};
+	},
+	
+	render() {
+		return React.createElement('div', {
+			className: this.getClassNameStringWithExtensions()
+		})
+	}
+});
+
 var ToolbarDivider = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			baseClassNames: ['toolbarDivider']
+		};
+	},
+	
 	render() {
 		//var text = ' · ';
 		var text = ' ';
 		return React.createElement('span', {
-			className: 'toolbarDivider'
+			className: this.getClassNameStringWithExtensions()
 		}, text);
 	}
 });
@@ -255,6 +279,12 @@ var TraitButton = React.createClass({
 		
 		this.setState({
 			showFields: !this.state.showFields
+		});
+	},
+	
+	close() {
+		this.setState({
+			showFields: false
 		});
 	},
 	
@@ -333,6 +363,12 @@ var TraitButton = React.createClass({
 						title: 'Remove',
 						className: 'removeButton',
 						onClick: this.removeTrait
+					}),
+					React.createElement(SecondaryButton, {
+						key: 'doneButton',
+						title: 'Done',
+						className: 'doneButton',
+						onClick: this.close
 					})
 				])
 			);
@@ -381,7 +417,7 @@ var TraitsToolbarMixin = {
 		var buttons = this.createButtonsForTraitSpecs(traitSpecs, chosenTraits);
 		return React.createElement('div', {
 			key: groupID,
-			className: this.getClassNameStringWithChildSuffix(`-${groupID}`)
+			className: this.getChildClassNameStringWithSuffix(`-${groupID}`)
 		}, buttons);
 	},
 	
@@ -606,6 +642,7 @@ var ParticularEditor = React.createClass({
 		if (blockTypeOptions.has('fields')) {
 			elements.push(
 				React.createElement(EditorFields.FieldsHolder, {
+					key: 'fieldsHolder',
 					fields: blockTypeOptions.get('fields').toJS(),
 					values: block.get('value', Immutable.Map()).toJS(),
 					onChangeInfo: this.changeFieldsInfo
@@ -638,6 +675,7 @@ var ParticularEditor = React.createClass({
 		)
 		
 		return React.createElement('div', {
+			key: 'particularEditor',
 			className: 'particularEditor',
 			onClick: this.onClick
 		}, elements);
@@ -645,12 +683,72 @@ var ParticularEditor = React.createClass({
 });
 
 
+var BlockTypeChoices = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			chosenBlockTypeGroup: null,
+			chosenBlockType: null
+		};
+	},
+	
+	render() {
+		let {
+			blockTypeGroups,
+			blockGroupIDsToTypesMap,
+			chosenBlockTypeGroup,
+			onChooseBlockType
+		} = this.props;
+		
+		var groupElements = blockTypeGroups.map(function(groupOptions) {
+			var groupID = groupOptions.get('id');
+			var typesMap = blockGroupIDsToTypesMap.get(groupID);
+			if (!typesMap) {
+				return null;
+			}
+			
+			var typeElements = typesMap.map(function(typeOptions) {
+				var type = typeOptions.get('id');
+				var onClick = onChooseBlockType.bind(null, groupOptions, typeOptions);
+				
+				return React.createElement(ToolbarButton, {
+					key: ('button-type-' + type),
+					ref: type,
+					title: typeOptions.get('title'),
+					selected: (chosenBlockTypeGroup === groupOptions.get('id') && chosenBlockType === type),
+					onClick: onClick
+				});
+			}, this).toJS();
+			
+			var groupTitle = groupOptions.get('title');
+			typeElements.splice(0, 0,
+				React.createElement('h5', {
+					key: 'groupTitle',
+					className: this.getChildClassNameStringWithSuffix('_group_title'),
+				}, groupTitle)
+			);
+			
+			return React.createElement('div', {
+				key: `group-${groupID}`,
+				className: this.getChildClassNameStringWithSuffix('_group'),
+			}, typeElements);
+		}, this).toJS();
+		
+		return React.createElement('div', {
+			className: this.getClassNameStringWithExtensions(),
+		}, groupElements);
+	}
+});
+
 var BlockTypeChooser = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
 		return {
-			baseClassNames: ['blockItemToolbar_typeChooser'],
+			isCreate: false,
+			chosenBlockTypeGroup: null,
+			chosenBlockType: null
 		};
 	},
 	
@@ -666,11 +764,8 @@ var BlockTypeChooser = React.createClass({
 		});
 	},
 	
-	onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event) {
-		event.stopPropagation();
-		
-		var actions = this.props.actions;
-		actions.onChangeChosenBlockType(typeGroupOptions, typeExtensionOptions, event);
+	onChooseBlockType(typeGroupOptions, typeExtensionOptions, event) {
+		this.props.onChooseBlockType(typeGroupOptions, typeExtensionOptions);
 		
 		this.setState({
 			active: false
@@ -678,77 +773,52 @@ var BlockTypeChooser = React.createClass({
 	},
 	
 	render() {
-		// PROPS
-		var props = this.props;
-		var chosenBlockTypeGroup = props.chosenBlockTypeGroup;
-		var chosenBlockType = props.chosenBlockType;
-		var blockTypeGroups = props.blockTypeGroups;
-		var blockGroupIDsToTypesMap = props.blockGroupIDsToTypesMap;
-		var actions = props.actions;
-		// STATE
-		var state = this.state;
-		var active = state.active;
+		let {
+			isCreate,
+			chosenBlockTypeGroup,
+			chosenBlockType,
+			blockTypeGroups,
+			blockGroupIDsToTypesMap
+		} = this.props;
+
+		let {
+			active
+		} = this.state;
 		
 		var classNameExtensions = [];
 		var children = [];
 		
-		var chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
-			chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap
-		);
-		
+		var mainButtonTitle;
+		if (isCreate) {
+			mainButtonTitle = '+';
+		}
+		else {
+			let chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+				chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap
+			);
+			
+			mainButtonTitle = chosenBlockTypeOptions ? chosenBlockTypeOptions.get('title') : `[${chosenBlockType}]`;
+		}
 		children.push(
 			React.createElement(ToolbarButton, {
 				key: 'mainButton',
-				baseClassNames: this.getClassNamesWithChildSuffix('_mainButton'),
-				title: chosenBlockTypeOptions ? chosenBlockTypeOptions.get('title') : `[${chosenBlockType}]`,
-				onClick: this.onToggleActive
+				title: mainButtonTitle,
+				onClick: this.onToggleActive,
+				baseClassNames: this.getChildClassNamesWithSuffix('_mainButton')
 			})
 		);
 		
 		if (active) {
-			var groupElements = blockTypeGroups.map(function(groupOptions) {
-				var groupID = groupOptions.get('id');
-				var typesMap = blockGroupIDsToTypesMap.get(groupID);
-				if (!typesMap) {
-					return null;
-				}
-				
-				var typeElements = typesMap.map(function(typeOptions) {
-					var type = typeOptions.get('id');
-					var onClick = this.onChangeChosenBlockType.bind(this, groupOptions, typeOptions);
-					
-					return React.createElement(ToolbarButton, {
-						key: ('button-type-' + type),
-						ref: type,
-						title: typeOptions.get('title'),
-						selected: chosenBlockTypeGroup === groupOptions.get('id') && chosenBlockType === type,
-						onClick: onClick
-					});
-				}, this).toJS();
-				
-				var groupTitle = groupOptions.get('title');
-				typeElements.splice(0, 0,
-					React.createElement('h5', {
-						key: 'groupTitle',
-						className: this.getClassNameStringWithChildSuffix('_choices_group_title'),
-					}, groupTitle)
-				);
-				
-				return React.createElement('div', {
-					key: `group-${groupID}`,
-					className: this.getClassNameStringWithChildSuffix('_choices_group'),
-				}, typeElements);
-			}, this).toJS();
-			
 			children.push(
-				React.createElement('div', {
+				React.createElement(BlockTypeChoices, {
 					key: 'choices',
-					className: this.getClassNameStringWithChildSuffix('_choices'),
-				}, groupElements)
+					blockTypeGroups,
+					blockGroupIDsToTypesMap,
+					onChooseBlockType: this.onChooseBlockType,
+					baseClassNames: this.getChildClassNamesWithSuffix('_choices')
+				})
 			);
-		}
-		
-		if (active) {
+			
 			classNameExtensions.push('-active');
 		}
 		
@@ -771,6 +841,11 @@ var BlockToolbar = React.createClass({
 		};
 	},
 	
+	onChooseBlockType(typeGroupOptions, typeExtensionOptions, event) {
+		var actions = this.props.actions;
+		actions.onChooseBlockType(typeGroupOptions, typeExtensionOptions);
+	},
+	
 	onMakeFocusForReordering() {
 		let {
 			actions
@@ -785,10 +860,6 @@ var BlockToolbar = React.createClass({
 		} = this.props;
 		
 		actions.keepInCurrentSpot();
-	},
-	
-	onClick(event) {
-		event.stopPropagation();	
 	},
 	
 	render() {
@@ -828,15 +899,6 @@ var BlockToolbar = React.createClass({
 						onClick: this.onMakeFocusForReordering,
 						hidden
 					})
-					/*
-					React.createElement(SecondaryButton, {
-						key: 'moveThisButton',
-						className: 'block_reorder_moveThisButton',
-						title: 'Move This',
-						onClick: this.onMakeFocusForReordering,
-						hidden
-					})
-					*/
 				);
 			}
 		}
@@ -848,18 +910,101 @@ var BlockToolbar = React.createClass({
 					chosenBlockType,
 					blockTypeGroups,
 					blockGroupIDsToTypesMap,
-					actions,
-					baseClassNames: this.getClassNamesWithChildSuffix('_typeChooser')
+					onChooseBlockType: this.onChooseBlockType,
+					baseClassNames: this.getChildClassNamesWithSuffix('_typeChooser')
 				})
 			);
 		}
 		
 		return React.createElement('div', {
-			className: this.getClassNameStringWithExtensions(),
-			onClick: this.onClick
+			className: this.getClassNameStringWithExtensions()
 		}, children);
 	}
 });
+
+let AddBlockElement = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			addAtEnd: false,
+			actions: null,
+			baseClassNames: ["blocks_addBlock"]
+		}
+	},
+	
+	getInitialState() {
+		return {
+			active: false
+		};
+	},
+	
+	onToggleActive() {
+		this.setState({
+			active: !this.state.active
+		});
+	},
+	
+	onCreateBlockOfType(typeGroupOptions, typeExtensionOptions, event) {
+		this.props.onCreateBlockOfType(typeGroupOptions, typeExtensionOptions);
+		
+		this.setState({
+			active: false
+		});
+	},
+	
+	render() {
+		let {
+			blockTypeGroups,
+			blockGroupIDsToTypesMap
+		} = this.props;
+		
+		let {
+			active
+		} = this.state;
+		
+		let classNameExtensions = [];
+		
+		let children = [
+			React.createElement(BlockTypeChooser, {
+				key: 'typeChooser',
+				isCreate: true,
+				blockTypeGroups,
+				blockGroupIDsToTypesMap,
+				onChooseBlockType: this.onCreateBlockOfType,
+				baseClassNames: this.getChildClassNamesWithSuffix('_typeChooser')
+			})
+			/*
+			React.createElement(ToolbarButton, {
+				key: 'mainButton',
+				title: '+',
+				onClick: this.onToggleActive,
+				baseClassNames: this.getChildClassNamesWithSuffix('_mainButton')
+			})
+			*/
+		];
+		
+		/*
+		if (active) {
+			children.push(
+				React.createElement(BlockTypeChoices, {
+					key: 'choices',
+					blockTypeGroups,
+					blockGroupIDsToTypesMap,
+					onChooseBlockType: this.onCreateBlockOfType,
+					baseClassNames: this.getChildClassNamesWithSuffix('_choices')
+				})
+			);
+			
+			classNameExtensions.push('-active');
+		}
+		*/
+		
+		return React.createElement('div', {
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
+		}, children);
+	}
+})
 
 var ChangeSubsectionElement = React.createClass({
 	getDefaultProps() {
@@ -884,9 +1029,13 @@ var ChangeSubsectionElement = React.createClass({
 		});
 	},
 	
+	makeInactive() {
+		this.setState({
+			active: false
+		});
+	},
+	
 	onCreateSubsectionOfType(subsectionType, event) {
-		event.stopPropagation();
-		
 		let {
 			actions,
 			followingBlockIndex
@@ -903,7 +1052,19 @@ var ChangeSubsectionElement = React.createClass({
 		} = this.props;
 		actions.changeTypeOfSubsectionAtKeyPath(keyPath, subsectionType);
 		
-		this.onToggleActive();
+		this.makeInactive();
+	},
+	
+	onRemoveSubsection(event) {
+		event.stopPropagation();
+		
+		let {
+			actions,
+			keyPath
+		} = this.props;
+		actions.removeSubsectionAtKeyPath(keyPath);
+		
+		this.makeInactive();
 	},
 	
 	createElementForSubsectionInfo(subsectionInfo) {
@@ -975,6 +1136,20 @@ var ChangeSubsectionElement = React.createClass({
 				return this.createElementForSubsectionInfo(subsectionInfo);
 			}, this);
 			
+			if (!isCreate) {
+				subsectionChoices.push(
+					React.createElement(ButtonDivider, {
+						key: 'dividerAboveRemove'
+					}),
+					React.createElement(SecondaryButton, {
+						key: 'removeSubsection',
+						baseClassNames: ['blocks_changeSubsection_removeButton'],
+						title: 'Remove Subsection',
+						onClick: this.onRemoveSubsection
+					})
+				);
+			}
+			
 			children.push(
 				React.createElement('div', {
 					key: 'choices',
@@ -1030,7 +1205,7 @@ var RearrangeBlockMoveHere = React.createClass({
 			React.createElement(SecondaryButton, {
 				key: 'moveHereButton',
 				//className: 'block_reorder_moveHereButton',
-				className: this.getClassNameStringWithChildSuffix('_button'),
+				className: this.getChildClassNameStringWithSuffix('_button'),
 				title: 'Move Here',
 				onClick: this.onMoveHere
 			})
@@ -1206,6 +1381,7 @@ var MainToolbar = React.createClass({
 var ElementToolbars = {
 	MainToolbar,
 	BlockToolbar,
+	AddBlockElement,
 	BlockTraitsToolbar,
 	TextItemEditor,
 	ParticularEditor,

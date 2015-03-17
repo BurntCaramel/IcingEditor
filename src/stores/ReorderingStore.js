@@ -6,8 +6,6 @@ var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 let ContentStore = require('./store-content');
 
-console.log('dfgdfgdfg ContentStore', ContentStore);
-
 
 //var documentSectionActivity = Immutable.Map({});
 

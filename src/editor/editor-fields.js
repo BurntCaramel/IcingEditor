@@ -1,5 +1,7 @@
 var React = require('react');
 let {ButtonMixin, BaseClassNamesMixin} = require('../ui/ui-mixins');
+var normalizeURL = require('normalize-url');
+
 
 var EditorFields = {};
 
@@ -69,7 +71,7 @@ var InputLabel = React.createClass({
 		children = [
 			React.createElement('span', {
 				key: 'title',
-				className: this.getClassNameStringWithChildSuffix('_title')
+				className: this.getChildClassNameStringWithSuffix('_title')
 			}, title)
 		].concat(children);
 		
@@ -209,6 +211,12 @@ EditorFields.createElementForField = function(fieldJSON, value, onChangeInfo) {
 				value: value,
 				onChange: function(event) {
 					var newValue = event.target.value;
+					
+					if (inputType === 'url') {
+						let normalizedURL = normalizeURL(newValue);
+						//console.log('URL', normalizedURL);
+					}
+					
 					onChangeInfo(
 						changeInfoWithIDAndValue(ID, newValue)
 					);

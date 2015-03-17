@@ -202,6 +202,26 @@
 						}
 					]
 				}
+			],
+			"valueDescription": [
+				{
+					"checkFieldPresent": ["typeChoice", "URL"],
+					"children": [
+						"Link to URL: ",
+						{
+							"textFromField": ["typeChoice", "URL", "URL"]
+						}
+					]
+				},
+				{
+					"checkFieldPresent": ["typeChoice", "email"],
+					"children": [
+						"Link to email address: ",
+						{
+							"textFromField": ["typeChoice", "email", "emailAddress"]
+						}
+					]
+				}
 			]
 		},
 		{

@@ -183,16 +183,24 @@ var ContentStore = {
 	
 	getNumberOfBlocksForDocumentSection: function(documentID, sectionID, keyPath) {
 		let blocksKeyPath = getBlocksKeyPath();
-		return this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath.concat('size'));
+		let blocks = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath);
+		if (blocks) {
+			return blocks.size;
+		}
+		else {
+			return null;
+		}
 	},
 	
 	// UPDATING
 	
-	updateContentObjectAtKeyPathForDocumentSection: function(documentID, sectionID, keyPath, updater, options) {
+	updateContentObjectAtKeyPathForDocumentSection: function(documentID, sectionID, keyPath, updater,
+		{trigger = true} = {}
+	) {
 		var fullKeyPath = [documentID, sectionID].concat(keyPath);
 		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, updater);
 	
-		if (!options || options.trigger) {
+		if (trigger) {
 			this.trigger('contentChangedForDocumentSection', documentID, sectionID);
 		}
 	},
@@ -211,10 +219,12 @@ var ContentStore = {
 		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
 	},
 	
-	removeBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
+	removeBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath,
+		{finishEditing = false, editPrevious = false} = {}
+	) {
 		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
 		var isEditingThisBlock = (editedBlockKeyPath == blockKeyPath);
-		if (isEditingThisBlock) {
+		if (isEditingThisBlock || finishEditing) {
 			this.finishEditingInDocumentSection(documentID, sectionID);
 		}
 		
@@ -225,13 +235,13 @@ var ContentStore = {
 			return blocks.remove(blockIndex);
 		});
 		
-		if (options && options.editPrevious) {
+		if (editPrevious) {
 			var precedingBlockIndex = blockIndex - 1;
 			var precedingBlockKeyPath = blocksKeyPath.concat(precedingBlockIndex);
 			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath);
 		}
 		
-		this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+		//this.trigger('contentChangedForDocumentSection', documentID, sectionID);
 	},
 	
 	updateTextItemAtKeyPathInDocumentSection: function(documentID, sectionID, keyPath, updater, options) {
@@ -312,17 +322,18 @@ var ContentStore = {
 		}
 	},
 	
-	insertSubsectionOfTypeAtBlockIndexInDocumentSection: function(documentID, sectionID, subsectionType, blockIndex, options) {
+	insertSubsectionOfTypeAtBlockIndexInDocumentSection: function(documentID, sectionID,
+		subsectionType, blockIndex, {editFollowingBlock = false} = {}
+	) {
 		let blocksKeyPath = getBlocksKeyPath();
-		
 		var blockKeyPath = blocksKeyPath.concat(blockIndex);
 		var subsectionBlock = this.newBlockSubsectionOfType(subsectionType);
 		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, subsectionBlock);
 		
-		if (options && options.editFollowing) {
+		if (editFollowingBlock) {
 			let followingBlockIndex = blockIndex + 1;
 			let followingBlockKeyPath = blocksKeyPath.concat(followingBlockIndex);
-			
+			console.log('followingBlockIndex', 'getNumberOfBlocks', this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
 			if (followingBlockIndex < this.getNumberOfBlocksForDocumentSection(documentID, sectionID)) {
 				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath, {editTextItemsIfPresent: true});
 			}
@@ -372,12 +383,6 @@ var ContentStore = {
 	},
 	
 	insertBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, block, options) {
-		/*
-		var blockIndex = blockKeyPath.slice(-1)[0];
-		var blocksKeyPath = blockKeyPath.slice(0, -1);
-		var newBlockIndex = blockIndex + 1;
-		var newBlockKeyPath = blocksKeyPath.concat(newBlockIndex);
-		*/
 		let newBlockKeyPath = getObjectKeyPathWithIndexChange(blockKeyPath, function(originalIndex) {
 			return originalIndex + 1;
 		});
@@ -401,12 +406,20 @@ var ContentStore = {
 		});
 	},
 	
+	insertBlockOfTypeAtIndexInDocumentSection: function(documentID, sectionID, typeGroup, type, blockIndex, options) {
+		let newBlock = this.newBlockOfType(typeGroup, type);
+		
+		let blocksKeyPath = getBlocksKeyPath();
+		var blockKeyPath = blocksKeyPath.concat(blockIndex);
+		
+		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlock, options);
+	},
+	
 	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function(documentID, sectionID, blockKeyPath, options) {
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+		var newBlock = this.newBlockWithSameTypeAs(currentBlock);
 		
-		var followingBlock = this.newBlockWithSameTypeAs(currentBlock);
-		
-		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, options);
+		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlock, options);
 	},
 	
 	insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, pastedText, options) {
@@ -850,6 +863,7 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 	var textItemKeyPath = null;
 	var editedBlockKeyPath = null;
 	var editedTextItemKeyPath = null;
+	var blockKeyPathIsEdited = false;
 	
 	if (payload.documentID) {
 		documentID = payload.documentID;
@@ -865,7 +879,7 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 			else {
 				blockKeyPath = payload.blockKeyPath;
 			}
-			//var blockKeyPathIsEdited = (blockKeyPath === editedBlockKeyPath);
+			blockKeyPathIsEdited = (blockKeyPath == editedBlockKeyPath);
 			
 			if (payload.useEditedTextItemKeyPath) {
 				textItemKeyPath = editedTextItemKeyPath;
@@ -900,21 +914,38 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 			sectionID,
 			payload.blockKeyPath
 		);
+		
 		break;
 	
 	case (documentSectionEventIDs.finishEditing):
 		ContentStore.finishEditingInDocumentSection(documentID, sectionID);
+		
 		break;
 	
 	case (documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex):
 		ContentStore.insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID,
-			payload.subsectionType, payload.blockIndex, {editFollowing: true}
+			payload.subsectionType, payload.blockIndex, {editFollowingBlock: true}
 		);
+		
+		break;
+	
+	case (documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex):
+		ContentStore.insertBlockOfTypeAtIndexInDocumentSection(documentID, sectionID,
+			payload.typeGroup, payload.type, payload.blockIndex, {edit: true}
+		);
+		
 		break;
 	
 	case (documentSectionEventIDs.subsectionAtKeyPath.changeType):
 		ContentStore.changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID,
 			payload.subsectionKeyPath, payload.subsectionType
+		);
+		
+		break;
+	
+	case (documentSectionEventIDs.subsectionAtKeyPath.remove):
+		ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID,
+			payload.subsectionKeyPath, {finishEditing: true}
 		);
 		
 		break;
@@ -937,14 +968,10 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 		});
 		break;
 	
-	case (documentSectionEventIDs.blockAtKeyPath.changePlaceholderID):
-		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function(block) {
-			return block.set('placeholderID', payload.placeholderID);
-		});
-		break;
-	
 	case (documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter):
-		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.keyPath);
+		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID,
+			blockKeyPath, {edit: blockKeyPathIsEdited}
+		);
 		break;
 	
 	case (documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText):
@@ -957,10 +984,6 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 	
 	case (documentSectionEventIDs.editedBlock.remove):
 		ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {editPrevious: true});
-		break;
-	
-	case (documentSectionEventIDs.editedBlock.insertRelatedBlockAfter):
-		ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, {edit: true});
 		break;
 	
 	case (documentSectionEventIDs.editedBlock.changeTraitValue):

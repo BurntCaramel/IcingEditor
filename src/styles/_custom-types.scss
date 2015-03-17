@@ -1,0 +1,61 @@
+.textItem-hasTrait-bold .text
+{
+	font-weight: bold;
+}
+.textItem-hasTrait-italic .text
+{
+	font-style: italic;
+}
+.textItem-hasTrait-link {
+	:after {
+		
+	}
+	
+	.text {
+		border-bottom: 1px dotted rgba(20, 200, 255, 1.0);
+	}
+}
+
+
+.block-text-body .text
+{
+	
+}
+.block-text-heading .text
+{
+	font-size: 36px;
+}
+.block-text-subhead1 .text
+{
+	font-size: 24px;
+}
+.block-text-subhead2 .text
+{
+	font-size: 21px;
+}
+.block-text-subhead3 .text
+{
+	font-size: 18px;
+}
+
+
+.block-inSubsection-unorderedList {
+	&:before {
+		content: '•';
+		position: absolute;
+		left: -0.5em;
+	};
+}
+
+.block-inSubsection-orderedList {
+	&:before {
+		content: attr(data-subsection-child-index) ".";
+		position: absolute;
+		left: -2.2em;
+		min-width: 1.9em; // Leave a little bit of space on the right.
+		text-align: right;
+		opacity: 0.45;
+	}
+}
+
+

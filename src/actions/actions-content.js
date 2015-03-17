@@ -141,6 +141,15 @@ var ActionsContent = {
 				});
 			},
 			
+			removeSubsectionAtKeyPath(subsectionKeyPath) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.subsectionAtKeyPath.remove,
+					documentID,
+					sectionID,
+					subsectionKeyPath
+				});
+			},
+			
 			changeTypeOfBlockAtKeyPath(blockTypeGroup, blockType, blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
@@ -161,12 +170,23 @@ var ActionsContent = {
 				});
 			},
 			
+			insertBlockOfTypeAtIndex(typeGroup, type, blockIndex) {
+				AppDispatcher.dispatch({
+					eventID: documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex,
+					typeGroup,
+					type,
+					blockIndex,
+					documentID,
+					sectionID
+				});
+			},
+			
 			insertRelatedBlockAfterBlockAtKeyPath(blockKeyPath) {
 				AppDispatcher.dispatch({
 					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
+					blockKeyPath,
 					documentID,
-					sectionID,
-					blockKeyPath
+					sectionID
 				});
 			},
 			
@@ -180,7 +200,8 @@ var ActionsContent = {
 			
 			insertRelatedBlockAfterEditedBlock() {
 				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedBlock.insertRelatedBlockAfter,
+					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
+					useEditedBlockKeyPath: true,
 					documentID,
 					sectionID
 				});
@@ -197,6 +218,8 @@ var ActionsContent = {
 				});
 			},
 			
+			// Updating Blocks
+			
 			updateValueForBlockAtKeyPath(blockKeyPath, defaultValue, newValueFunction)
 			{
 				AppDispatcher.dispatch({
@@ -206,16 +229,6 @@ var ActionsContent = {
 					blockKeyPath,
 					defaultValue,
 					newValueFunction
-				});
-			},
-			
-			changePlaceholderIDOfBlockAtKeyPath(placeholderID, blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.changePlaceholderID,
-					documentID,
-					sectionID,
-					blockKeyPath,
-					placeholderID
 				});
 			},
 			

@@ -9,10 +9,12 @@ var ActionsContentEventIDs = {
 		},
 		finishEditing: 'documentSection.finishEditing',
 		blocks: {
-			insertSubsectionOfTypeAtIndex: 'documentSection.blocks.insertSubsectionOfTypeAtIndex'
+			insertSubsectionOfTypeAtIndex: 'documentSection.blocks.insertSubsectionOfTypeAtIndex',
+			insertBlockOfTypeAtIndex: 'documentSection.blocks.insertBlockOfTypeAtIndex'
 		},
 		subsectionAtKeyPath: {
-			changeType: 'documentSection.subsectionAtKeyPath.changeType'
+			changeType: 'documentSection.subsectionAtKeyPath.changeType',
+			remove: 'documentSection.subsectionAtKeyPath.remove'
 		},
 		blockAtKeyPath: {
 			changeType: 'documentSection.blockAtKeyPath.changeType',
