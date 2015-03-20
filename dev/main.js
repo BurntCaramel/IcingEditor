@@ -26088,9 +26088,9 @@ module.exports = AppDispatcher;
 },{"flux":2}],172:[function(require,module,exports){
 "use strict";
 
-var BlockTypesAssistant = {};
+var TypesAssistant = {};
 
-BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList = function (chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
+TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function (chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
 	// Find options by searching for the particular ID
 	var chosenBlockTypeOptions = null;
 	var chosenTypesList = blockGroupIDsToTypesMap.get(chosenBlockTypeGroup);
@@ -26104,7 +26104,13 @@ BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList = funct
 	return chosenBlockTypeOptions;
 };
 
-module.exports = BlockTypesAssistant;
+TypesAssistant.findParticularTraitOptionsInMap = function (traitIDToFind, traitOptionsMap) {
+	return traitOptionsMap.find(function (traitOptions) {
+		return traitOptions.get("id") === traitIDToFind;
+	});
+};
+
+module.exports = TypesAssistant;
 
 },{}],173:[function(require,module,exports){
 "use strict";
@@ -26114,7 +26120,72 @@ var Immutable = require("immutable");
 
 var HTMLRepresentationAssistant = {};
 
-HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function (HTMLRepresentation, value) {
+var getAttributeValueForInfoAndValue = (function (_getAttributeValueForInfoAndValue) {
+	var _getAttributeValueForInfoAndValueWrapper = function getAttributeValueForInfoAndValue(_x, _x2) {
+		return _getAttributeValueForInfoAndValue.apply(this, arguments);
+	};
+
+	_getAttributeValueForInfoAndValueWrapper.toString = function () {
+		return _getAttributeValueForInfoAndValue.toString();
+	};
+
+	return _getAttributeValueForInfoAndValueWrapper;
+})(function (attributeValueRepresentation, sourceValue) {
+	var attributeValue = null;
+
+	if (typeof attributeValueRepresentation === "string") {
+		attributeValue = attributeValueRepresentation;
+	} else if (Immutable.List.isList(attributeValueRepresentation)) {
+		var keyPath = attributeValueRepresentation;
+		attributeValue = sourceValue.getIn(keyPath);
+	} else if (Immutable.Map.isMap(attributeValueRepresentation)) {
+		var attributeOptions = attributeValueRepresentation;
+
+		if (attributeOptions.has("checkIsPresent")) {
+			var checkIsPresentInfo = attributeOptions.has("checkIsPresent");
+			var valueToCheck = getAttributeValueForInfoAndValue(checkIsPresentInfo, sourceValue);
+			if (valueToCheck == null) {
+				return null;
+			}
+		}
+
+		if (attributeOptions.has("text")) {
+			attributeValue = attributeOptions.get("text");
+		} else if (attributeOptions.has("join")) {
+			(function () {
+				var join = attributeOptions.get("join");
+				console.log("join", join.toJS());
+				var pieces = [];
+				var allPresent = join.every(function (attributeInfoToCheck) {
+					var valueToCheck = getAttributeValueForInfoAndValue(attributeInfoToCheck, sourceValue);
+					if (valueToCheck == null) {
+						return false;
+					}
+
+					pieces.push(valueToCheck);
+					return true;
+				});
+
+				if (allPresent) {
+					attributeValue = pieces.join("");
+				}
+			})();
+		} else if (attributeOptions.has("firstWhichIsPresent")) {
+			var firstWhichIsPresent = attributeOptions.get("firstWhichIsPresent");
+			firstWhichIsPresent.forEach(function (attributeInfoToCheck) {
+				var valueToCheck = getAttributeValueForInfoAndValue(attributeInfoToCheck, sourceValue);
+				if (valueToCheck != null) {
+					attributeValue = valueToCheck;
+					return false; // break
+				}
+			});
+		}
+	}
+
+	return attributeValue;
+});
+
+HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function (HTMLRepresentation, sourceValue) {
 	var reactElementForElementOptions = (function (_reactElementForElementOptions) {
 		var _reactElementForElementOptionsWrapper = function reactElementForElementOptions(_x, _x2) {
 			return _reactElementForElementOptions.apply(this, arguments);
@@ -26128,35 +26199,47 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 	})(function (elementOptions, index) {
 		var indexPath = this;
 
-		var tagName = elementOptions.get("tagName");
-		var attributes = elementOptions.get("attributes");
-		var attributesReady = {};
-		if (attributes && value) {
-			attributesReady = attributes.map(function (attributeValueRepresentation, attributeName) {
-				if (typeof attributeValueRepresentation === "string") {
-					return attributeValueRepresentation;
-				} else if (Immutable.List.isList(attributeValueRepresentation)) {
-					var attributeKeyPath = attributeValueRepresentation;
-					if (attributeKeyPath.get(0) === "fields") {
-						var attributeKeyPathForFields = attributeKeyPath.slice(1);
-						return value.getIn(attributeKeyPathForFields);
-					}
-				}
+		/*if (typeof elementOptions === 'string') {
+  	return elementOptions;
+  }
+  else if (Immutable.List.isList(elementOptions)) {
+  	let keyPath = elementOptions;
+  	return sourceValue.getIn(keyPath);
+  }
+  else if (Immutable.Map.isMap(elementOptions)) {*/
 
-				return "";
-			}).toJS();
+		// Referenced Element
+		if (elementOptions.get("placeOriginalElement", false)) {
+			return sourceValue.get("originalElement", null);
 		}
+		// Element
+		else if (elementOptions.has("tagName")) {
+			var tagName = elementOptions.get("tagName");
 
-		var children = elementOptions.get("children");
-		var childrenReady = null;
-		if (children) {
-			childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
+			var attributes = elementOptions.get("attributes");
+			var attributesReady = {};
+			if (attributes && sourceValue) {
+				attributesReady = attributes.map(function (attributeValueRepresentation, attributeName) {
+					return getAttributeValueForInfoAndValue(attributeValueRepresentation, sourceValue);
+				}).toJS();
+			}
+
+			var children = elementOptions.get("children");
+			var childrenReady = null;
+			if (children) {
+				childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
+			}
+
+			var indexPathString = indexPath.join("/");
+			attributesReady.key = "indexPath-" + indexPath.join();
+
+			return React.createElement(tagName, attributesReady, childrenReady);
 		}
-
-		var indexPathString = indexPath.join("/");
-		attributesReady.key = "indexPath-" + indexPath.join();
-
-		return React.createElement(tagName, attributesReady, childrenReady);
+		// Text
+		else {
+			return getAttributeValueForInfoAndValue(elementOptions, sourceValue);
+		}
+		//}
 	});
 
 	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();
@@ -26178,11 +26261,11 @@ module.exports={
 	"defaultSectionType": "normal",
 	"blockTypesByGroups": {
 		"text": [
-			{"id": "body", "title": "Paragraph"},
-			{"id": "heading", "title": "Heading 1"},
-			{"id": "subhead1", "title": "Heading 2"},
-			{"id": "subhead2", "title": "Heading 3"},
-			{"id": "subhead3", "title": "Heading 4"}
+			{"id": "body", "title": "Paragraph", "outerHTMLTagName": "p"},
+			{"id": "heading", "title": "Heading 1", "outerHTMLTagName": "h1"},
+			{"id": "subhead1", "title": "Heading 2", "outerHTMLTagName": "h2"},
+			{"id": "subhead2", "title": "Heading 3", "outerHTMLTagName": "h3"},
+			{"id": "subhead3", "title": "Heading 4", "outerHTMLTagName": "h4"}
 		],
 		"media": [
 			{
@@ -26211,7 +26294,7 @@ module.exports={
 						"title": "Description"
 					}
 				],
-				"HTMLTagNameForBlock": "p",
+				"outerHTMLTagName": "p",
 				"innerHTMLRepresentation": [
 					{
 						"tagName": "img",
@@ -26253,7 +26336,7 @@ module.exports={
 								},
 								"children": [
 									{
-										"textFromField": ["businessName"]
+										"text": ["fields", "businessName"]
 									}
 								]
 							},
@@ -26269,17 +26352,17 @@ module.exports={
 										"tagName": "div",
 										"children": [
 											{
-												"textFromField": ["streetAddress"]
+												"text": ["fields", "streetAddress"]
 											},
 											{
 												"text": ",",
-												"checkFieldPresent": ["streetAddress"]
+												"checkIsPresent": ["fields", "streetAddress"]
 											},
 											{
-												"textFromField": ["suburb"]
+												"text": ["fields", "suburb"]
 											},
 											{
-												"textFromField": ["province"]
+												"text": ["fields", "province"]
 											}
 										]
 									}
@@ -26314,33 +26397,50 @@ module.exports={
 				"title": "Feature Heading",
 				"fieldsAreRequired": true,
 				"fields": [
-					{"id": "primary", "title": "Primary"},
-					{"id": "secondary", "title": "Secondary"}
+					{"id": "primaryText", "title": "Primary Text"},
+					{"id": "secondaryText", "title": "Secondary Text"}
 				]
 			}
 		]
-	},
-	"allowedTextItemTraits": {
-		"bold": true,
-		"italic": true
 	},
 	"traits": [
 		{
 			"id": "bold",
 			"title": "Bold",
-			"allowedForAnyTextItems": true
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "strong",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			]
 		},
 		{
 			"id": "italic",
 			"title": "Italic",
-			"allowedForAnyTextItems": true
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "em",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			]
 		},
 		{
 			"id": "link",
 			"allowedForAnyTextItems": true,
 			"allowedForBlockTypesByGroupType": {
 				"text": true,
-				"media": true
+				"media": true,
+				"particular": true
 			},
 			"disabled": false,
 			"title": "Link",
@@ -26376,13 +26476,36 @@ module.exports={
 					]
 				}
 			],
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "a",
+					"attributes": {
+						"href": {
+							"firstWhichIsPresent": [
+								["fields", "typeChoice", "URL", "URL"],
+								{
+									"join": [
+										"mailto:",
+										["fields", "typeChoice", "email", "emailAddress"]
+									]
+								}
+							]
+						}
+					},
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			],
 			"valueDescription": [
 				{
-					"checkFieldPresent": ["typeChoice", "URL"],
+					"checkIsPresent": ["fields", "typeChoice", "URL"],
 					"children": [
 						"Link to URL: ",
 						{
-							"textFromField": ["typeChoice", "URL", "URL"]
+							"text": ["fields", "typeChoice", "URL", "URL"]
 						}
 					]
 				},
@@ -26391,7 +26514,7 @@ module.exports={
 					"children": [
 						"Link to email address: ",
 						{
-							"textFromField": ["typeChoice", "email", "emailAddress"]
+							"text": ["fields", "typeChoice", "email", "emailAddress"]
 						}
 					]
 				}
@@ -26399,8 +26522,10 @@ module.exports={
 		},
 		{
 			"id": "class",
+			"disabled": true,
 			"title": "Class",
 			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": true,
 			"type": "fields",
 			"fields": [
 				{
@@ -26419,7 +26544,14 @@ module.exports={
 			"id": "secondary",
 			"disabled": true,
 			"title": "Secondary"
-		}
+		},
+		{
+			"id": "hide",
+			"title": "Don’t Show",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": true,
+			"innerHTMLRepresentation": null
+		},
 	],
 	"itemsByBlock": {
 		"*": {
@@ -26445,8 +26577,8 @@ var ContentStore = require("../stores/store-content.js");
 var SettingsStore = require("../stores/store-settings.js");
 var ReorderingStore = require("../stores/ReorderingStore");
 
-var BlockTypesAssistant = require("../assistants/block-types-assistant");
-var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
+var BlockTypesAssistant = require("../assistants/TypesAssistant");
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 
 var _require = require("../ui/ui-mixins");
 
@@ -26623,7 +26755,7 @@ var BlockElement = React.createClass({
 
 		var classNameExtensions = ["-" + typeGroup, "-" + typeGroup + "-" + blockType, "-inSubsection-" + subsectionType];
 
-		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(typeGroup, blockType, blockGroupIDsToTypesMap);
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(typeGroup, blockType, blockGroupIDsToTypesMap);
 
 		var childrenInfo = {};
 		var children;
@@ -27117,7 +27249,7 @@ EditorElementCreator.MainElement = React.createClass({
 
 module.exports = EditorElementCreator;
 
-},{"../assistants/block-types-assistant":172,"../assistants/html-representation-assistant":173,"../stores/ReorderingStore":180,"../stores/store-content.js":183,"../stores/store-settings.js":185,"../ui/ui-constants":186,"../ui/ui-mixins":187,"./editor-toolbars":177,"immutable":5,"react":168}],176:[function(require,module,exports){
+},{"../assistants/TypesAssistant":172,"../assistants/html-representation-assistant":173,"../stores/ReorderingStore":180,"../stores/store-content.js":183,"../stores/store-settings.js":185,"../ui/ui-constants":186,"../ui/ui-mixins":187,"./editor-toolbars":177,"immutable":5,"react":168}],176:[function(require,module,exports){
 "use strict";
 
 var React = require("react");
@@ -27215,7 +27347,7 @@ var ChoiceInput = React.createClass({
 				selectedChoiceValues: null
 			},
 			keyPath: [],
-			onChangeInfo: null,
+			onReplaceInfoAtKeyPath: null,
 			tabIndex: 0
 		};
 	},
@@ -27228,7 +27360,7 @@ var ChoiceInput = React.createClass({
 
 	getSelectedChoiceID: function getSelectedChoiceID() {
 		var value = this.props.value;
-		var selectedChoiceID = value ? value.selectedChoiceID : null;
+		var selectedChoiceID = value ? Object.keys(value)[0] : null;
 		if (!selectedChoiceID) {
 			selectedChoiceID = this.getDefaultSelectedChoiceID();
 		}
@@ -27237,23 +27369,23 @@ var ChoiceInput = React.createClass({
 
 	onSelectChange: function onSelectChange(event) {
 		var newSelectedChoiceID = event.target.value;
-		var onChangeInfo = this.props.onChangeInfo;
-		if (onChangeInfo) {
-			onChangeInfo({
-				selectedChoiceID: newSelectedChoiceID
-			});
+		var info = {};
+		info[newSelectedChoiceID] = {};
+
+		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+		if (onReplaceInfoAtKeyPath) {
+			onReplaceInfoAtKeyPath(info, []);
 		}
 	},
 
-	onChildFieldChangeInfo: function onChildFieldChangeInfo(fieldChangeInfo) {
-		var changeInfo = {
-			selectedChoiceID: this.getSelectedChoiceID(),
-			selectedChoiceValues: fieldChangeInfo
-		};
+	onChildFieldReplaceInfoAtKeyPath: function onChildFieldReplaceInfoAtKeyPath(info, keyPath) {
+		var selectedChoiceID = this.getSelectedChoiceID();
 
-		var onChangeInfo = this.props.onChangeInfo;
-		if (onChangeInfo) {
-			onChangeInfo(changeInfo);
+		keyPath = [selectedChoiceID].concat(keyPath);
+
+		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+		if (onReplaceInfoAtKeyPath) {
+			onReplaceInfoAtKeyPath(info, keyPath);
 		}
 	},
 
@@ -27293,8 +27425,8 @@ var ChoiceInput = React.createClass({
 			children = children.concat(React.createElement(EditorFields.FieldsHolder, {
 				key: "fields",
 				fields: selectedChoiceInfo.fields,
-				values: value ? value.selectedChoiceValues : null,
-				onChangeInfo: this.onChildFieldChangeInfo,
+				values: value ? value[selectedChoiceID] : null,
+				onReplaceInfoAtKeyPath: this.onChildFieldReplaceInfoAtKeyPath,
 				className: "choice_fieldsHolder"
 			}));
 		}
@@ -27304,81 +27436,6 @@ var ChoiceInput = React.createClass({
 		}, children);
 	}
 });
-
-EditorFields.createElementForField = function (fieldJSON, value, onChangeInfo) {
-	var type = fieldJSON.type;
-	var ID = fieldJSON.id;
-	var title = fieldJSON.title;
-
-	if (!type) {
-		type = "text";
-	}
-
-	if (EditorFields.fieldTypeIsTextual(type)) {
-		var inputType = type;
-
-		return React.createElement(InputLabel, {
-			key: ID,
-			title: title,
-			additionalClassNameExtensions: ["-inputType-" + type]
-		}, [React.createElement("input", {
-			key: ID,
-			type: inputType,
-			value: value,
-			onChange: function onChange(event) {
-				var newValue = event.target.value;
-
-				if (inputType === "url") {
-					var normalizedURL = normalizeURL(newValue);
-					//console.log('URL', normalizedURL);
-				}
-
-				onChangeInfo(changeInfoWithIDAndValue(ID, newValue));
-			},
-			className: "input-textual input-" + type,
-			tabIndex: 0
-		})]);
-
-		/*
-  return EditorFields.createInputLabel(title, [
-  	React.createElement('input', {
-  		type: inputType,
-  		value: value,
-  		onChange: function(event) {
-  			var newValue = event.target.value;
-  			onChangeInfo(
-  				changeInfoWithIDAndValue(ID, newValue)
-  			);
-  		},
-  		className: 'input-textual input-' + type
-  	})
-  ]);
-  */
-	} else if (type === "choice") {
-		return React.createElement(ChoiceInput, {
-			key: ID,
-			ID: ID,
-			choiceInfos: fieldJSON.choices,
-			value: value,
-			title: title,
-			onChangeInfo: (function (_onChangeInfo) {
-				var _onChangeInfoWrapper = function onChangeInfo(_x) {
-					return _onChangeInfo.apply(this, arguments);
-				};
-
-				_onChangeInfoWrapper.toString = function () {
-					return _onChangeInfo.toString();
-				};
-
-				return _onChangeInfoWrapper;
-			})(function (changeInfo) {
-				onChangeInfo(changeInfoWithIDAndValue(ID, changeInfo));
-			})
-		});
-	}
-
-	console.error("unknown field type", type);
-};
 
 EditorFields.FieldsHolder = React.createClass({
 	displayName: "FieldsHolder",
@@ -27394,17 +27451,76 @@ EditorFields.FieldsHolder = React.createClass({
 		};
 	},
 
+	createElementForField: function createElementForField(fieldJSON, value) {
+		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+
+		var type = fieldJSON.type;
+		var ID = fieldJSON.id;
+		var title = fieldJSON.title;
+
+		if (!type) {
+			type = "text";
+		}
+
+		if (EditorFields.fieldTypeIsTextual(type)) {
+			var inputType = type;
+
+			return React.createElement(InputLabel, {
+				key: ID,
+				title: title,
+				additionalClassNameExtensions: ["-inputType-" + type]
+			}, [React.createElement("input", {
+				key: ID,
+				type: inputType,
+				value: value,
+				onChange: function onChange(event) {
+					var newValue = event.target.value;
+
+					if (inputType === "url") {}
+
+					onReplaceInfoAtKeyPath(newValue, [ID]);
+				},
+				className: "input-textual input-" + type,
+				tabIndex: 0
+			})]);
+		} else if (type === "choice") {
+			return React.createElement(ChoiceInput, {
+				key: ID,
+				ID: ID,
+				choiceInfos: fieldJSON.choices,
+				value: value,
+				title: title,
+				onReplaceInfoAtKeyPath: (function (_onReplaceInfoAtKeyPath) {
+					var _onReplaceInfoAtKeyPathWrapper = function onReplaceInfoAtKeyPath(_x) {
+						return _onReplaceInfoAtKeyPath.apply(this, arguments);
+					};
+
+					_onReplaceInfoAtKeyPathWrapper.toString = function () {
+						return _onReplaceInfoAtKeyPath.toString();
+					};
+
+					return _onReplaceInfoAtKeyPathWrapper;
+				})(function (info) {
+					var additionalKeyPath = arguments[1] === undefined ? [] : arguments[1];
+
+					var keyPath = [ID].concat(additionalKeyPath);
+					onReplaceInfoAtKeyPath(info, keyPath);
+				}) });
+		}
+
+		console.error("unknown field type", type);
+	},
+
 	render: function render() {
 		var props = this.props;
 		var fields = props.fields;
 		var values = props.values;
-		var onChangeInfo = props.onChangeInfo;
 
 		var fieldElements = fields.map(function (fieldJSON) {
 			var fieldID = fieldJSON.id;
 			var valueForField = values ? values[fieldID] : null;
-			return EditorFields.createElementForField(fieldJSON, valueForField, onChangeInfo);
-		});
+			return this.createElementForField(fieldJSON, valueForField);
+		}, this);
 
 		return React.createElement("div", {
 			key: "fields",
@@ -27414,6 +27530,9 @@ EditorFields.FieldsHolder = React.createClass({
 });
 
 module.exports = EditorFields;
+
+//let normalizedURL = normalizeURL(newValue);
+//console.log('URL', normalizedURL);
 
 },{"../ui/ui-mixins":187,"normalize-url":7,"react":168}],177:[function(require,module,exports){
 "use strict";
@@ -27434,8 +27553,8 @@ var _require = require("../ui/ui-mixins");
 var ButtonMixin = _require.ButtonMixin;
 var BaseClassNamesMixin = _require.BaseClassNamesMixin;
 
-var BlockTypesAssistant = require("../assistants/block-types-assistant");
-var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
+var BlockTypesAssistant = require("../assistants/TypesAssistant");
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 
 var MicroEvent = require("microevent");
 
@@ -27720,7 +27839,7 @@ var TraitButton = React.createClass({
 		this.didToggleFunction = function (sourceComponent, showing) {
 			if (sourceComponent !== _this) {
 				if (showing) {
-					_this.toggleShowFields(null, false);
+					_this.close();
 				}
 			}
 		};
@@ -27733,7 +27852,7 @@ var TraitButton = React.createClass({
 		this.didToggleFunction = null;
 	},
 
-	toggleShowFields: function toggleShowFields(event, flag) {
+	onToggleShowFields: function onToggleShowFields(event, flag) {
 		var currentShowFields = this.state.showFields;
 		var newShowFields = typeof flag !== "undefined" ? flag : !currentShowFields;
 		if (newShowFields == currentShowFields) {
@@ -27748,24 +27867,24 @@ var TraitButton = React.createClass({
 	},
 
 	close: function close() {
-		this.toggleShowFields(null, false);
+		this.onToggleShowFields(null, false);
 	},
 
-	toggleTrait: function toggleTrait(event) {
+	onToggleTrait: function onToggleTrait(event) {
 		var props = this.props;
 		props.toggleTrait();
 	},
 
-	changeTraitInfo: function changeTraitInfo(changeInfo) {
+	onReplaceInfoAtKeyPath: function onReplaceInfoAtKeyPath(info, keyPath) {
 		var props = this.props;
-		props.changeTraitInfo(changeInfo);
+		props.replaceTraitInfoAtKeyPath(info, keyPath);
 	},
 
 	removeTrait: function removeTrait(event) {
 		var props = this.props;
 		props.removeTrait();
 
-		this.toggleShowFields(null, false);
+		this.close();
 	},
 
 	render: function render() {
@@ -27777,18 +27896,18 @@ var TraitButton = React.createClass({
 		var title = traitSpec.get("title");
 		var isFields = traitSpec.has("fields");
 
-		var isSelected = traitValue != null && traitValue != false;
+		var isSelected = traitValue != null && traitValue !== false;
 		var onClick;
 		var showFields = this.state.showFields;
 		var buttonClassNameExtensions = [];
 		if (isFields) {
 			title += " ▾";
-			onClick = this.toggleShowFields;
+			onClick = this.onToggleShowFields;
 			if (showFields) {
 				buttonClassNameExtensions.push("-showingFields");
 			}
 		} else {
-			onClick = this.toggleTrait;
+			onClick = this.onToggleTrait;
 		}
 
 		var mainButton = React.createElement(ToolbarButton, {
@@ -27808,7 +27927,7 @@ var TraitButton = React.createClass({
 				key: "fields",
 				fields: traitSpec.get("fields").toJS(),
 				values: traitValue,
-				onChangeInfo: this.changeTraitInfo
+				onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 			}), React.createElement(SecondaryButton, {
 				key: "removeButton",
 				title: "Remove",
@@ -27840,6 +27959,8 @@ var TraitsToolbarMixin = {
 		var actions = this.props.actions;
 
 		return traitSpecs.map(function (traitSpec) {
+			var _this = this;
+
 			if (traitSpec.get("disabled", false)) {
 				return null;
 			}
@@ -27854,7 +27975,9 @@ var TraitsToolbarMixin = {
 				actions: actions,
 				className: "buttonHolder",
 				toggleTrait: this.toggleTraitWithID.bind(this, traitID),
-				changeTraitInfo: this.changeTraitInfoWithID.bind(this, traitID),
+				replaceTraitInfoAtKeyPath: function (info, keyPath) {
+					_this.replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID);
+				},
 				removeTrait: this.removeTraitWithID.bind(this, traitID) });
 		}, this).toJS();
 	},
@@ -27901,6 +28024,9 @@ var BlockTraitsToolbar = React.createClass({
 			var blockTypeGroup = props.blockTypeGroup;
 
 			var allowedForBlockTypesByGroupType = traitOptions.get("allowedForBlockTypesByGroupType");
+			if (allowedForBlockTypesByGroupType === true) {
+				return true;
+			}
 			var allowedForBlockTypes = allowedForBlockTypesByGroupType.get(blockTypeGroup, false);
 			if (allowedForBlockTypes === true) {
 				return true;
@@ -27922,10 +28048,10 @@ var BlockTraitsToolbar = React.createClass({
 		actions.toggleBooleanTraitForEditedBlock(traitID);
 	},
 
-	changeTraitInfoWithID: function changeTraitInfoWithID(traitID, changeInfo) {
+	replaceInfoAtKeyPathForTraitWithID: function replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedBlock(traitID, function (valueBefore) {
-			return valueBefore.mergeDeep(changeInfo);
+			return valueBefore.setIn(keyPath, info);
 		});
 	},
 
@@ -27953,10 +28079,11 @@ var ItemTraitsToolbar = React.createClass({
 		actions.toggleBooleanTraitForEditedTextItem(traitID);
 	},
 
-	changeTraitInfoWithID: function changeTraitInfoWithID(traitID, changeInfo) {
+	replaceInfoAtKeyPathForTraitWithID: function replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedTextItem(traitID, function (valueBefore) {
-			return valueBefore.mergeDeep(changeInfo);
+			var infoImmutable = Immutable.fromJS(info);
+			return valueBefore.setIn(keyPath, infoImmutable);
 		});
 	},
 
@@ -28026,7 +28153,8 @@ var TextItemEditor = React.createClass({
   React.createElement('h5', {
   	key: 'blockTraitsToolbar_heading',
   	className: 'textItemEditor_blockTraitsToolbar_heading'
-  }, 'All items inside this block:'),
+  //}, 'All items inside this block:'),
+  }, 'Block'),
   React.createElement(BlockTraitsToolbar, {
   	key: 'blockTraitsToolbar',
   	traitSpecs,
@@ -28076,7 +28204,7 @@ var ParticularEditor = React.createClass({
 		var blockGroupIDsToTypesMap = props.blockGroupIDsToTypesMap;
 		var actions = props.actions;
 
-		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(typeGroup, type, blockGroupIDsToTypesMap);
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(typeGroup, type, blockGroupIDsToTypesMap);
 
 		var elements = [];
 		if (blockTypeOptions.has("fields")) {
@@ -28222,7 +28350,7 @@ var BlockTypeChooser = React.createClass({
 		if (isCreate) {
 			mainButtonTitle = "+";
 		} else {
-			var chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap);
+			var chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap);
 
 			mainButtonTitle = chosenBlockTypeOptions ? chosenBlockTypeOptions.get("title") : "[" + chosenBlockType + "]";
 		}
@@ -28771,7 +28899,7 @@ var ElementToolbars = {
 };
 module.exports = ElementToolbars;
 
-},{"../actions/actions-content-eventIDs":169,"../app-dispatcher":171,"../assistants/block-types-assistant":172,"../stores/ReorderingStore":180,"../stores/store-preview":184,"../stores/store-settings":185,"../ui/ui-mixins":187,"./editor-fields":176,"immutable":5,"microevent":6,"react":168}],178:[function(require,module,exports){
+},{"../actions/actions-content-eventIDs":169,"../app-dispatcher":171,"../assistants/TypesAssistant":172,"../stores/ReorderingStore":180,"../stores/store-preview":184,"../stores/store-settings":185,"../ui/ui-mixins":187,"./editor-fields":176,"immutable":5,"microevent":6,"react":168}],178:[function(require,module,exports){
 "use strict";
 
 var React = require("react");
@@ -29113,112 +29241,136 @@ var UIMixins = require("../ui/ui-mixins");
 //var Toolbars = require('./editor-toolbars');
 var Immutable = require("immutable");
 
-var BlockTypesAssistant = require("../assistants/block-types-assistant");
-var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
+var _require = require("../assistants/TypesAssistant");
+
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = _require.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
+var findParticularTraitOptionsInMap = _require.findParticularTraitOptionsInMap;
 
 var HTMLRepresentationAssistant = require("../assistants/html-representation-assistant");
 
 var PreviewElementsCreator = {};
 
+function isStringWithContent(object) {
+	return typeof object === "string" && object.trim().length > 0;
+}
+
 function createElementFactoryMergingProps(type, originalProps, children) {
 	return function (additionalAttributes) {
 		var mergedProps = objectAssign({}, originalProps, additionalAttributes);
+
+		// Merge the class name
+		delete mergedProps.className;
+		var mergedClassNames = [originalProps.className, additionalAttributes.className].filter(isStringWithContent).join(" ").trim();
+		if (mergedClassNames != "") {
+			mergedProps.className = mergedClassNames;
+		}
+
 		return React.createElement(type, mergedProps, children);
 	};
 }
 
-PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child, traits) {
-	// Factory for child, tries to keep as is if not attributes passed.
-	var elementFactory = function (additionalAttributes) {
-		if (additionalAttributes && Object.keys(additionalAttributes).length > 0) {
-			return createElementFactoryMergingProps("span", { key: "span" }, child)(additionalAttributes);
-		} else {
-			return child;
-		}
-	};
+PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child, traits, traitSpecs) {
+	if (true) {
+		traits.forEach(function (traitValue, traitID) {
+			if (traitValue == null || traitValue === false) {
+				return;
+			}
 
-	if (traits.has("italic")) {
-		elementFactory = createElementFactoryMergingProps("em", { key: "italic" }, elementFactory());
+			var traitOptions = findParticularTraitOptionsInMap(traitID, traitSpecs);
+			var valueForRepresentation = undefined;
+			// Fields
+			if (traitOptions.has("fields")) {
+				console.log("traitValue for fields", traitValue.toJS());
+				valueForRepresentation = Immutable.Map({
+					originalElement: child,
+					fields: traitValue
+				});
+			}
+			// On/off trait
+			else {
+				valueForRepresentation = Immutable.Map({
+					originalElement: child
+				});
+			}
+
+			if (traitOptions.has("innerHTMLRepresentation")) {
+				var HTMLRepresentation = traitOptions.get("innerHTMLRepresentation");
+				if (HTMLRepresentation) {
+					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
+				} else {
+					child = null;
+				}
+			}
+		});
+
+		return child;
+	} else {
+		var link;
+		var linkTypeChoice;
+		var linkType;
+		var values;
+		var classNames;
+
+		var _ret = (function () {
+			// Factory for child, tries to keep as is if not attributes passed.
+			var elementFactory = function (additionalAttributes) {
+				if (additionalAttributes && Object.keys(additionalAttributes).length > 0) {
+					return createElementFactoryMergingProps("span", { key: "span" }, child)(additionalAttributes);
+				} else {
+					return child;
+				}
+			};
+
+			if (traits.has("italic")) {
+				elementFactory = createElementFactoryMergingProps("em", { key: "italic" }, elementFactory());
+			}
+
+			if (traits.has("bold")) {
+				elementFactory = createElementFactoryMergingProps("strong", { key: "bold" }, elementFactory());
+			}
+
+			if (traits.has("link")) {
+				link = traits.get("link");
+				linkTypeChoice = link.get("typeChoice");
+				linkType = linkTypeChoice.get("selectedChoiceID");
+				values = linkTypeChoice.get("selectedChoiceValues");
+
+				if (linkType === "URL") {
+					elementFactory = createElementFactoryMergingProps("a", {
+						key: "link/URL",
+						href: values.get("URL")
+					}, elementFactory());
+				} else if (linkType === "email") {
+					elementFactory = createElementFactoryMergingProps("a", {
+						key: "link/email",
+						href: "mailto:" + values.get("emailAddress")
+					}, elementFactory());
+				}
+			}
+
+			var additionalAttributes = {};
+			var additionalClassNames = [];
+
+			if (traits.has("class")) {
+				classNames = traits.getIn(["class", "classNames"]);
+
+				if (classNames && classNames !== "") {
+					additionalClassNames.push(classNames);
+				}
+			}
+
+			if (additionalClassNames.length) {
+				additionalAttributes.className = additionalClassNames.join(" ");
+			}
+
+			return {
+				v: elementFactory(additionalAttributes)
+			};
+		})();
+
+		if (typeof _ret === "object") return _ret.v;
 	}
-
-	if (traits.has("bold")) {
-		elementFactory = createElementFactoryMergingProps("strong", { key: "bold" }, elementFactory());
-	}
-
-	if (traits.has("link")) {
-		var link = traits.get("link");
-		var linkTypeChoice = link.get("typeChoice");
-		var linkType = linkTypeChoice.get("selectedChoiceID");
-		var values = linkTypeChoice.get("selectedChoiceValues");
-		if (linkType === "URL") {
-			elementFactory = createElementFactoryMergingProps("a", {
-				key: "link/URL",
-				href: values.get("URL")
-			}, elementFactory());
-		} else if (linkType === "email") {
-			elementFactory = createElementFactoryMergingProps("a", {
-				key: "link/email",
-				href: "mailto:" + values.get("emailAddress")
-			}, elementFactory());
-		}
-	}
-
-	var additionalAttributes = {};
-
-	if (traits.has("class")) {
-		var classNames = traits.getIn(["class", "classNames"]);
-		if (classNames && classNames !== "") {
-			additionalAttributes.className = classNames;
-		}
-	}
-
-	return elementFactory(additionalAttributes);
 };
-
-/*
-PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
-	let element = child;
-	
-	if (traits.has('italic')) {
-		element = React.createElement('em', {key: 'italic'}, element);
-	}
-	
-	if (traits.has('bold')) {
-		element = React.createElement('strong', {key: 'bold'}, element);
-	}
-	
-	if (traits.has('link')) {
-		var link = traits.get('link');
-		var linkTypeChoice = link.get('typeChoice');
-		var linkType = linkTypeChoice.get('selectedChoiceID');
-		var selectedChoiceValues = linkTypeChoice.get('selectedChoiceValues');
-		if (linkType === 'URL') {
-			element = React.createElement('a', {
-				key: 'link/URL',
-				href: selectedChoiceValues.get('URL')
-			}, element);
-		}
-		else if (linkType === 'email') {
-			element = React.createElement('a', {
-				key: 'link/email',
-				href: 'mailto:' + selectedChoiceValues.get('emailAddress')
-			}, element);
-		}
-	}
-	
-	if (traits.has('class')) {
-		var classNames = traits.get('classNames');
-		
-		if (typeof element === 'string') {
-			element = React.createElement('span', {key: 'class'}, element);
-		}
-		
-		element.props.className = classNames;
-	}
-	
-	return element;
-};
-*/
 
 PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function (subsectionType, subsectionElements) {
 	var subsectionTypesToHolderTagNames = {
@@ -29244,14 +29396,15 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function (subsectionTyp
 	};
 	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
 
-	var tagNameForBlock = blockTypeOptions.get("HTMLTagNameForBlock", null);
-	if (blockTypeGroup === "text") {
-		tagNameForBlock = PreviewElementsCreator.tagNameForTextBlockType(blockType);
+	var tagNameForBlock = blockTypeOptions.get("outerHTMLTagName", "div");
+	/*
+ if (blockTypeGroup === 'text') {
+ 	tagNameForBlock = PreviewElementsCreator.tagNameForTextBlockType(blockType);
+ }*/
 
-		// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
-		if (tagNameForSubsectionChild && blockType === "body") {
-			tagNameForBlock = null;
-		}
+	// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
+	if (tagNameForSubsectionChild && tagNameForBlock === "p") {
+		tagNameForBlock = null;
 	}
 
 	var innerElements;
@@ -29320,38 +29473,49 @@ PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, spec
 			var blockTypeOptions;
 			var elements;
 			var value;
+			var valueForRepresentation;
 			var HTMLRepresentation;
 
 			(function () {
-				blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(typeGroup, type, blockGroupIDsToTypesMap);
-				elements = [];
+				blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(typeGroup, type, blockGroupIDsToTypesMap);
 
 				if (typeGroup === "particular" || typeGroup === "media") {
 					value = block.get("value", Immutable.Map());
+					valueForRepresentation = Immutable.Map({
+						fields: value
+					});
 					HTMLRepresentation = blockTypeOptions.get("innerHTMLRepresentation");
 
 					if (HTMLRepresentation) {
-						elements = elements.concat(HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, value));
+						elements = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
 					}
 				} else if (typeGroup === "text") {
-					elements = elements.concat(block.get("textItems").map(function (textItem) {
+					elements = block.get("textItems").map(function (textItem) {
 						var element = textItem.get("text");
 						var traits = textItem.get("traits");
 
 						if (traits) {
-							element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits);
+							element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits, traitsSpecs);
 						}
 
 						return element;
-					}).toJS());
+					}).toJS();
 				}
 
 				var traits = block.get("traits");
 				if (traits) {
-					elements = [PreviewElementsCreator.reactElementForWrappingChildWithTraits(elements, traits)];
+					var blockElementWithTraits = PreviewElementsCreator.reactElementForWrappingChildWithTraits(elements, traits, traitsSpecs);
+					if (blockElementWithTraits) {
+						elements = [blockElementWithTraits];
+					} else {
+						// For example, 'hide' trait was on.
+						elements = null;
+					}
 				}
 
-				currentSubsectionElements = currentSubsectionElements.concat(PreviewElementsCreator.reactElementsForSubsectionChild(currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex));
+				if (elements) {
+					currentSubsectionElements = currentSubsectionElements.concat(PreviewElementsCreator.reactElementsForSubsectionChild(currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex));
+				}
 			})();
 		}
 	});
@@ -29503,7 +29667,7 @@ PreviewElementsCreator.ViewHTMLElement = React.createClass({
 
 module.exports = PreviewElementsCreator;
 
-},{"../assistants/block-types-assistant":172,"../assistants/html-representation-assistant":173,"../ui/ui-mixins":187,"immutable":5,"object-assign":12,"react":168}],180:[function(require,module,exports){
+},{"../assistants/TypesAssistant":172,"../assistants/html-representation-assistant":173,"../ui/ui-mixins":187,"immutable":5,"object-assign":12,"react":168}],180:[function(require,module,exports){
 "use strict";
 
 var AppDispatcher = require("../app-dispatcher");

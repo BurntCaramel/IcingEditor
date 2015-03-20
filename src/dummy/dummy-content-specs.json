@@ -11,11 +11,11 @@
 	"defaultSectionType": "normal",
 	"blockTypesByGroups": {
 		"text": [
-			{"id": "body", "title": "Paragraph"},
-			{"id": "heading", "title": "Heading 1"},
-			{"id": "subhead1", "title": "Heading 2"},
-			{"id": "subhead2", "title": "Heading 3"},
-			{"id": "subhead3", "title": "Heading 4"}
+			{"id": "body", "title": "Paragraph", "outerHTMLTagName": "p"},
+			{"id": "heading", "title": "Heading 1", "outerHTMLTagName": "h1"},
+			{"id": "subhead1", "title": "Heading 2", "outerHTMLTagName": "h2"},
+			{"id": "subhead2", "title": "Heading 3", "outerHTMLTagName": "h3"},
+			{"id": "subhead3", "title": "Heading 4", "outerHTMLTagName": "h4"}
 		],
 		"media": [
 			{
@@ -44,7 +44,7 @@
 						"title": "Description"
 					}
 				],
-				"HTMLTagNameForBlock": "p",
+				"outerHTMLTagName": "p",
 				"innerHTMLRepresentation": [
 					{
 						"tagName": "img",
@@ -86,7 +86,7 @@
 								},
 								"children": [
 									{
-										"textFromField": ["businessName"]
+										"text": ["fields", "businessName"]
 									}
 								]
 							},
@@ -102,17 +102,17 @@
 										"tagName": "div",
 										"children": [
 											{
-												"textFromField": ["streetAddress"]
+												"text": ["fields", "streetAddress"]
 											},
 											{
 												"text": ",",
-												"checkFieldPresent": ["streetAddress"]
+												"checkIsPresent": ["fields", "streetAddress"]
 											},
 											{
-												"textFromField": ["suburb"]
+												"text": ["fields", "suburb"]
 											},
 											{
-												"textFromField": ["province"]
+												"text": ["fields", "province"]
 											}
 										]
 									}
@@ -147,33 +147,50 @@
 				"title": "Feature Heading",
 				"fieldsAreRequired": true,
 				"fields": [
-					{"id": "primary", "title": "Primary"},
-					{"id": "secondary", "title": "Secondary"}
+					{"id": "primaryText", "title": "Primary Text"},
+					{"id": "secondaryText", "title": "Secondary Text"}
 				]
 			}
 		]
-	},
-	"allowedTextItemTraits": {
-		"bold": true,
-		"italic": true
 	},
 	"traits": [
 		{
 			"id": "bold",
 			"title": "Bold",
-			"allowedForAnyTextItems": true
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "strong",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			]
 		},
 		{
 			"id": "italic",
 			"title": "Italic",
-			"allowedForAnyTextItems": true
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "em",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			]
 		},
 		{
 			"id": "link",
 			"allowedForAnyTextItems": true,
 			"allowedForBlockTypesByGroupType": {
 				"text": true,
-				"media": true
+				"media": true,
+				"particular": true
 			},
 			"disabled": false,
 			"title": "Link",
@@ -209,13 +226,36 @@
 					]
 				}
 			],
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "a",
+					"attributes": {
+						"href": {
+							"firstWhichIsPresent": [
+								["fields", "typeChoice", "URL", "URL"],
+								{
+									"join": [
+										"mailto:",
+										["fields", "typeChoice", "email", "emailAddress"]
+									]
+								}
+							]
+						}
+					},
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			],
 			"valueDescription": [
 				{
-					"checkFieldPresent": ["typeChoice", "URL"],
+					"checkIsPresent": ["fields", "typeChoice", "URL"],
 					"children": [
 						"Link to URL: ",
 						{
-							"textFromField": ["typeChoice", "URL", "URL"]
+							"text": ["fields", "typeChoice", "URL", "URL"]
 						}
 					]
 				},
@@ -224,7 +264,7 @@
 					"children": [
 						"Link to email address: ",
 						{
-							"textFromField": ["typeChoice", "email", "emailAddress"]
+							"text": ["fields", "typeChoice", "email", "emailAddress"]
 						}
 					]
 				}
@@ -232,8 +272,10 @@
 		},
 		{
 			"id": "class",
+			"disabled": true,
 			"title": "Class",
 			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": true,
 			"type": "fields",
 			"fields": [
 				{
@@ -252,7 +294,14 @@
 			"id": "secondary",
 			"disabled": true,
 			"title": "Secondary"
-		}
+		},
+		{
+			"id": "hide",
+			"title": "Don’t Show",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": true,
+			"innerHTMLRepresentation": null
+		},
 	],
 	"itemsByBlock": {
 		"*": {

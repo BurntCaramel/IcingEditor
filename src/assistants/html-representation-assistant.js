@@ -6,40 +6,108 @@ var HTMLRepresentationAssistant = {
 	
 };
 
-HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(HTMLRepresentation, value) {
+let getAttributeValueForInfoAndValue = function(attributeValueRepresentation, sourceValue) {
+	let attributeValue = null;
+	
+	if (typeof attributeValueRepresentation === 'string') {
+		attributeValue = attributeValueRepresentation;
+	}
+	else if (Immutable.List.isList(attributeValueRepresentation)) {
+		let keyPath = attributeValueRepresentation;
+		attributeValue = sourceValue.getIn(keyPath);
+	}
+	else if (Immutable.Map.isMap(attributeValueRepresentation)) {
+		let attributeOptions = attributeValueRepresentation;
+		
+		if (attributeOptions.has('checkIsPresent')) {
+			let checkIsPresentInfo = attributeOptions.has('checkIsPresent');
+			let valueToCheck = getAttributeValueForInfoAndValue(checkIsPresentInfo, sourceValue);
+			if (valueToCheck == null) {
+				return null;
+			}
+		}
+		
+		if (attributeOptions.has('text')) {
+			attributeValue = attributeOptions.get('text');
+		}
+		else if (attributeOptions.has('join')) {
+			let join = attributeOptions.get('join');
+			console.log('join', join.toJS());
+			let pieces = [];
+			let allPresent = join.every(function(attributeInfoToCheck) {
+				let valueToCheck = getAttributeValueForInfoAndValue(attributeInfoToCheck, sourceValue);
+				if (valueToCheck == null) {
+					return false;
+				}
+				
+				pieces.push(valueToCheck);
+				return true;
+			});
+			
+			if (allPresent) {
+				attributeValue = pieces.join('');
+			}
+		}
+		else if (attributeOptions.has('firstWhichIsPresent')) {
+			let firstWhichIsPresent = attributeOptions.get('firstWhichIsPresent');
+			firstWhichIsPresent.forEach(function(attributeInfoToCheck) {
+				let valueToCheck = getAttributeValueForInfoAndValue(attributeInfoToCheck, sourceValue);
+				if (valueToCheck != null) {
+					attributeValue = valueToCheck;
+					return false; // break
+				}
+			});
+		}
+	}
+	
+	return attributeValue;
+};
+
+HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(HTMLRepresentation, sourceValue) {
 	var reactElementForElementOptions = function(elementOptions, index) {
 		let indexPath = this;
 		
-		var tagName = elementOptions.get('tagName');
-		var attributes = elementOptions.get('attributes');
-		var attributesReady = {};
-		if (attributes && value) {
-			attributesReady = attributes.map(function(attributeValueRepresentation, attributeName) {
-				if (typeof attributeValueRepresentation === 'string') {
-					return attributeValueRepresentation;
-				}
-				else if (Immutable.List.isList(attributeValueRepresentation)) {
-					let attributeKeyPath = attributeValueRepresentation;
-					if (attributeKeyPath.get(0) === 'fields') {
-						let attributeKeyPathForFields = attributeKeyPath.slice(1);
-						return value.getIn(attributeKeyPathForFields);
-					}
-				}
-				
-				return '';
-			}).toJS();
+		/*if (typeof elementOptions === 'string') {
+			return elementOptions;
 		}
-		
-		var children = elementOptions.get('children');
-		var childrenReady = null;
-		if (children) {
-			childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
+		else if (Immutable.List.isList(elementOptions)) {
+			let keyPath = elementOptions;
+			return sourceValue.getIn(keyPath);
 		}
+		else if (Immutable.Map.isMap(elementOptions)) {*/
 		
-		let indexPathString = indexPath.join('/')
-		attributesReady.key = `indexPath-${indexPath.join()}`
-		
-		return React.createElement(tagName, attributesReady, childrenReady);
+		// Referenced Element
+		if (elementOptions.get('placeOriginalElement', false)) {
+			return sourceValue.get('originalElement', null);
+		}
+		// Element
+		else if (elementOptions.has('tagName')) {
+			let tagName = elementOptions.get('tagName');
+	
+			let attributes = elementOptions.get('attributes');
+			let attributesReady = {};
+			if (attributes && sourceValue) {
+				attributesReady = attributes.map(function(attributeValueRepresentation, attributeName) {
+					return getAttributeValueForInfoAndValue(attributeValueRepresentation, sourceValue);
+				}).toJS();
+			}
+	
+			let children = elementOptions.get('children');
+			let childrenReady = null;
+			if (children) {
+				childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
+			}
+	
+			let indexPathString = indexPath.join('/')
+			attributesReady.key = `indexPath-${indexPath.join()}`
+	
+			return React.createElement(tagName, attributesReady, childrenReady);
+		}
+		// Text
+		else {
+			return getAttributeValueForInfoAndValue(elementOptions, sourceValue);
+		}
+			//}
 	};
 	
 	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();

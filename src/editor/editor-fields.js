@@ -90,7 +90,7 @@ var ChoiceInput = React.createClass({
 				selectedChoiceValues: null
 			},
 			keyPath: [],
-			onChangeInfo: null,
+			onReplaceInfoAtKeyPath: null,
 			tabIndex: 0
 		};
 	},
@@ -103,7 +103,7 @@ var ChoiceInput = React.createClass({
 	
 	getSelectedChoiceID: function() {
 		var value = this.props.value;
-		var selectedChoiceID = value ? value.selectedChoiceID : null;
+		var selectedChoiceID = value ? Object.keys(value)[0] : null;
 		if (!selectedChoiceID) {
 			selectedChoiceID = this.getDefaultSelectedChoiceID();
 		}
@@ -111,24 +111,24 @@ var ChoiceInput = React.createClass({
 	},
 	
 	onSelectChange: function(event) {
-		var newSelectedChoiceID = event.target.value;
-		var onChangeInfo = this.props.onChangeInfo;
-		if (onChangeInfo) {
-			onChangeInfo({
-				selectedChoiceID: newSelectedChoiceID
-			});
+		let newSelectedChoiceID = event.target.value;
+		let info = {};
+		info[newSelectedChoiceID] = {};
+		
+		let onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+		if (onReplaceInfoAtKeyPath) {
+			onReplaceInfoAtKeyPath(info, []);
 		}
 	},
 	
-	onChildFieldChangeInfo: function(fieldChangeInfo) {
-		var changeInfo = {
-			selectedChoiceID: this.getSelectedChoiceID(),
-			selectedChoiceValues: fieldChangeInfo
-		};
+	onChildFieldReplaceInfoAtKeyPath: function(info, keyPath) {
+		let selectedChoiceID = this.getSelectedChoiceID();
 		
-		var onChangeInfo = this.props.onChangeInfo;
-		if (onChangeInfo) {
-			onChangeInfo(changeInfo);
+		keyPath = [selectedChoiceID].concat(keyPath);
+		
+		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+		if (onReplaceInfoAtKeyPath) {
+			onReplaceInfoAtKeyPath(info, keyPath);
 		}
 	},
 	
@@ -175,8 +175,8 @@ var ChoiceInput = React.createClass({
 				React.createElement(EditorFields.FieldsHolder, {
 					key: 'fields',
 					fields: selectedChoiceInfo.fields,
-					values: value ? value.selectedChoiceValues : null,
-					onChangeInfo: this.onChildFieldChangeInfo,
+					values: value ? value[selectedChoiceID] : null,
+					onReplaceInfoAtKeyPath: this.onChildFieldReplaceInfoAtKeyPath,
 					className: 'choice_fieldsHolder'
 				})
 			);
@@ -188,82 +188,10 @@ var ChoiceInput = React.createClass({
 	}
 });
 
-EditorFields.createElementForField = function(fieldJSON, value, onChangeInfo) {
-	var type = fieldJSON.type;
-	var ID = fieldJSON.id;
-	var title = fieldJSON.title;
-	
-	if (!type) {
-		type = 'text';
-	}
-	
-	if (EditorFields.fieldTypeIsTextual(type)) {
-		var inputType = type;
-		
-		return React.createElement(InputLabel, {
-			key: ID,
-			title,
-			additionalClassNameExtensions: [`-inputType-${type}`]
-		}, [
-			React.createElement('input', {
-				key: ID,
-				type: inputType,
-				value: value,
-				onChange: function(event) {
-					var newValue = event.target.value;
-					
-					if (inputType === 'url') {
-						let normalizedURL = normalizeURL(newValue);
-						//console.log('URL', normalizedURL);
-					}
-					
-					onChangeInfo(
-						changeInfoWithIDAndValue(ID, newValue)
-					);
-				},
-				className: 'input-textual input-' + type,
-				tabIndex: 0
-			})
-		]);
-		
-		/*
-		return EditorFields.createInputLabel(title, [
-			React.createElement('input', {
-				type: inputType,
-				value: value,
-				onChange: function(event) {
-					var newValue = event.target.value;
-					onChangeInfo(
-						changeInfoWithIDAndValue(ID, newValue)
-					);
-				},
-				className: 'input-textual input-' + type
-			})
-		]);
-		*/
-	}
-	else if (type === 'choice') {
-		return React.createElement(ChoiceInput, {
-			key: ID,
-			ID,
-			choiceInfos: fieldJSON.choices,
-			value: value,
-			title: title,
-			onChangeInfo: function(changeInfo) {
-				onChangeInfo(
-					changeInfoWithIDAndValue(ID, changeInfo)
-				);
-			}
-		});
-	}
-	
-	console.error('unknown field type', type);
-};
-
 EditorFields.FieldsHolder = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
-	getDefaultProps: function() {
+	getDefaultProps() {
 		return {
 			baseClassNames: ['fieldsHolder'],
 			fields: [],
@@ -272,19 +200,78 @@ EditorFields.FieldsHolder = React.createClass({
 		}
 	},
 	
-	render: function() {
+	createElementForField(fieldJSON, value) {
+		let {
+			onReplaceInfoAtKeyPath
+		} = this.props;
+		
+		var type = fieldJSON.type;
+		var ID = fieldJSON.id;
+		var title = fieldJSON.title;
+	
+		if (!type) {
+			type = 'text';
+		}
+	
+		if (EditorFields.fieldTypeIsTextual(type)) {
+			var inputType = type;
+		
+			return React.createElement(InputLabel, {
+				key: ID,
+				title,
+				additionalClassNameExtensions: [`-inputType-${type}`]
+			}, [
+				React.createElement('input', {
+					key: ID,
+					type: inputType,
+					value: value,
+					onChange: function(event) {
+						var newValue = event.target.value;
+					
+						if (inputType === 'url') {
+							//let normalizedURL = normalizeURL(newValue);
+							//console.log('URL', normalizedURL);
+						}
+					
+						onReplaceInfoAtKeyPath(
+							newValue,
+							[ID]
+						);
+					},
+					className: 'input-textual input-' + type,
+					tabIndex: 0
+				})
+			]);
+		}
+		else if (type === 'choice') {
+			return React.createElement(ChoiceInput, {
+				key: ID,
+				ID,
+				choiceInfos: fieldJSON.choices,
+				value: value,
+				title: title,
+				onReplaceInfoAtKeyPath: function(info, additionalKeyPath = []) {
+					let keyPath = [ID].concat(additionalKeyPath);
+					onReplaceInfoAtKeyPath(info, keyPath);
+				},
+			});
+		}
+	
+		console.error('unknown field type', type);
+	},
+	
+	render() {
 		var props = this.props;
 		var fields = props.fields;
 		var values = props.values;
-		var onChangeInfo = props.onChangeInfo;
 		
 		var fieldElements = fields.map(function(fieldJSON) {
 			var fieldID = fieldJSON.id;
 			var valueForField = values ? values[fieldID] : null;
-			return EditorFields.createElementForField(
-				fieldJSON, valueForField, onChangeInfo
+			return this.createElementForField(
+				fieldJSON, valueForField
 			);
-		});
+		}, this);
 		
 		return React.createElement('div', {
 			key: 'fields',

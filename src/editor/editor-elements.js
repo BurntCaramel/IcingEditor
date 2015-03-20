@@ -5,8 +5,8 @@ var ContentStore = require('../stores/store-content.js');
 var SettingsStore = require('../stores/store-settings.js');
 var ReorderingStore = require('../stores/ReorderingStore');
 
-var BlockTypesAssistant = require('../assistants/block-types-assistant');
-var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
+var BlockTypesAssistant = require('../assistants/TypesAssistant');
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 
 let {
 	BaseClassNamesMixin
@@ -194,7 +194,7 @@ var BlockElement = React.createClass({
 			`-inSubsection-${subsectionType}`
 		];
 		
-		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
 			typeGroup, blockType, blockGroupIDsToTypesMap
 		);
 		

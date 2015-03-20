@@ -13,8 +13,8 @@ let {
 	BaseClassNamesMixin
 } = require('../ui/ui-mixins');
 
-var BlockTypesAssistant = require('../assistants/block-types-assistant');
-var findParticularBlockTypeOptionsWithGroupAndTypeInList = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInList;
+var BlockTypesAssistant = require('../assistants/TypesAssistant');
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 
 var MicroEvent = require('microevent');
 
@@ -289,7 +289,7 @@ var TraitButton = React.createClass({
 		this.didToggleFunction = (sourceComponent, showing) => {
 			if (sourceComponent !== this) {
 				if (showing) {
-					this.toggleShowFields(null, false);
+					this.close();
 				}
 			}
 		};
@@ -302,9 +302,9 @@ var TraitButton = React.createClass({
 		this.didToggleFunction = null;
 	},
 	
-	toggleShowFields(event, flag) {
+	onToggleShowFields(event, flag) {
 		let currentShowFields = this.state.showFields;
-		let newShowFields = typeof flag !== 'undefined' ? flag : !currentShowFields;
+		let newShowFields = (typeof flag !== 'undefined') ? flag : !currentShowFields;
 		if (newShowFields == currentShowFields) {
 			return;
 		}
@@ -317,24 +317,24 @@ var TraitButton = React.createClass({
 	},
 	
 	close() {
-		this.toggleShowFields(null, false);
+		this.onToggleShowFields(null, false);
 	},
 	
-	toggleTrait(event) {
+	onToggleTrait(event) {
 		var props = this.props;
 		props.toggleTrait();
 	},
 	
-	changeTraitInfo(changeInfo) {
+	onReplaceInfoAtKeyPath(info, keyPath) {
 		var props = this.props;
-		props.changeTraitInfo(changeInfo);
+		props.replaceTraitInfoAtKeyPath(info, keyPath);
 	},
 	
 	removeTrait(event) {
 		var props = this.props;
 		props.removeTrait();
 		
-		this.toggleShowFields(null, false);
+		this.close();
 	},
 	
 	render() {
@@ -347,19 +347,19 @@ var TraitButton = React.createClass({
 		var title = traitSpec.get('title');
 		var isFields = traitSpec.has('fields');
 		
-		var isSelected = (traitValue != null && traitValue != false);
+		var isSelected = (traitValue != null && traitValue !== false);
 		var onClick;
 		var showFields = this.state.showFields;
 		var buttonClassNameExtensions = [];
 		if (isFields) {
 			title += ' ▾';
-			onClick = this.toggleShowFields;
+			onClick = this.onToggleShowFields;
 			if (showFields) {
 				buttonClassNameExtensions.push('-showingFields');
 			}
 		}
 		else {
-			onClick = this.toggleTrait;
+			onClick = this.onToggleTrait;
 		}
 		
 		var mainButton = React.createElement(ToolbarButton, {
@@ -384,7 +384,7 @@ var TraitButton = React.createClass({
 						key: 'fields',
 						fields: traitSpec.get('fields').toJS(),
 						values: traitValue,
-						onChangeInfo: this.changeTraitInfo
+						onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 					}),
 					React.createElement(SecondaryButton, {
 						key: 'removeButton',
@@ -435,7 +435,9 @@ var TraitsToolbarMixin = {
 				actions,
 				className: 'buttonHolder',
 				toggleTrait: this.toggleTraitWithID.bind(this, traitID),
-				changeTraitInfo: this.changeTraitInfoWithID.bind(this, traitID),
+				replaceTraitInfoAtKeyPath: (info, keyPath) => {
+					this.replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID)
+				},
 				removeTrait: this.removeTraitWithID.bind(this, traitID),
 			});
 		}, this).toJS();
@@ -483,6 +485,9 @@ var BlockTraitsToolbar = React.createClass({
 			let blockTypeGroup = props.blockTypeGroup;
 			
 			let allowedForBlockTypesByGroupType = traitOptions.get('allowedForBlockTypesByGroupType');
+			if (allowedForBlockTypesByGroupType === true) {
+				return true;
+			}
 			var allowedForBlockTypes = allowedForBlockTypesByGroupType.get(blockTypeGroup, false);
 			if (allowedForBlockTypes === true) {
 				return true;
@@ -504,10 +509,10 @@ var BlockTraitsToolbar = React.createClass({
 		actions.toggleBooleanTraitForEditedBlock(traitID);
 	},
 	
-	changeTraitInfoWithID(traitID, changeInfo) {
+	replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedBlock(traitID, function(valueBefore) {
-			return valueBefore.mergeDeep(changeInfo);
+			return valueBefore.setIn(keyPath, info);
 		});
 	},
 	
@@ -533,10 +538,11 @@ var ItemTraitsToolbar = React.createClass({
 		actions.toggleBooleanTraitForEditedTextItem(traitID);
 	},
 	
-	changeTraitInfoWithID(traitID, changeInfo) {
+	replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedTextItem(traitID, function(valueBefore) {
-			return valueBefore.mergeDeep(changeInfo);
+			let infoImmutable = Immutable.fromJS(info);
+			return valueBefore.setIn(keyPath, infoImmutable);
 		});
 	},
 	
@@ -612,7 +618,8 @@ var TextItemEditor = React.createClass({
 			React.createElement('h5', {
 				key: 'blockTraitsToolbar_heading',
 				className: 'textItemEditor_blockTraitsToolbar_heading'
-			}, 'All items inside this block:'),
+			//}, 'All items inside this block:'),
+			}, 'Block'),
 			React.createElement(BlockTraitsToolbar, {
 				key: 'blockTraitsToolbar',
 				traitSpecs,
@@ -662,7 +669,7 @@ var ParticularEditor = React.createClass({
 			actions
 		} = props;
 		
-		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
 			typeGroup, type, blockGroupIDsToTypesMap
 		);
 		
@@ -821,7 +828,7 @@ var BlockTypeChooser = React.createClass({
 			mainButtonTitle = '+';
 		}
 		else {
-			let chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+			let chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
 				chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap
 			);
 			

@@ -1,7 +1,7 @@
 window.burntIcing = {
 	settingsJSON: {
 		//actionURL: '/-admin/burnt-icing/json/',
-		previewURL: '/-icing-preview/',
+		previewURL: '/-icing/preview/',
 		wantsSaveFunctionality: false,
 		wantsViewHTMLFunctionality: true,
 		wantsPlaceholderFunctionality: true,

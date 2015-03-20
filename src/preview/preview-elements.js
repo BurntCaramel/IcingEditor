@@ -4,10 +4,10 @@ let UIMixins = require('../ui/ui-mixins');
 //var Toolbars = require('./editor-toolbars');
 let Immutable = require('immutable');
 
-let BlockTypesAssistant = require('../assistants/block-types-assistant');
 let {
-	findParticularBlockTypeOptionsWithGroupAndTypeInList
-} = BlockTypesAssistant;
+	findParticularBlockTypeOptionsWithGroupAndTypeInMap,
+	findParticularTraitOptionsInMap
+} = require('../assistants/TypesAssistant');
 
 let HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
 
@@ -16,107 +16,121 @@ var PreviewElementsCreator = {
 	
 };
 
+function isStringWithContent(object) {
+	return (typeof object === 'string' && object.trim().length > 0);
+}
+
 function createElementFactoryMergingProps(type, originalProps, children) {
 	return function (additionalAttributes) {
 		let mergedProps = objectAssign({}, originalProps, additionalAttributes);
+		
+		// Merge the class name
+		delete mergedProps.className;
+		let mergedClassNames = [originalProps.className, additionalAttributes.className].filter(isStringWithContent).join(' ').trim();
+		if (mergedClassNames != '') {
+			mergedProps.className = mergedClassNames;
+		}
+		
 		return React.createElement(type, mergedProps, children);
 	}
 }
 
-PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
-	// Factory for child, tries to keep as is if not attributes passed.
-	let elementFactory = (additionalAttributes) => {
-		if (additionalAttributes && Object.keys(additionalAttributes).length > 0) {
-			return createElementFactoryMergingProps('span', {key: 'span'}, child)(additionalAttributes);
-		}
-		else {
-			return child;
-		}
-	};
-	
-	if (traits.has('italic')) {
-		elementFactory = createElementFactoryMergingProps('em', {key: 'italic'}, elementFactory());
+PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits, traitSpecs) {
+	if (true) {
+		traits.forEach(function(traitValue, traitID) {
+			if (traitValue == null || traitValue === false) {
+				return;
+			}
+			
+			let traitOptions = findParticularTraitOptionsInMap(traitID, traitSpecs);
+			let valueForRepresentation;
+			// Fields
+			if (traitOptions.has('fields')) {
+				console.log('traitValue for fields', traitValue.toJS());
+				valueForRepresentation = Immutable.Map({
+					'originalElement': child,
+					'fields': traitValue
+				});
+			}
+			// On/off trait
+			else {
+				valueForRepresentation = Immutable.Map({
+					'originalElement': child
+				});
+			}
+			
+			if (traitOptions.has('innerHTMLRepresentation')) {
+				let HTMLRepresentation = traitOptions.get('innerHTMLRepresentation');
+				if (HTMLRepresentation) {
+					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
+						HTMLRepresentation, valueForRepresentation
+					);
+				}
+				else {
+					child = null;
+				}
+			}
+		});
+		
+		return child;
 	}
+	else {
+		// Factory for child, tries to keep as is if not attributes passed.
+		let elementFactory = (additionalAttributes) => {
+			if (additionalAttributes && Object.keys(additionalAttributes).length > 0) {
+				return createElementFactoryMergingProps('span', {key: 'span'}, child)(additionalAttributes);
+			}
+			else {
+				return child;
+			}
+		};
 	
-	if (traits.has('bold')) {
-		elementFactory = createElementFactoryMergingProps('strong', {key: 'bold'}, elementFactory());
-	}
-	
-	if (traits.has('link')) {
-		var link = traits.get('link');
-		var linkTypeChoice = link.get('typeChoice');
-		var linkType = linkTypeChoice.get('selectedChoiceID');
-		var values = linkTypeChoice.get('selectedChoiceValues');
-		if (linkType === 'URL') {
-			elementFactory = createElementFactoryMergingProps('a', {
-				key: 'link/URL',
-				href: values.get('URL')
-			}, elementFactory());
+		if (traits.has('italic')) {
+			elementFactory = createElementFactoryMergingProps('em', {key: 'italic'}, elementFactory());
 		}
-		else if (linkType === 'email') {
-			elementFactory = createElementFactoryMergingProps('a', {
-				key: 'link/email',
-				href: 'mailto:' + values.get('emailAddress')
-			}, elementFactory());
+	
+		if (traits.has('bold')) {
+			elementFactory = createElementFactoryMergingProps('strong', {key: 'bold'}, elementFactory());
 		}
-	}
 	
-	let additionalAttributes = {};
-	
-	if (traits.has('class')) {
-		var classNames = traits.getIn(['class', 'classNames']);
-		if (classNames && classNames !== '') {
-			additionalAttributes.className = classNames;
+		if (traits.has('link')) {
+			var link = traits.get('link');
+			var linkTypeChoice = link.get('typeChoice');
+			var linkType = linkTypeChoice.get('selectedChoiceID');
+			var values = linkTypeChoice.get('selectedChoiceValues');
+		
+			if (linkType === 'URL') {
+				elementFactory = createElementFactoryMergingProps('a', {
+					key: 'link/URL',
+					href: values.get('URL')
+				}, elementFactory());
+			}
+			else if (linkType === 'email') {
+				elementFactory = createElementFactoryMergingProps('a', {
+					key: 'link/email',
+					href: 'mailto:' + values.get('emailAddress')
+				}, elementFactory());
+			}
 		}
-	}
 	
-	return elementFactory(additionalAttributes);
+		let additionalAttributes = {};
+		let additionalClassNames = [];
+	
+		if (traits.has('class')) {
+			var classNames = traits.getIn(['class', 'classNames']);
+			if (classNames && classNames !== '') {
+				additionalClassNames.push(classNames);
+			}
+		}
+	
+		if (additionalClassNames.length) {
+			additionalAttributes.className = additionalClassNames.join(' ');
+		}
+	
+		return elementFactory(additionalAttributes);
+	}
 };
 
-/*
-PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits) {
-	let element = child;
-	
-	if (traits.has('italic')) {
-		element = React.createElement('em', {key: 'italic'}, element);
-	}
-	
-	if (traits.has('bold')) {
-		element = React.createElement('strong', {key: 'bold'}, element);
-	}
-	
-	if (traits.has('link')) {
-		var link = traits.get('link');
-		var linkTypeChoice = link.get('typeChoice');
-		var linkType = linkTypeChoice.get('selectedChoiceID');
-		var selectedChoiceValues = linkTypeChoice.get('selectedChoiceValues');
-		if (linkType === 'URL') {
-			element = React.createElement('a', {
-				key: 'link/URL',
-				href: selectedChoiceValues.get('URL')
-			}, element);
-		}
-		else if (linkType === 'email') {
-			element = React.createElement('a', {
-				key: 'link/email',
-				href: 'mailto:' + selectedChoiceValues.get('emailAddress')
-			}, element);
-		}
-	}
-	
-	if (traits.has('class')) {
-		var classNames = traits.get('classNames');
-		
-		if (typeof element === 'string') {
-			element = React.createElement('span', {key: 'class'}, element);
-		}
-		
-		element.props.className = classNames;
-	}
-	
-	return element;
-};
-*/
 
 PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
 	var subsectionTypesToHolderTagNames = {
@@ -147,14 +161,15 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 	};
 	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
 	
-	var tagNameForBlock = blockTypeOptions.get('HTMLTagNameForBlock', null);
+	var tagNameForBlock = blockTypeOptions.get('outerHTMLTagName', 'div');
+	/*
 	if (blockTypeGroup === 'text') {
 		tagNameForBlock = PreviewElementsCreator.tagNameForTextBlockType(blockType);
-		
-		// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
-		if (tagNameForSubsectionChild && blockType === 'body') {
-			tagNameForBlock = null;
-		}
+	}*/
+	
+	// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
+	if (tagNameForSubsectionChild && tagNameForBlock === 'p') {
+		tagNameForBlock = null;
 	}
 	
 	var innerElements;
@@ -164,7 +179,7 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 			React.createElement(tagNameForBlock, {
 				key: `block-${blockIndex}`
 			}, contentElements)
-		]
+		];
 	}
 	else {
 		innerElements = contentElements;
@@ -233,48 +248,59 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 			currentSubsectionType = type;
 		}
 		else {
-			var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInList(
+			var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
 				typeGroup, type, blockGroupIDsToTypesMap
 			);
 		
-			var elements = [];
+			var elements;
 		
 			if (typeGroup === 'particular' || typeGroup === 'media') {
 				var value = block.get('value', Immutable.Map());
+				var valueForRepresentation = Immutable.Map({
+					'fields': value
+				});
 				var HTMLRepresentation = blockTypeOptions.get('innerHTMLRepresentation');
 				if (HTMLRepresentation) {
-					elements = elements.concat(
-						HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, value)
+					elements = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
+						HTMLRepresentation, valueForRepresentation
 					);
 				}
 			}
 			else if (typeGroup === 'text') {
-				elements = elements.concat(block.get('textItems').map(function(textItem) {
+				elements = block.get('textItems').map(function(textItem) {
 					let element = textItem.get('text');
 					let traits = textItem.get('traits');
 					
 					if (traits) {
-						element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits);
+						element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits, traitsSpecs);
 					}
 				
 					return element;
-				}).toJS());
+				}).toJS();
 			}
 			
 			
 			let traits = block.get('traits');
 			if (traits) {
-				elements = [
-					PreviewElementsCreator.reactElementForWrappingChildWithTraits(elements, traits)
-				];
+				let blockElementWithTraits = PreviewElementsCreator.reactElementForWrappingChildWithTraits(elements, traits, traitsSpecs);
+				if (blockElementWithTraits) {
+					elements = [
+						blockElementWithTraits
+					];
+				}
+				else {
+					// For example, 'hide' trait was on.
+					elements = null;
+				}
 			}
 			
-		
-			currentSubsectionElements = currentSubsectionElements.concat(
-				PreviewElementsCreator.reactElementsForSubsectionChild(
-					currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex
-				)
-			);
+			if (elements) {
+				currentSubsectionElements = currentSubsectionElements.concat(
+					PreviewElementsCreator.reactElementsForSubsectionChild(
+						currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex
+					)
+				);
+			}
 		}
 	});
 	
