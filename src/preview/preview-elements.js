@@ -1,3 +1,7 @@
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
 let React = require('react');
 let objectAssign = require('object-assign');
 let UIMixins = require('../ui/ui-mixins');

@@ -1,3 +1,7 @@
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
 var React = require('react');
 var AppDispatcher = require('../app-dispatcher');
 var SettingsStore = require('../stores/store-settings');

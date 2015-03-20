@@ -1,3 +1,7 @@
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
 var React = require('react');
 let {ButtonMixin, BaseClassNamesMixin} = require('../ui/ui-mixins');
 var normalizeURL = require('normalize-url');

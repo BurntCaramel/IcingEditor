@@ -1,3 +1,7 @@
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
 var AppDispatcher = require('../app-dispatcher');
 var Immutable = require('immutable');
 var MicroEvent = require('microevent');

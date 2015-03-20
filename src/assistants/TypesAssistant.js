@@ -1,3 +1,7 @@
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
 var TypesAssistant = {
 	
 };

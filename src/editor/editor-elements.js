@@ -1,3 +1,7 @@
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
 var React = require('react');
 var Toolbars = require('./editor-toolbars');
 var Immutable = require('immutable');
