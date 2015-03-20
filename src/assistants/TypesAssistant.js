@@ -16,7 +16,7 @@ TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function(ch
 	return chosenBlockTypeOptions;
 };
 
-TypesAssistant.findParticularTraitOptionsInMap = function(traitIDToFind, traitOptionsMap) {
+TypesAssistant.findParticularTraitOptionsInList = function(traitIDToFind, traitOptionsMap) {
 	return traitOptionsMap.find(function(traitOptions) {
 		return (traitOptions.get('id') === traitIDToFind);
 	});

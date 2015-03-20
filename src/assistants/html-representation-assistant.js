@@ -6,7 +6,7 @@ var HTMLRepresentationAssistant = {
 	
 };
 
-let getAttributeValueForInfoAndValue = function(attributeValueRepresentation, sourceValue) {
+let getAttributeValueForInfoAndSourceValue = function(attributeValueRepresentation, sourceValue) {
 	let attributeValue = null;
 	
 	if (typeof attributeValueRepresentation === 'string') {
@@ -20,8 +20,8 @@ let getAttributeValueForInfoAndValue = function(attributeValueRepresentation, so
 		let attributeOptions = attributeValueRepresentation;
 		
 		if (attributeOptions.has('checkIsPresent')) {
-			let checkIsPresentInfo = attributeOptions.has('checkIsPresent');
-			let valueToCheck = getAttributeValueForInfoAndValue(checkIsPresentInfo, sourceValue);
+			let checkIsPresentInfo = attributeOptions.get('checkIsPresent');
+			let valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsPresentInfo, sourceValue);
 			if (valueToCheck == null) {
 				return null;
 			}
@@ -32,10 +32,9 @@ let getAttributeValueForInfoAndValue = function(attributeValueRepresentation, so
 		}
 		else if (attributeOptions.has('join')) {
 			let join = attributeOptions.get('join');
-			console.log('join', join.toJS());
 			let pieces = [];
 			let allPresent = join.every(function(attributeInfoToCheck) {
-				let valueToCheck = getAttributeValueForInfoAndValue(attributeInfoToCheck, sourceValue);
+				let valueToCheck = getAttributeValueForInfoAndSourceValue(attributeInfoToCheck, sourceValue);
 				if (valueToCheck == null) {
 					return false;
 				}
@@ -51,7 +50,7 @@ let getAttributeValueForInfoAndValue = function(attributeValueRepresentation, so
 		else if (attributeOptions.has('firstWhichIsPresent')) {
 			let firstWhichIsPresent = attributeOptions.get('firstWhichIsPresent');
 			firstWhichIsPresent.forEach(function(attributeInfoToCheck) {
-				let valueToCheck = getAttributeValueForInfoAndValue(attributeInfoToCheck, sourceValue);
+				let valueToCheck = getAttributeValueForInfoAndSourceValue(attributeInfoToCheck, sourceValue);
 				if (valueToCheck != null) {
 					attributeValue = valueToCheck;
 					return false; // break
@@ -88,7 +87,7 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 			let attributesReady = {};
 			if (attributes && sourceValue) {
 				attributesReady = attributes.map(function(attributeValueRepresentation, attributeName) {
-					return getAttributeValueForInfoAndValue(attributeValueRepresentation, sourceValue);
+					return getAttributeValueForInfoAndSourceValue(attributeValueRepresentation, sourceValue);
 				}).toJS();
 			}
 	
@@ -105,7 +104,7 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 		}
 		// Text
 		else {
-			return getAttributeValueForInfoAndValue(elementOptions, sourceValue);
+			return getAttributeValueForInfoAndSourceValue(elementOptions, sourceValue);
 		}
 			//}
 	};

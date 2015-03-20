@@ -6,7 +6,7 @@ let Immutable = require('immutable');
 
 let {
 	findParticularBlockTypeOptionsWithGroupAndTypeInMap,
-	findParticularTraitOptionsInMap
+	findParticularTraitOptionsInList
 } = require('../assistants/TypesAssistant');
 
 let HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
@@ -42,11 +42,10 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 				return;
 			}
 			
-			let traitOptions = findParticularTraitOptionsInMap(traitID, traitSpecs);
+			let traitOptions = findParticularTraitOptionsInList(traitID, traitSpecs);
 			let valueForRepresentation;
 			// Fields
 			if (traitOptions.has('fields')) {
-				console.log('traitValue for fields', traitValue.toJS());
 				valueForRepresentation = Immutable.Map({
 					'originalElement': child,
 					'fields': traitValue
@@ -61,12 +60,13 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 			
 			if (traitOptions.has('innerHTMLRepresentation')) {
 				let HTMLRepresentation = traitOptions.get('innerHTMLRepresentation');
-				if (HTMLRepresentation) {
+				if (HTMLRepresentation !== null && HTMLRepresentation !== false) {
 					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 						HTMLRepresentation, valueForRepresentation
 					);
 				}
 				else {
+					// For example, hide trait
 					child = null;
 				}
 			}
@@ -223,7 +223,7 @@ PreviewElementsCreator.tagNameForTextBlockType = function(blockType) {
 };
 	
 PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
-	var traitsSpecs = specsImmutable.get('traits', Immutable.Map());
+	var traitsSpecs = specsImmutable.get('traits', Immutable.List());
 	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
 	
 	var mainElements = [];

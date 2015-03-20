@@ -132,12 +132,11 @@ var ContentStore = {
 			var newValue = isIndexed ? value.toList() : value.toMap();
 			
 			if ((key === 'blocks') || (key === 'textItems')) {
-				newValue = newValue.map(function(textItem) {
-					// Set an identifier, if there isn't one already.
-					return textItem.update('identifier', newItemIdentifier(), function(identifier) {
-						return identifier;
-					});
-					//return textItem.set('identifier', newItemIdentifier());
+				newValue = newValue.map(function(item) {
+					if (!item.has('identifier')) {
+						item = item.set('identifier', newItemIdentifier());
+					}
+					return item;
 				});
 			}
 			

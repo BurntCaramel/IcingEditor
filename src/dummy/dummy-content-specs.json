@@ -252,20 +252,16 @@
 			"valueDescription": [
 				{
 					"checkIsPresent": ["fields", "typeChoice", "URL"],
-					"children": [
+					"join": [
 						"Link to URL: ",
-						{
-							"text": ["fields", "typeChoice", "URL", "URL"]
-						}
+						["fields", "typeChoice", "URL", "URL"]
 					]
 				},
 				{
 					"checkFieldPresent": ["typeChoice", "email"],
-					"children": [
+					"join": [
 						"Link to email address: ",
-						{
-							"text": ["fields", "typeChoice", "email", "emailAddress"]
-						}
+						["fields", "typeChoice", "email", "emailAddress"]
 					]
 				}
 			]
@@ -301,7 +297,7 @@
 			"allowedForAnyTextItems": true,
 			"allowedForBlockTypesByGroupType": true,
 			"innerHTMLRepresentation": null
-		},
+		}
 	],
 	"itemsByBlock": {
 		"*": {

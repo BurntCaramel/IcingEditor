@@ -27342,11 +27342,7 @@ var ChoiceInput = React.createClass({
 	getDefaultProps: function getDefaultProps() {
 		return {
 			choiceInfos: [],
-			value: {
-				selectedChoiceID: null,
-				selectedChoiceValues: null
-			},
-			keyPath: [],
+			value: {},
 			onReplaceInfoAtKeyPath: null,
 			tabIndex: 0
 		};
@@ -27360,7 +27356,7 @@ var ChoiceInput = React.createClass({
 
 	getSelectedChoiceID: function getSelectedChoiceID() {
 		var value = this.props.value;
-		var selectedChoiceID = value ? Object.keys(value)[0] : null;
+		var selectedChoiceID = value ? value.choice_selectedID : null;
 		if (!selectedChoiceID) {
 			selectedChoiceID = this.getDefaultSelectedChoiceID();
 		}
@@ -27369,7 +27365,9 @@ var ChoiceInput = React.createClass({
 
 	onSelectChange: function onSelectChange(event) {
 		var newSelectedChoiceID = event.target.value;
-		var info = {};
+		var info = {
+			choice_selectedID: newSelectedChoiceID
+		};
 		info[newSelectedChoiceID] = {};
 
 		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
@@ -27400,6 +27398,7 @@ var ChoiceInput = React.createClass({
 		var selectedChoiceID = this.getSelectedChoiceID();
 		var selectedChoiceInfo = null;
 
+		// Create <option> for each choice.
 		var optionElements = choiceInfos.map(function (choiceInfo, choiceIndex) {
 			if (choiceInfo.id === selectedChoiceID) {
 				selectedChoiceInfo = choiceInfo;
@@ -27409,7 +27408,7 @@ var ChoiceInput = React.createClass({
 				key: choiceInfo.id,
 				value: choiceInfo.id }, choiceInfo.title);
 		});
-
+		// Create <label> and <select>
 		var children = [React.createElement(InputLabel, {
 			key: "label",
 			title: title
@@ -27421,6 +27420,7 @@ var ChoiceInput = React.createClass({
 			tabIndex: tabIndex
 		}, optionElements)])];
 
+		// Show fields for the selected choice.
 		if (selectedChoiceInfo) {
 			children = children.concat(React.createElement(EditorFields.FieldsHolder, {
 				key: "fields",
@@ -30108,12 +30108,11 @@ var ContentStore = {
 			var newValue = isIndexed ? value.toList() : value.toMap();
 
 			if (key === "blocks" || key === "textItems") {
-				newValue = newValue.map(function (textItem) {
-					// Set an identifier, if there isn't one already.
-					return textItem.update("identifier", newItemIdentifier(), function (identifier) {
-						return identifier;
-					});
-					//return textItem.set('identifier', newItemIdentifier());
+				newValue = newValue.map(function (item) {
+					if (!item.has("identifier")) {
+						item = item.set("identifier", newItemIdentifier());
+					}
+					return item;
 				});
 			}
 

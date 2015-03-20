@@ -85,11 +85,7 @@ var ChoiceInput = React.createClass({
 	getDefaultProps: function() {
 		return {
 			choiceInfos: [],
-			value: {
-				selectedChoiceID: null,
-				selectedChoiceValues: null
-			},
-			keyPath: [],
+			value: {},
 			onReplaceInfoAtKeyPath: null,
 			tabIndex: 0
 		};
@@ -103,7 +99,7 @@ var ChoiceInput = React.createClass({
 	
 	getSelectedChoiceID: function() {
 		var value = this.props.value;
-		var selectedChoiceID = value ? Object.keys(value)[0] : null;
+		var selectedChoiceID = value ? value.choice_selectedID : null;
 		if (!selectedChoiceID) {
 			selectedChoiceID = this.getDefaultSelectedChoiceID();
 		}
@@ -112,7 +108,9 @@ var ChoiceInput = React.createClass({
 	
 	onSelectChange: function(event) {
 		let newSelectedChoiceID = event.target.value;
-		let info = {};
+		let info = {
+			choice_selectedID: newSelectedChoiceID
+		};
 		info[newSelectedChoiceID] = {};
 		
 		let onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
@@ -144,6 +142,7 @@ var ChoiceInput = React.createClass({
 		var selectedChoiceID = this.getSelectedChoiceID();
 		var selectedChoiceInfo = null;
 	
+		// Create <option> for each choice.
 		var optionElements = choiceInfos.map(function(choiceInfo, choiceIndex) {
 			if (choiceInfo.id === selectedChoiceID) {
 				selectedChoiceInfo = choiceInfo;
@@ -154,7 +153,7 @@ var ChoiceInput = React.createClass({
 				value: choiceInfo.id,
 			}, choiceInfo.title);
 		});
-		
+		// Create <label> and <select>
 		var children = [
 			React.createElement(InputLabel, {
 				key: 'label',
@@ -170,6 +169,7 @@ var ChoiceInput = React.createClass({
 			])
 		];
 		
+		// Show fields for the selected choice.
 		if (selectedChoiceInfo) {
 			children = children.concat(
 				React.createElement(EditorFields.FieldsHolder, {
