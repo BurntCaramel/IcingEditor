@@ -32,16 +32,13 @@
     "npm": "1.4.x"
   },
   "dependencies": {
-    "coffee-script": "^1.7.1",
-    "express": "3.x",
     "flux": "^2.0.1",
-    "gulp": "^3.8.10",
     "immutable": "^3.6.4",
     "microevent": "^1.0.0",
     "normalize-url": "^1.2.0",
     "object-assign": "^2.0.0",
-    "react": "^0.13.1",
-    "underscore": "^1.6.0"
+	"qwest": "^1.5.4",
+    "react": "^0.13.1"
   },
   "scripts": {
     "start": "gulp watch",
@@ -49,6 +46,7 @@
   },
   "devDependencies": {
     "envify": "^3.2.0",
-    "qwest": "^1.5.4"
+    "guilty-gulp": "^1.2.1",
+	"gulp": "^3.8.10"
   }
 }

@@ -1,12 +1,52 @@
 {
-	"namespace": "burntcaramel",
-	"version": "1.0.0",
-	"standard": {"id": "burnticing", "version": "0.1.0"},
-	"sectionTypes": [
-		{"id": "normal", "title": "Normal"},
-		{"id": "unorderedList", "title": "Unordered List"},
-		{"id": "orderedList", "title": "Ordered List"},
-		{"id": "quote", "title": "Quote"}
+	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
+	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.0"},
+	"subsectionTypes": [
+		{
+			"id": "normal",
+			"title": "Normal"
+		},
+		{
+			"id": "unorderedList",
+			"title": "Unordered List",
+			"outerHTMLTagName": "ul",
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "li",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			],
+			"blockHTMLOptions": {
+				"noParagraphs": true
+			}
+		},
+		{
+			"id": "orderedList",
+			"title": "Ordered List",
+			"outerHTMLTagName": "ol",
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "li",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			],
+			"blockHTMLOptions": {
+				"noParagraphs": true
+			}
+		},
+		{
+			"id": "quote",
+			"title": "Quote",
+			"outerHTMLTagName": "blockquote"
+		}
 	],
 	"defaultSectionType": "normal",
 	"blockTypesByGroups": {

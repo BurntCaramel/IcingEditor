@@ -1,5 +1,5 @@
 var gulp = require('gulp');
-var guilty = require('./guilty-gulp')({
+var guilty = require('guilty-gulp')({
 	taskNameGroup: 'main',
 	gulp: gulp,
 	onError: function(e) {

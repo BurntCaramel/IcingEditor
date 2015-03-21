@@ -104,8 +104,7 @@ body {
 
 /* line 11, ../../src/styles/main.scss */
 body {
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
   height: 100vh;
   margin: 0;
   padding: 0;
@@ -156,16 +155,14 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
   height: 40px;
   padding-left: 20px;
   padding-top: 8px;
   text-align: center;
   background-color: rgba(239, 239, 239, 0.9);
   opacity: 0.95;
-  -webkit-transition: opacity 0.25s ease-out;
-          transition: opacity 0.25s ease-out;
+  transition: opacity 0.25s ease-out;
 }
 /* line 69, ../../src/styles/main.scss */
 #burntIcingEditor .mainToolbar:hover {
@@ -177,8 +174,7 @@ body {
 }
 /* line 85, ../../src/styles/_mixins.scss */
 #burntIcingEditor .mainToolbar .toolbarButton {
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 85, ../../src/styles/main.scss */
 #burntIcingEditor .mainToolbar_availableDocumentsSelect,
@@ -191,8 +187,7 @@ body {
 #burntIcingEditor .blocks {
   position: relative;
   left: -15vw;
-  -webkit-transition: left 0.7s ease-out, background-color 0.25s ease;
-          transition: left 0.7s ease-out, background-color 0.25s ease;
+  transition: left 0.7s ease-out, background-color 0.25s ease;
 }
 /* line 111, ../../src/styles/main.scss */
 #burntIcingEditor .blocks_makeSubsection {
@@ -215,8 +210,7 @@ body {
 }
 /* line 85, ../../src/styles/_mixins.scss */
 #burntIcingEditor .blocks_makeSubsection_mainButton {
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 132, ../../src/styles/main.scss */
 #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_makeSubsection_mainButton {
@@ -235,8 +229,7 @@ body {
   z-index: 2000;
   background-color: #5f5f5f;
   border-radius: 2px;
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 152, ../../src/styles/main.scss */
 #burntIcingEditor .blocks_makeSubsection_choices button {
@@ -249,8 +242,7 @@ body {
   font-size: 15px;
   line-height: 1.3;
   min-height: 20px;
-  -webkit-transition: background-color 0.25s ease;
-          transition: background-color 0.25s ease;
+  transition: background-color 0.25s ease;
 }
 /* line 172, ../../src/styles/main.scss */
 #burntIcingEditor .block-edited {
@@ -288,8 +280,7 @@ body {
 /* line 214, ../../src/styles/main.scss */
 #burntIcingEditor .textItem .text {
   border: 1px dotted transparent;
-  -webkit-transition: background-color 0.25s ease;
-          transition: background-color 0.25s ease;
+  transition: background-color 0.25s ease;
 }
 /* line 221, ../../src/styles/main.scss */
 #burntIcingEditor .textItem:not(.textItem-edited):hover .text {
@@ -318,8 +309,7 @@ body {
 /* line 85, ../../src/styles/_mixins.scss */
 #burntIcingEditor .blockItemToolbar_typeChooser_mainButton,
 #burntIcingEditor .blocks_addBlock_typeChooser_mainButton {
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 263, ../../src/styles/main.scss */
 #burntIcingEditor .blockItemToolbar_typeChooser {
@@ -338,15 +328,13 @@ body {
   z-index: 2000;
   top: 0;
   left: 100%;
-  display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
   text-align: center;
   background-color: #5f5f5f;
   border-radius: 2px;
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 291, ../../src/styles/main.scss */
 #burntIcingEditor .blockItemToolbar_typeChooser_choices_group,
@@ -377,8 +365,7 @@ body {
 }
 /* line 332, ../../src/styles/main.scss */
 #burntIcingEditor .textItemEditor textarea {
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
   max-width: 40vw;
   width: 500px;
   height: 140px;
@@ -415,8 +402,7 @@ body {
 }
 /* line 85, ../../src/styles/_mixins.scss */
 #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton {
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 397, ../../src/styles/main.scss */
 #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields {
@@ -431,14 +417,12 @@ body {
 /* line 413, ../../src/styles/main.scss */
 #burntIcingEditor .fieldsHolder,
 #burntIcingEditor .choice {
-  display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
   -webkit-flex-wrap: wrap;
       -ms-flex-wrap: wrap;
           flex-wrap: wrap;
-  -webkit-box-pack: start;
   -webkit-justify-content: flex-start;
       -ms-flex-pack: start;
           justify-content: flex-start;
@@ -451,12 +435,10 @@ body {
 #burntIcingEditor .fieldsHolder .inputLabel,
 #burntIcingEditor .fieldsHolder .choice,
 #burntIcingEditor .fieldsHolder .choice_fieldsHolder {
-  -webkit-box-flex: 4;
   -webkit-flex: 4 0 100%;
       -ms-flex: 4 0 100%;
           flex: 4 0 100%;
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
 }
 /* line 433, ../../src/styles/main.scss */
 #burntIcingEditor .fieldsHolder .inputLabel,
@@ -465,7 +447,6 @@ body {
 }
 /* line 436, ../../src/styles/main.scss */
 #burntIcingEditor .fieldsHolder .inputLabel-inputType-number-integer {
-  -webkit-box-flex: 2;
   -webkit-flex: 2 0 33.333333%;
       -ms-flex: 2 0 33.333333%;
           flex: 2 0 33.333333%;
@@ -484,8 +465,7 @@ body {
 /* line 453, ../../src/styles/main.scss */
 #burntIcingEditor .fieldsHolder .input-textual,
 #burntIcingEditor .fieldsHolder .choice_select {
-  -webkit-box-sizing: border-box;
-          box-sizing: border-box;
+  box-sizing: border-box;
   display: block;
   min-width: 100%;
   margin: 0;
@@ -550,14 +530,12 @@ body {
 /* line 85, ../../src/styles/_mixins.scss */
 #burntIcingEditor .block_reorder_moveThisButton,
 #burntIcingEditor .block_reorder_keepHereButton {
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 538, ../../src/styles/main.scss */
 #burntIcingEditor .block_reorder_moveThisButton,
 #burntIcingEditor .block_reorder_moveHere {
-  -webkit-transition: opacity 0.35s ease;
-          transition: opacity 0.35s ease;
+  transition: opacity 0.35s ease;
 }
 /* line 543, ../../src/styles/main.scss */
 #burntIcingEditor .block_reorder_moveThisButton-hidden,
@@ -588,8 +566,7 @@ body {
 }
 /* line 85, ../../src/styles/_mixins.scss */
 #burntIcingEditor .block_reorder_moveHere_button {
-  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-          box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
 }
 /* line 571, ../../src/styles/main.scss */
 #burntIcingEditor .previewHTMLHolder {
