@@ -10,6 +10,26 @@ var HTMLRepresentationAssistant = {
 	
 };
 
+let checkOptionsShouldShow = function(options, sourceValue) {
+	if (options.has('checkIsPresent')) {
+		let checkIsPresentInfo = options.get('checkIsPresent');
+		let valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsPresentInfo, sourceValue);
+		if (valueToCheck === null || valueToCheck === false) {
+			return false;
+		}
+	}
+	
+	if (options.has('checkIsFilled')) {
+		let checkIsFilledInfo = options.get('checkIsFilled');
+		let valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsFilledInfo, sourceValue);
+		if (typeof valueToCheck !== 'string' || valueToCheck.trim() === '') {
+			return false;
+		}
+	}
+	
+	return true;
+}
+
 let getAttributeValueForInfoAndSourceValue = function(attributeValueRepresentation, sourceValue) {
 	let attributeValue = null;
 	
@@ -23,16 +43,12 @@ let getAttributeValueForInfoAndSourceValue = function(attributeValueRepresentati
 	else if (Immutable.Map.isMap(attributeValueRepresentation)) {
 		let attributeOptions = attributeValueRepresentation;
 		
-		if (attributeOptions.has('checkIsPresent')) {
-			let checkIsPresentInfo = attributeOptions.get('checkIsPresent');
-			let valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsPresentInfo, sourceValue);
-			if (valueToCheck == null) {
-				return null;
-			}
+		if (!checkOptionsShouldShow(attributeOptions, sourceValue)) {
+			return null;
 		}
 		
 		if (attributeOptions.has('text')) {
-			attributeValue = attributeOptions.get('text');
+			attributeValue = getAttributeValueForInfoAndSourceValue(attributeOptions.get('text'), sourceValue);
 		}
 		else if (attributeOptions.has('join')) {
 			let join = attributeOptions.get('join');
@@ -61,6 +77,13 @@ let getAttributeValueForInfoAndSourceValue = function(attributeValueRepresentati
 				}
 			});
 		}
+		/*else if (attributeOptions.has('every')) {
+			
+		}
+		else if (attributeOptions.has('any')) {
+			
+		}
+		*/
 	}
 	
 	return attributeValue;
@@ -69,15 +92,11 @@ let getAttributeValueForInfoAndSourceValue = function(attributeValueRepresentati
 HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(HTMLRepresentation, sourceValue) {
 	var reactElementForElementOptions = function(elementOptions, index) {
 		let indexPath = this;
+		indexPath = indexPath.concat(index);
 		
-		/*if (typeof elementOptions === 'string') {
-			return elementOptions;
+		if (!checkOptionsShouldShow(elementOptions, sourceValue)) {
+			return null;
 		}
-		else if (Immutable.List.isList(elementOptions)) {
-			let keyPath = elementOptions;
-			return sourceValue.getIn(keyPath);
-		}
-		else if (Immutable.Map.isMap(elementOptions)) {*/
 		
 		// Referenced Element
 		if (elementOptions.get('placeOriginalElement', false)) {
@@ -98,7 +117,7 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 			let children = elementOptions.get('children');
 			let childrenReady = null;
 			if (children) {
-				childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
+				childrenReady = children.map(reactElementForElementOptions, indexPath).toJS();
 			}
 	
 			let indexPathString = indexPath.join('/')
@@ -106,11 +125,13 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 	
 			return React.createElement(tagName, attributesReady, childrenReady);
 		}
+		else if (elementOptions.get('lineBreak', false)) {
+			return React.createElement('br');
+		}
 		// Text
 		else {
 			return getAttributeValueForInfoAndSourceValue(elementOptions, sourceValue);
 		}
-			//}
 	};
 	
 	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();

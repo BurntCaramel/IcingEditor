@@ -9,8 +9,10 @@ var ContentStore = require('../stores/store-content.js');
 var SettingsStore = require('../stores/store-settings.js');
 var ReorderingStore = require('../stores/ReorderingStore');
 
-var BlockTypesAssistant = require('../assistants/TypesAssistant');
-var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
+let {
+	findParticularSubsectionOptionsInList,
+	findParticularBlockTypeOptionsWithGroupAndTypeInMap
+} = require('../assistants/TypesAssistant');
 
 let {
 	BaseClassNamesMixin
@@ -24,58 +26,62 @@ var HTMLRepresentationAssistant = require('../assistants/html-representation-ass
 
 
 var SubsectionElement = React.createClass({
-	getInitialState: function() {
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			baseClassNames: ['subsection']
+		}
+	},
+	
+	getInitialState() {
 		return {
 			active: false
 		};
 	},
 	
-	onToggleActive: function() {
+	onToggleActive() {
 		this.setState({
 			active: !this.state.active
 		});
 	},
 	
-	render: function() {
-		var props = this.props;
-		var state = this.state;
+	render() {
+		let {
+			type,
+			keyPath,
+			subsectionsSpecs,
+			actions,
+			edited
+		} = this.props;
+		let {
+			active
+		} = this.state;
 		
-		var subsectionType = props.type;
-		var keyPath = props.keyPath;
-		var actions = props.actions;
-		var active = state.active;
-		var edited = props.edited;
-		
-		var classNames = ['subsection', 'subsection-type-' + subsectionType];
-		
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
-		var subsectionTitle = null;
-		subsectionInfos.some(function(subsectionInfo) {
-			if (subsectionInfo.id === subsectionType) {
-				subsectionTitle = subsectionInfo.title;
-				return true;
-			}
-		});
+		let classNameExtensions = [
+			`-type-${type}`
+		];
 		
 		if (active) {
-			classNames.push('subsection-active');
+			classNameExtensions.push('-active');
 		}
 		if (edited) {
-			classNames.push('subsection-edited');
+			classNameExtensions.push('-edited');
 		}
 		
 		var children = [];
 		children.push(
 			React.createElement(Toolbars.ChangeSubsectionElement, {
 				key: 'changeSubsection',
-				selectedSubsectionType: subsectionType,
+				selectedSubsectionType: type,
 				keyPath,
+				subsectionsSpecs,
 				actions
 			})
 		)
 		
 		return React.createElement('div', {
-			className: classNames.join(' ')
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
 	}
 });
@@ -86,6 +92,7 @@ var BlockElement = React.createClass({
 	getDefaultProps() {
 		return {
 			baseClassNames: ['block'],
+			allowsEditing: true,
 			isReordering: false
 		}
 	},
@@ -186,6 +193,7 @@ var BlockElement = React.createClass({
 			edited,
 			editedTextItemIdentifier,
 			editedTextItemKeyPath,
+			allowsEditing,
 			isReordering,
 			isFocusedForReordering,
 			anotherBlockIsFocusedForReordering
@@ -207,13 +215,18 @@ var BlockElement = React.createClass({
 		if (typeGroup === 'media' || typeGroup === 'particular') {
 			var hasHTMLRepresentation = false;
 			// http://www.burntcaramel.com/images/stylised-name.png
-			var value = block.get('value', Immutable.Map());
+			let blockValue = block.get('value', Immutable.Map());
+			
 			if (blockTypeOptions) {
 				var HTMLRepresentation = blockTypeOptions.get('innerHTMLRepresentation');
 				if (HTMLRepresentation) {
 					hasHTMLRepresentation = true;
-					var elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
-						HTMLRepresentation, value
+					let valueForRepresentation = Immutable.Map({
+						'fields': blockValue
+					});
+					
+					let elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
+						HTMLRepresentation, valueForRepresentation
 					);
 					children = [
 						React.createElement('div', {
@@ -235,19 +248,30 @@ var BlockElement = React.createClass({
 		}
 		else if (typeGroup === 'text') {
 			var textItemsKeyPath = keyPath.concat('textItems');
-			children = EditorElementCreator.reactElementsWithTextItems(
-				props.textItems, textItemsKeyPath, actions, block, typeGroup, blockType, traitSpecs, editedTextItemIdentifier, childrenInfo
+			let textItemElements = EditorElementCreator.reactElementsWithTextItems(
+				props.textItems, {
+					keyPath: textItemsKeyPath, actions, block, blockTypeGroup: typeGroup, blockType, blockTypeOptions, traitSpecs, editedTextItemIdentifier,
+					outputInfo: childrenInfo, allowsEditing
+				}
 			);
 			
-			if (children.length === 0) {
+			if (textItemElements.length === 0) {
 				classNameExtensions.push(
 					'-textItemsIsEmpty'
 				);
-				children.push(
+				children = [
 					React.createElement('span', {
 						key: 'noItems'
 					})
-				);
+				];
+			}
+			else {
+				children = [
+					React.createElement('div', {
+						key: 'textItems',
+						className: this.getChildClassNameStringWithSuffix('_textItems')
+					}, textItemElements)
+				];
 			}
 		}
 		
@@ -300,7 +324,7 @@ var BlockElement = React.createClass({
 		return React.createElement('div', {
 			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			"data-subsection-child-index": (subsectionChildIndex + 1), // Change from zero to one based.
-			onClick: this.beginEditing,
+			onClick: allowsEditing ? this.beginEditing : null,
 			onMouseEnter: this.onMouseEnter,
 			onMouseLeave: this.onMouseLeave
 		}, children);
@@ -312,6 +336,7 @@ var TextItem = React.createClass({
 	
 	getDefaultProps: function() {
 		return {
+			allowsEditing: true,
 			baseClassNames: ['textItem'],
 			traits: {}
 		};
@@ -341,8 +366,10 @@ var TextItem = React.createClass({
 			block,
 			blockTypeGroup,
 			blockType,
+			blockTypeOptions,
 			actions,
-			edited
+			edited,
+			allowsEditing
 		} = this.props;
 		
 		var classNameExtensions = [];
@@ -374,6 +401,7 @@ var TextItem = React.createClass({
 					block,
 					blockTypeGroup,
 					blockType,
+					blockTypeOptions,
 					actions
 				})
 			);
@@ -405,7 +433,7 @@ var TextItem = React.createClass({
 			key: 'mainElement',
 			id: id,
 			className: this.getClassNameStringWithExtensions(classNameExtensions),
-			onClick: this.beginEditing
+			onClick: allowsEditing ? this.beginEditing : null
 		}, contentChildren);
 	}
 });
@@ -424,7 +452,7 @@ EditorElementCreator.BlockElement = BlockElement;
 EditorElementCreator.TextItem = TextItem;
 
 EditorElementCreator.reactElementsWithTextItems = function(
-	textItems, keyPath, actions, block, blockTypeGroup, blockType, traitSpecs, editedTextItemIdentifier, outputInfo
+	textItems, {keyPath, actions, block, blockTypeGroup, blockType, blockTypeOptions, traitSpecs, editedTextItemIdentifier, outputInfo, allowsEditing}
 ) {
 	if (textItems) {
 		var editedItem = null;
@@ -439,8 +467,10 @@ EditorElementCreator.reactElementsWithTextItems = function(
 				block,
 				blockTypeGroup,
 				blockType,
+				blockTypeOptions,
 				traitSpecs,
-				actions
+				actions,
+				allowsEditing
 			};
 	
 			if (editedTextItemIdentifier === identifier) {
@@ -495,21 +525,12 @@ EditorElementCreator.reactElementsWithBlocks = function(
 		focusedBlockKeyPathForReordering
 	}
 ) {
-	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
-	var traitSpecs = specsImmutable.get('traits', Immutable.List());
+	let subsectionsSpecs = specsImmutable.get('subsectionTypes', Immutable.List());
+	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
+	let traitSpecs = specsImmutable.get('traits', Immutable.List());
 	
-	/*
-	if (isReordering) {
-		editedBlockIdentifier = null;
-		editedTextItemIdentifier = null;
-	}
-	*/
-	
-	//var editedBlockIdentifier = actions.getEditedBlockIdentifier();
-	//var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
-	
-	var currentSubsectionType = specsImmutable.get('defaultSectionType', 'normal');
-	var currentSubsectionChildIndex = 0;
+	let currentSubsectionType = specsImmutable.get('defaultSubsectionType', 'normal');
+	let currentSubsectionChildIndex = 0;
 	
 	var elementsForBlocks = blocksImmutable.map(function(blockImmutable, blockIndex) {
 		var blockIdentifier = blockImmutable.get('identifier');
@@ -523,6 +544,7 @@ EditorElementCreator.reactElementsWithBlocks = function(
 			subsectionType: currentSubsectionType,
 			subsectionChildIndex: currentSubsectionChildIndex,
 			actions,
+			subsectionsSpecs,
 			traitSpecs,
 			blockTypeGroups,
 			blockGroupIDsToTypesMap,
@@ -531,6 +553,7 @@ EditorElementCreator.reactElementsWithBlocks = function(
 			editedBlockKeyPath,
 			editedTextItemIdentifier,
 			editedTextItemKeyPath,
+			allowsEditing: !isReordering,
 			isReordering,
 			isFocusedForReordering: (blockIdentifier == focusedBlockIdentifierForReordering),
 			anotherBlockIsFocusedForReordering: (
@@ -595,6 +618,7 @@ EditorElementCreator.reactElementsWithBlocks = function(
 							key: `changeSubsection-${blockIndex}`,
 							isCreate: true,
 							followingBlockIndex: blockIndex,
+							subsectionsSpecs,
 							actions
 						})	
 					);

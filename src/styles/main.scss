@@ -107,19 +107,19 @@ body
 	}
 	
 	
-	.blocks_makeSubsection
+	.blocks_changeSubsection
 	{
 		position: relative;
 		visibility: hidden;
 		margin: auto;
 		width: 60%;
 	}
-	.blocks:hover .blocks_makeSubsection,
-	.blocks_makeSubsection-active,
+	.blocks:hover .blocks_changeSubsection,
+	.blocks_changeSubsection-active,
 	.blocks_changeSubsection-hasSelectedSubsectionType {
 		visibility: visible;
 	}
-	.blocks_makeSubsection_mainButton {
+	.blocks_changeSubsection_mainButton {
 		@include toolbarButton_light($small: true);
 		
 		//@extend %toolbarButton_light;
@@ -129,17 +129,17 @@ body
 		//margin-top: 4px;
 		//margin-bottom: 4px;
 	}
-	.blocks_changeSubsection-hasSelectedSubsectionType .blocks_makeSubsection_mainButton {
+	.blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton {
 		opacity: 0.5;
 	}
-	.blocks_makeSubsection-active .blocks_makeSubsection_mainButton,
-	.blocks_makeSubsection_mainButton:hover {
+	.blocks_changeSubsection-active .blocks_changeSubsection_mainButton,
+	.blocks_changeSubsection_mainButton:hover {
 		opacity: 1.0;
 		
 		@extend %toolbarButton_light_hover;
 	};
 	
-	.blocks_makeSubsection_choices {
+	.blocks_changeSubsection_choices {
 		position: absolute;
 		//opacity: 0.98;
 		width: 60%;
@@ -170,9 +170,11 @@ body
 	.block-edited
 	//.block-hover //.block:hover
 	{
-		//background-color: rgba(white, 0.2);
-		background-color: rgba(black, 0.025);
-		//box-shadow: 0 0 4px rgba(black, 0.025);
+		.block_textItems {
+			//background-color: rgba(white, 0.2);
+			background-color: rgba(black, 0.025);
+			//box-shadow: 0 0 4px rgba(black, 0.025);
+		}
 	}
 	
 	.block-particular,
@@ -188,12 +190,6 @@ body
 		&.block-edited,
 		&.block-edited:hover {
 			background-color: white;
-		}
-	}
-	
-	.block-media-externalImage-HTMLRepresentation {
-		img {
-			max-width: $editorPreviewMaxWidth;
 		}
 	}
 	
@@ -213,6 +209,7 @@ body
 	{
 		.text {
 			border: 1px dotted transparent;
+			word-wrap: break-word;
 			transition: background-color $hoverTransitionDuration ease;
 		}
 	}
@@ -400,11 +397,14 @@ body
 		}
 	}
 	
+	.textItemEditor_itemTraitsToolbar_heading,
 	.textItemEditor_blockTraitsToolbar_heading {
 		@extend %smallUIHeading;
 		
-		margin-top: 12px;
 		margin-bottom: 4px;
+	}
+	.textItemEditor_blockTraitsToolbar_heading {
+		margin-top: 12px;
 	}
 	
 	
@@ -420,31 +420,26 @@ body
 	{
 		margin: 0 (-$fieldsPadding);
 		
-		.inputLabel,
+		.fieldLabel,
 		.choice,
-		.choice_fieldsHolder
-		{
+		.group,
+		.choice_fieldsHolder,
+		.group_fieldsHolder {
 			flex: 4 0 100%;
 			box-sizing: border-box;
 		}
 		
-		.inputLabel,
-		.choice_fieldsHolder
-		{
+		.fieldLabel,
+		.choice_fieldsHolder,
+		.group_fieldsHolder {
 			padding: 0 $fieldsPadding;
 		}
-		.inputLabel-inputType-number-integer {
-			flex: 2 0 33.333333%;
-			//padding-right: 10px;
-			/*
-			+ .inputLabel-inputType-number-integer {
-				padding-right: 0;
-				padding-left: 10px;
-			}
-			*/
+		.choice_fieldsHolder {
+			// Nested fields get an indent.
+			padding-left: 20px;
 		}
 		
-		.inputLabel_title {
+		.fieldLabel_title {
 			display: block;
 			font-size: 10px;
 		}
@@ -455,22 +450,29 @@ body
 			display: block;
 			min-width: 100%;
 			margin: 0;
-			margin-bottom: 8px;
+			margin-top: 2px;
+			margin-bottom: 10px;
 			font-size: 12px;
 			line-height: 1.3;
 		}
-		
 		.input-textual {
 			border: none;
 			padding: 2px 4px;
 		}
-	}
-	.choice_fieldsHolder {
-		// Nested fields get an indent.
-		padding-left: 20px;
+		
+		.fieldLabel-fieldType-number-integer {
+			flex: 2 0 33.333333%; // Up to 3 in one row
+		}
+		
+		.group_fieldsHolder {
+			.fieldLabel-fieldType-textual,
+			.choice {
+				flex: 2 0 50%;
+			}
+		}
 	}
 	
-	.traitFieldsHolder {
+	.traitOptions {
 		position: absolute;
 		z-index: 1000;
 		left: 0;
@@ -480,30 +482,50 @@ body
 		background-color: $toolbarButtonSelectedBackgroundColor;
 		border-radius: $boxBorderRadius;
 		
-		.inputLabel_title {
+		.fieldLabel_title {
 			color: white;
 		}
 		
+		.traitOptions_buttons {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: flex-start;
+			
+			margin-top: 2px;
+			margin-left: -6px;
+			margin-right: -6px;
+			margin-bottom: -4px;
+			
+			.secondaryButton {
+				flex: 2 0 45%;
+				margin-left: 6px;
+				margin-right: 6px;
+			
+				& {
+					@extend %toolbarButton;
+					@extend %toolbarButton_dark;
+					@extend %toolbarButton_dark_hover;
+				}
+				&:hover,
+				&:active {
+					@extend %toolbarButton_light;
+					@extend %toolbarButton_light_hover;
+				}
+			}
+		}
+		
+		.removeButton {
+			background-color: #554444;
+		}
 		.removeButton,
 		.doneButton {
-			margin-top: 2px;
-			
-			& {
-				@extend %toolbarButton;
-				@extend %toolbarButton_dark;
-				@extend %toolbarButton_dark_hover;
-			}
-			&:hover,
-			&:active {
-				@extend %toolbarButton_light;
-				@extend %toolbarButton_light_hover;
-			}
+			//width: 50%;
 		}
 		.doneButton {
-			float: right;
+			//float: right;
 		}
 	}
-	.textItemEditor_traitsToolbar .buttonHolder:first-child .traitFieldsHolder
+	.textItemEditor_traitsToolbar .buttonHolder:first-child .traitOptions
 	{
 		border-top-left-radius: 0;
 	}
@@ -518,8 +540,10 @@ body
 		width: $editorInputWidth;
 		margin-left: 3vw;
 		
-		.inputLabel_title {
-			font-size: 12px;
+		.particularEditor_fieldsHolder {
+			.fieldLabel_title {
+				font-size: 12px;
+			}
 		}
 		
 		.textItemEditor_blockTraitsToolbar {

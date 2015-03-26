@@ -1,6 +1,7 @@
 {
 	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
 	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.0"},
+	"defaultSubsectionType": "normal",
 	"subsectionTypes": [
 		{
 			"id": "normal",
@@ -10,7 +11,7 @@
 			"id": "unorderedList",
 			"title": "Unordered List",
 			"outerHTMLTagName": "ul",
-			"innerHTMLRepresentation": [
+			"childHTMLRepresentation": [
 				{
 					"tagName": "li",
 					"children": [
@@ -28,7 +29,7 @@
 			"id": "orderedList",
 			"title": "Ordered List",
 			"outerHTMLTagName": "ol",
-			"innerHTMLRepresentation": [
+			"childHTMLRepresentation": [
 				{
 					"tagName": "li",
 					"children": [
@@ -48,7 +49,6 @@
 			"outerHTMLTagName": "blockquote"
 		}
 	],
-	"defaultSectionType": "normal",
 	"blockTypesByGroups": {
 		"text": [
 			{"id": "body", "title": "Paragraph", "outerHTMLTagName": "p"},
@@ -61,30 +61,56 @@
 			{
 				"id": "externalImage",
 				"title": "External Image",
-				"fieldsAreRequired": true,
 				"fields": [
 					{
 						"id": "url",
 						"type": "url",
-						"title": "Image URL"
+						"title": "Image URL",
+						"placeholder": "Enter the URL to an image – JPEG, PNG, SVG, etc.",
+						"required": true
 					},
 					{
 						"id": "width",
 						"type": "number-integer",
-						"title": "Displayed Width"
+						"title": "Displayed Width",
+						"placeholder": "Automatic"
 					},
 					{
 						"id": "height",
 						"type": "number-integer",
-						"title": "Displayed Height"
+						"title": "Displayed Height",
+						"placeholder": "Automatic"
 					},
 					{
 						"id": "description",
-						"type": "text",
-						"title": "Description"
+						"type": "group",
+						"fields": [
+							{
+								"id": "descriptionText",
+								"type": "text",
+								"title": "Description",
+								"placeholder": "None",
+								"recommended": true
+							},
+							{
+								"id": "showDescriptionChoice",
+								"title": "Description Visibility",
+								"type": "choice",
+								"choices": [
+									{
+										"id": "accessible",
+										"title": "Use For Accessibility Only"
+									},
+									{
+										"id": "visible",
+										"title": "Show Description"
+									}
+								]
+							}
+						]
 					}
 				],
-				"outerHTMLTagName": "p",
+				"outerHTMLTagName": "figure",
 				"innerHTMLRepresentation": [
 					{
 						"tagName": "img",
@@ -92,13 +118,26 @@
 							"src": ["fields", "url"],
 							"width": ["fields", "width"],
 							"height": ["fields", "height"],
-							"alt": ["fields", "description"]
+							"alt": {
+								"checkIsPresent": ["fields", "description", "showDescriptionChoice", "accessible"],
+								"text": ["fields", "description", "descriptionText"]
+							}
 						}
+					},
+					{
+						"checkIsFilled": ["fields", "description", "descriptionText"],
+						"checkIsPresent": ["fields", "description", "showDescriptionChoice", "visible"],
+						"tagName": "figcaption",
+						"children": [
+							{
+								"text": ["fields", "description", "descriptionText"]
+							}
+						]
 					}
 				]
 			}
 		],
-		"particular[OFF]": [
+		"particular_OFF": [
 			{
 				"id": "contactDetails",
 				"title": "Contact Details",
@@ -115,14 +154,14 @@
 					{
 						"tagName": "div",
 						"attributes": {
-							"itemscope": true,
-							"itemtype": "http://schema.org/Organization"
+							"itemScope": true,
+							"itemType": "http://schema.org/Organization"
 						},
 						"children": [
 							{
-								"tagName": "div",
+								"tagName": "section",
 								"attributes": {
-									"itemprop": "name"
+									"itemProp": "name"
 								},
 								"children": [
 									{
@@ -131,11 +170,11 @@
 								]
 							},
 							{
-								"tagName": "div",
+								"tagName": "article",
 								"attributes": {
-									"itemprop": "address",
-									"itemscope": true,
-									"itemtype": "http://schema.org/PostalAddress"
+									"itemProp": "address",
+									"itemScope": true,
+									"itemType": "http://schema.org/PostalAddress"
 								},
 								"children": [
 									{
@@ -145,14 +184,23 @@
 												"text": ["fields", "streetAddress"]
 											},
 											{
-												"text": ",",
-												"checkIsPresent": ["fields", "streetAddress"]
+												"checkIsPresent": ["fields", "streetAddress"],
+												"text": ", "
 											},
 											{
-												"text": ["fields", "suburb"]
+												"text": ["fields", "locality"]
 											},
 											{
-												"text": ["fields", "province"]
+												"lineBreak": true
+											},
+											{
+												"text": ["fields", "region"]
+											},
+											{
+												"text": ["fields", "postalCode"]
+											},
+											{
+												"text": ["fields", "country"]
 											}
 										]
 									}
@@ -187,8 +235,33 @@
 				"title": "Feature Heading",
 				"fieldsAreRequired": true,
 				"fields": [
-					{"id": "primaryText", "title": "Primary Text"},
-					{"id": "secondaryText", "title": "Secondary Text"}
+					{"id": "secondaryText", "title": "Secondary Text"},
+					{"id": "primaryText", "title": "Primary Text"}
+				],
+				"outerHTMLTagName": "h3",
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "span",
+						"attributes": {
+							"className": "secondary"
+						},
+						"children": [
+							{
+								"text": ["fields", "secondaryText"]
+							}
+						]
+					},
+					{
+						"tagName": "span",
+						"attributes": {
+							"className": "primary"
+						},
+						"children": [
+							{
+								"text": ["fields", "primaryText"]
+							}
+						]
+					}
 				]
 			}
 		]
@@ -238,7 +311,7 @@
 			"fields": [
 				{
 					"id": "typeChoice",
-					"title": "Link Type",
+					"title": "Link To",
 					"type": "choice",
 					"choices": [
 						{
@@ -248,7 +321,8 @@
 								{
 									"type": "url",
 									"id": "URL",
-									"title": "URL"
+									"title": "URL",
+									"placeholder": "Enter the URL to link to"
 								}
 							]
 						},
@@ -259,7 +333,8 @@
 								{
 									"type": "email",
 									"id": "emailAddress",
-									"title": "Email Address"
+									"title": "Email Address",
+									"placeholder": "Enter the email address to link to"
 								}
 							]
 						}

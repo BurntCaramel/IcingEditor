@@ -27570,6 +27570,12 @@ module.exports = AppDispatcher;
 
 var TypesAssistant = {};
 
+TypesAssistant.findParticularSubsectionOptionsInList = function (subsectionIDToFind, subsectionOptionsList) {
+	return subsectionOptionsList.find(function (subsectionOptions) {
+		return subsectionOptions.get("id") === subsectionIDToFind;
+	});
+};
+
 TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function (chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
 	// Find options by searching for the particular ID
 	var chosenBlockTypeOptions = null;
@@ -27584,8 +27590,8 @@ TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function (c
 	return chosenBlockTypeOptions;
 };
 
-TypesAssistant.findParticularTraitOptionsInList = function (traitIDToFind, traitOptionsMap) {
-	return traitOptionsMap.find(function (traitOptions) {
+TypesAssistant.findParticularTraitOptionsInList = function (traitIDToFind, traitOptionsList) {
+	return traitOptionsList.find(function (traitOptions) {
 		return traitOptions.get("id") === traitIDToFind;
 	});
 };
@@ -27603,6 +27609,26 @@ var React = require("react");
 var Immutable = require("immutable");
 
 var HTMLRepresentationAssistant = {};
+
+var checkOptionsShouldShow = function checkOptionsShouldShow(options, sourceValue) {
+	if (options.has("checkIsPresent")) {
+		var checkIsPresentInfo = options.get("checkIsPresent");
+		var valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsPresentInfo, sourceValue);
+		if (valueToCheck === null || valueToCheck === false) {
+			return false;
+		}
+	}
+
+	if (options.has("checkIsFilled")) {
+		var checkIsFilledInfo = options.get("checkIsFilled");
+		var valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsFilledInfo, sourceValue);
+		if (typeof valueToCheck !== "string" || valueToCheck.trim() === "") {
+			return false;
+		}
+	}
+
+	return true;
+};
 
 var getAttributeValueForInfoAndSourceValue = (function (_getAttributeValueForInfoAndSourceValue) {
 	var _getAttributeValueForInfoAndSourceValueWrapper = function getAttributeValueForInfoAndSourceValue(_x, _x2) {
@@ -27625,16 +27651,12 @@ var getAttributeValueForInfoAndSourceValue = (function (_getAttributeValueForInf
 	} else if (Immutable.Map.isMap(attributeValueRepresentation)) {
 		var attributeOptions = attributeValueRepresentation;
 
-		if (attributeOptions.has("checkIsPresent")) {
-			var checkIsPresentInfo = attributeOptions.get("checkIsPresent");
-			var valueToCheck = getAttributeValueForInfoAndSourceValue(checkIsPresentInfo, sourceValue);
-			if (valueToCheck == null) {
-				return null;
-			}
+		if (!checkOptionsShouldShow(attributeOptions, sourceValue)) {
+			return null;
 		}
 
 		if (attributeOptions.has("text")) {
-			attributeValue = attributeOptions.get("text");
+			attributeValue = getAttributeValueForInfoAndSourceValue(attributeOptions.get("text"), sourceValue);
 		} else if (attributeOptions.has("join")) {
 			(function () {
 				var join = attributeOptions.get("join");
@@ -27663,6 +27685,13 @@ var getAttributeValueForInfoAndSourceValue = (function (_getAttributeValueForInf
 				}
 			});
 		}
+		/*else if (attributeOptions.has('every')) {
+  	
+  }
+  else if (attributeOptions.has('any')) {
+  	
+  }
+  */
 	}
 
 	return attributeValue;
@@ -27681,15 +27710,11 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 		return _reactElementForElementOptionsWrapper;
 	})(function (elementOptions, index) {
 		var indexPath = this;
+		indexPath = indexPath.concat(index);
 
-		/*if (typeof elementOptions === 'string') {
-  	return elementOptions;
-  }
-  else if (Immutable.List.isList(elementOptions)) {
-  	let keyPath = elementOptions;
-  	return sourceValue.getIn(keyPath);
-  }
-  else if (Immutable.Map.isMap(elementOptions)) {*/
+		if (!checkOptionsShouldShow(elementOptions, sourceValue)) {
+			return null;
+		}
 
 		// Referenced Element
 		if (elementOptions.get("placeOriginalElement", false)) {
@@ -27710,19 +27735,20 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 			var children = elementOptions.get("children");
 			var childrenReady = null;
 			if (children) {
-				childrenReady = children.map(reactElementForElementOptions, indexPath.concat(index)).toJS();
+				childrenReady = children.map(reactElementForElementOptions, indexPath).toJS();
 			}
 
 			var indexPathString = indexPath.join("/");
 			attributesReady.key = "indexPath-" + indexPath.join();
 
 			return React.createElement(tagName, attributesReady, childrenReady);
+		} else if (elementOptions.get("lineBreak", false)) {
+			return React.createElement("br");
 		}
 		// Text
 		else {
 			return getAttributeValueForInfoAndSourceValue(elementOptions, sourceValue);
 		}
-		//}
 	});
 
 	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();
@@ -27734,6 +27760,7 @@ module.exports = HTMLRepresentationAssistant;
 module.exports={
 	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
 	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.0"},
+	"defaultSubsectionType": "normal",
 	"subsectionTypes": [
 		{
 			"id": "normal",
@@ -27743,7 +27770,7 @@ module.exports={
 			"id": "unorderedList",
 			"title": "Unordered List",
 			"outerHTMLTagName": "ul",
-			"innerHTMLRepresentation": [
+			"childHTMLRepresentation": [
 				{
 					"tagName": "li",
 					"children": [
@@ -27761,7 +27788,7 @@ module.exports={
 			"id": "orderedList",
 			"title": "Ordered List",
 			"outerHTMLTagName": "ol",
-			"innerHTMLRepresentation": [
+			"childHTMLRepresentation": [
 				{
 					"tagName": "li",
 					"children": [
@@ -27781,7 +27808,6 @@ module.exports={
 			"outerHTMLTagName": "blockquote"
 		}
 	],
-	"defaultSectionType": "normal",
 	"blockTypesByGroups": {
 		"text": [
 			{"id": "body", "title": "Paragraph", "outerHTMLTagName": "p"},
@@ -27794,30 +27820,56 @@ module.exports={
 			{
 				"id": "externalImage",
 				"title": "External Image",
-				"fieldsAreRequired": true,
 				"fields": [
 					{
 						"id": "url",
 						"type": "url",
-						"title": "Image URL"
+						"title": "Image URL",
+						"placeholder": "Enter the URL to an image – JPEG, PNG, SVG, etc.",
+						"required": true
 					},
 					{
 						"id": "width",
 						"type": "number-integer",
-						"title": "Displayed Width"
+						"title": "Displayed Width",
+						"placeholder": "Automatic"
 					},
 					{
 						"id": "height",
 						"type": "number-integer",
-						"title": "Displayed Height"
+						"title": "Displayed Height",
+						"placeholder": "Automatic"
 					},
 					{
 						"id": "description",
-						"type": "text",
-						"title": "Description"
+						"type": "group",
+						"fields": [
+							{
+								"id": "descriptionText",
+								"type": "text",
+								"title": "Description",
+								"placeholder": "None",
+								"recommended": true
+							},
+							{
+								"id": "showDescriptionChoice",
+								"title": "Description Visibility",
+								"type": "choice",
+								"choices": [
+									{
+										"id": "accessible",
+										"title": "Use For Accessibility Only"
+									},
+									{
+										"id": "visible",
+										"title": "Show Description"
+									}
+								]
+							}
+						]
 					}
 				],
-				"outerHTMLTagName": "p",
+				"outerHTMLTagName": "figure",
 				"innerHTMLRepresentation": [
 					{
 						"tagName": "img",
@@ -27825,13 +27877,26 @@ module.exports={
 							"src": ["fields", "url"],
 							"width": ["fields", "width"],
 							"height": ["fields", "height"],
-							"alt": ["fields", "description"]
+							"alt": {
+								"checkIsPresent": ["fields", "description", "showDescriptionChoice", "accessible"],
+								"text": ["fields", "description", "descriptionText"]
+							}
 						}
+					},
+					{
+						"checkIsFilled": ["fields", "description", "descriptionText"],
+						"checkIsPresent": ["fields", "description", "showDescriptionChoice", "visible"],
+						"tagName": "figcaption",
+						"children": [
+							{
+								"text": ["fields", "description", "descriptionText"]
+							}
+						]
 					}
 				]
 			}
 		],
-		"particular[OFF]": [
+		"particular_OFF": [
 			{
 				"id": "contactDetails",
 				"title": "Contact Details",
@@ -27848,14 +27913,14 @@ module.exports={
 					{
 						"tagName": "div",
 						"attributes": {
-							"itemscope": true,
-							"itemtype": "http://schema.org/Organization"
+							"itemScope": true,
+							"itemType": "http://schema.org/Organization"
 						},
 						"children": [
 							{
-								"tagName": "div",
+								"tagName": "section",
 								"attributes": {
-									"itemprop": "name"
+									"itemProp": "name"
 								},
 								"children": [
 									{
@@ -27864,11 +27929,11 @@ module.exports={
 								]
 							},
 							{
-								"tagName": "div",
+								"tagName": "article",
 								"attributes": {
-									"itemprop": "address",
-									"itemscope": true,
-									"itemtype": "http://schema.org/PostalAddress"
+									"itemProp": "address",
+									"itemScope": true,
+									"itemType": "http://schema.org/PostalAddress"
 								},
 								"children": [
 									{
@@ -27878,14 +27943,23 @@ module.exports={
 												"text": ["fields", "streetAddress"]
 											},
 											{
-												"text": ",",
-												"checkIsPresent": ["fields", "streetAddress"]
+												"checkIsPresent": ["fields", "streetAddress"],
+												"text": ", "
 											},
 											{
-												"text": ["fields", "suburb"]
+												"text": ["fields", "locality"]
 											},
 											{
-												"text": ["fields", "province"]
+												"lineBreak": true
+											},
+											{
+												"text": ["fields", "region"]
+											},
+											{
+												"text": ["fields", "postalCode"]
+											},
+											{
+												"text": ["fields", "country"]
 											}
 										]
 									}
@@ -27920,8 +27994,33 @@ module.exports={
 				"title": "Feature Heading",
 				"fieldsAreRequired": true,
 				"fields": [
-					{"id": "primaryText", "title": "Primary Text"},
-					{"id": "secondaryText", "title": "Secondary Text"}
+					{"id": "secondaryText", "title": "Secondary Text"},
+					{"id": "primaryText", "title": "Primary Text"}
+				],
+				"outerHTMLTagName": "h3",
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "span",
+						"attributes": {
+							"className": "secondary"
+						},
+						"children": [
+							{
+								"text": ["fields", "secondaryText"]
+							}
+						]
+					},
+					{
+						"tagName": "span",
+						"attributes": {
+							"className": "primary"
+						},
+						"children": [
+							{
+								"text": ["fields", "primaryText"]
+							}
+						]
+					}
 				]
 			}
 		]
@@ -27971,7 +28070,7 @@ module.exports={
 			"fields": [
 				{
 					"id": "typeChoice",
-					"title": "Link Type",
+					"title": "Link To",
 					"type": "choice",
 					"choices": [
 						{
@@ -27981,7 +28080,8 @@ module.exports={
 								{
 									"type": "url",
 									"id": "URL",
-									"title": "URL"
+									"title": "URL",
+									"placeholder": "Enter the URL to link to"
 								}
 							]
 						},
@@ -27992,7 +28092,8 @@ module.exports={
 								{
 									"type": "email",
 									"id": "emailAddress",
-									"title": "Email Address"
+									"title": "Email Address",
+									"placeholder": "Enter the email address to link to"
 								}
 							]
 						}
@@ -28100,21 +28201,31 @@ var ContentStore = require("../stores/store-content.js");
 var SettingsStore = require("../stores/store-settings.js");
 var ReorderingStore = require("../stores/ReorderingStore");
 
-var BlockTypesAssistant = require("../assistants/TypesAssistant");
-var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
+var _require = require("../assistants/TypesAssistant");
 
-var _require = require("../ui/ui-mixins");
+var findParticularSubsectionOptionsInList = _require.findParticularSubsectionOptionsInList;
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = _require.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 
-var BaseClassNamesMixin = _require.BaseClassNamesMixin;
+var _require2 = require("../ui/ui-mixins");
 
-var _require2 = require("../ui/ui-constants");
+var BaseClassNamesMixin = _require2.BaseClassNamesMixin;
 
-var KeyCodes = _require2.KeyCodes;
+var _require3 = require("../ui/ui-constants");
+
+var KeyCodes = _require3.KeyCodes;
 
 var HTMLRepresentationAssistant = require("../assistants/html-representation-assistant");
 
 var SubsectionElement = React.createClass({
 	displayName: "SubsectionElement",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			baseClassNames: ["subsection"]
+		};
+	},
 
 	getInitialState: function getInitialState() {
 		return {
@@ -28129,43 +28240,34 @@ var SubsectionElement = React.createClass({
 	},
 
 	render: function render() {
-		var props = this.props;
-		var state = this.state;
+		var _props = this.props;
+		var type = _props.type;
+		var keyPath = _props.keyPath;
+		var subsectionsSpecs = _props.subsectionsSpecs;
+		var actions = _props.actions;
+		var edited = _props.edited;
+		var active = this.state.active;
 
-		var subsectionType = props.type;
-		var keyPath = props.keyPath;
-		var actions = props.actions;
-		var active = state.active;
-		var edited = props.edited;
-
-		var classNames = ["subsection", "subsection-type-" + subsectionType];
-
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
-		var subsectionTitle = null;
-		subsectionInfos.some(function (subsectionInfo) {
-			if (subsectionInfo.id === subsectionType) {
-				subsectionTitle = subsectionInfo.title;
-				return true;
-			}
-		});
+		var classNameExtensions = ["-type-" + type];
 
 		if (active) {
-			classNames.push("subsection-active");
+			classNameExtensions.push("-active");
 		}
 		if (edited) {
-			classNames.push("subsection-edited");
+			classNameExtensions.push("-edited");
 		}
 
 		var children = [];
 		children.push(React.createElement(Toolbars.ChangeSubsectionElement, {
 			key: "changeSubsection",
-			selectedSubsectionType: subsectionType,
+			selectedSubsectionType: type,
 			keyPath: keyPath,
+			subsectionsSpecs: subsectionsSpecs,
 			actions: actions
 		}));
 
 		return React.createElement("div", {
-			className: classNames.join(" ")
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
 	}
 });
@@ -28178,6 +28280,7 @@ var BlockElement = React.createClass({
 	getDefaultProps: function getDefaultProps() {
 		return {
 			baseClassNames: ["block"],
+			allowsEditing: true,
 			isReordering: false
 		};
 	},
@@ -28270,6 +28373,7 @@ var BlockElement = React.createClass({
 		var edited = props.edited;
 		var editedTextItemIdentifier = props.editedTextItemIdentifier;
 		var editedTextItemKeyPath = props.editedTextItemKeyPath;
+		var allowsEditing = props.allowsEditing;
 		var isReordering = props.isReordering;
 		var isFocusedForReordering = props.isFocusedForReordering;
 		var anotherBlockIsFocusedForReordering = props.anotherBlockIsFocusedForReordering;
@@ -28285,12 +28389,17 @@ var BlockElement = React.createClass({
 		if (typeGroup === "media" || typeGroup === "particular") {
 			var hasHTMLRepresentation = false;
 			// http://www.burntcaramel.com/images/stylised-name.png
-			var value = block.get("value", Immutable.Map());
+			var blockValue = block.get("value", Immutable.Map());
+
 			if (blockTypeOptions) {
 				var HTMLRepresentation = blockTypeOptions.get("innerHTMLRepresentation");
 				if (HTMLRepresentation) {
 					hasHTMLRepresentation = true;
-					var elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, value);
+					var valueForRepresentation = Immutable.Map({
+						fields: blockValue
+					});
+
+					var elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
 					children = [React.createElement("div", {
 						key: "HTMLRepresentation",
 						className: "block-" + typeGroup + "-" + blockType + "-HTMLRepresentation"
@@ -28306,13 +28415,21 @@ var BlockElement = React.createClass({
 			}
 		} else if (typeGroup === "text") {
 			var textItemsKeyPath = keyPath.concat("textItems");
-			children = EditorElementCreator.reactElementsWithTextItems(props.textItems, textItemsKeyPath, actions, block, typeGroup, blockType, traitSpecs, editedTextItemIdentifier, childrenInfo);
+			var textItemElements = EditorElementCreator.reactElementsWithTextItems(props.textItems, {
+				keyPath: textItemsKeyPath, actions: actions, block: block, blockTypeGroup: typeGroup, blockType: blockType, blockTypeOptions: blockTypeOptions, traitSpecs: traitSpecs, editedTextItemIdentifier: editedTextItemIdentifier,
+				outputInfo: childrenInfo, allowsEditing: allowsEditing
+			});
 
-			if (children.length === 0) {
+			if (textItemElements.length === 0) {
 				classNameExtensions.push("-textItemsIsEmpty");
-				children.push(React.createElement("span", {
+				children = [React.createElement("span", {
 					key: "noItems"
-				}));
+				})];
+			} else {
+				children = [React.createElement("div", {
+					key: "textItems",
+					className: this.getChildClassNameStringWithSuffix("_textItems")
+				}, textItemElements)];
 			}
 		}
 
@@ -28361,7 +28478,7 @@ var BlockElement = React.createClass({
 		return React.createElement("div", {
 			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			"data-subsection-child-index": subsectionChildIndex + 1, // Change from zero to one based.
-			onClick: this.beginEditing,
+			onClick: allowsEditing ? this.beginEditing : null,
 			onMouseEnter: this.onMouseEnter,
 			onMouseLeave: this.onMouseLeave
 		}, children);
@@ -28375,6 +28492,7 @@ var TextItem = React.createClass({
 
 	getDefaultProps: function getDefaultProps() {
 		return {
+			allowsEditing: true,
 			baseClassNames: ["textItem"],
 			traits: {}
 		};
@@ -28404,8 +28522,10 @@ var TextItem = React.createClass({
 		var block = _props.block;
 		var blockTypeGroup = _props.blockTypeGroup;
 		var blockType = _props.blockType;
+		var blockTypeOptions = _props.blockTypeOptions;
 		var actions = _props.actions;
 		var edited = _props.edited;
+		var allowsEditing = _props.allowsEditing;
 
 		var classNameExtensions = [];
 		var dataAttributes = [];
@@ -28433,6 +28553,7 @@ var TextItem = React.createClass({
 				block: block,
 				blockTypeGroup: blockTypeGroup,
 				blockType: blockType,
+				blockTypeOptions: blockTypeOptions,
 				actions: actions
 			}));
 		}
@@ -28458,7 +28579,7 @@ var TextItem = React.createClass({
 			key: "mainElement",
 			id: id,
 			className: this.getClassNameStringWithExtensions(classNameExtensions),
-			onClick: this.beginEditing
+			onClick: allowsEditing ? this.beginEditing : null
 		}, contentChildren);
 	}
 });
@@ -28476,7 +28597,18 @@ var EditorElementCreator = {};
 EditorElementCreator.BlockElement = BlockElement;
 EditorElementCreator.TextItem = TextItem;
 
-EditorElementCreator.reactElementsWithTextItems = function (textItems, keyPath, actions, block, blockTypeGroup, blockType, traitSpecs, editedTextItemIdentifier, outputInfo) {
+EditorElementCreator.reactElementsWithTextItems = function (textItems, _ref) {
+	var keyPath = _ref.keyPath;
+	var actions = _ref.actions;
+	var block = _ref.block;
+	var blockTypeGroup = _ref.blockTypeGroup;
+	var blockType = _ref.blockType;
+	var blockTypeOptions = _ref.blockTypeOptions;
+	var traitSpecs = _ref.traitSpecs;
+	var editedTextItemIdentifier = _ref.editedTextItemIdentifier;
+	var outputInfo = _ref.outputInfo;
+	var allowsEditing = _ref.allowsEditing;
+
 	if (textItems) {
 		var editedItem = null;
 
@@ -28490,8 +28622,10 @@ EditorElementCreator.reactElementsWithTextItems = function (textItems, keyPath, 
 				block: block,
 				blockTypeGroup: blockTypeGroup,
 				blockType: blockType,
+				blockTypeOptions: blockTypeOptions,
 				traitSpecs: traitSpecs,
-				actions: actions
+				actions: actions,
+				allowsEditing: allowsEditing
 			};
 
 			if (editedTextItemIdentifier === identifier) {
@@ -28544,20 +28678,11 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 	var focusedBlockIdentifierForReordering = _ref.focusedBlockIdentifierForReordering;
 	var focusedBlockKeyPathForReordering = _ref.focusedBlockKeyPathForReordering;
 
+	var subsectionsSpecs = specsImmutable.get("subsectionTypes", Immutable.List());
 	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroups", Immutable.Map());
 	var traitSpecs = specsImmutable.get("traits", Immutable.List());
 
-	/*
- if (isReordering) {
- 	editedBlockIdentifier = null;
- 	editedTextItemIdentifier = null;
- }
- */
-
-	//var editedBlockIdentifier = actions.getEditedBlockIdentifier();
-	//var editedTextItemIdentifier = actions.getEditedTextItemIdentifier();
-
-	var currentSubsectionType = specsImmutable.get("defaultSectionType", "normal");
+	var currentSubsectionType = specsImmutable.get("defaultSubsectionType", "normal");
 	var currentSubsectionChildIndex = 0;
 
 	var elementsForBlocks = blocksImmutable.map(function (blockImmutable, blockIndex) {
@@ -28572,6 +28697,7 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 			subsectionType: currentSubsectionType,
 			subsectionChildIndex: currentSubsectionChildIndex,
 			actions: actions,
+			subsectionsSpecs: subsectionsSpecs,
 			traitSpecs: traitSpecs,
 			blockTypeGroups: blockTypeGroups,
 			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
@@ -28580,6 +28706,7 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 			editedBlockKeyPath: editedBlockKeyPath,
 			editedTextItemIdentifier: editedTextItemIdentifier,
 			editedTextItemKeyPath: editedTextItemKeyPath,
+			allowsEditing: !isReordering,
 			isReordering: isReordering,
 			isFocusedForReordering: blockIdentifier == focusedBlockIdentifierForReordering,
 			anotherBlockIsFocusedForReordering: focusedBlockIdentifierForReordering != null && blockIdentifier != focusedBlockIdentifierForReordering,
@@ -28637,6 +28764,7 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 						key: "changeSubsection-" + blockIndex,
 						isCreate: true,
 						followingBlockIndex: blockIndex,
+						subsectionsSpecs: subsectionsSpecs,
 						actions: actions
 					}));
 				}
@@ -28799,6 +28927,7 @@ var changeInfoWithIDAndValue = function changeInfoWithIDAndValue(ID, value) {
 EditorFields.fieldTypeIsTextual = function (fieldType) {
 	var textualFieldTypes = {
 		text: true,
+		"text-long": true,
 		url: true,
 		email: true,
 		tel: true,
@@ -28812,37 +28941,14 @@ EditorFields.fieldTypeIsTextual = function (fieldType) {
 	}
 };
 
-var InputLabel = React.createClass({
-	displayName: "InputLabel",
-
-	getDefaultProps: function getDefaultProps() {
-		return {
-			title: ""
-		};
-	},
-
-	render: function render() {
-		var props = this.props;
-		var title = this.props.title;
-
-		var children = [React.createElement("span", {
-			className: "inputLabel_title"
-		}, title)];
-
-		return React.createElement("label", {
-			className: "inputLabel"
-		}, children);
-	}
-});
-
-var InputLabel = React.createClass({
-	displayName: "InputLabel",
+var FieldLabel = React.createClass({
+	displayName: "FieldLabel",
 
 	mixins: [BaseClassNamesMixin],
 
 	getDefaultProps: function getDefaultProps() {
 		return {
-			baseClassNames: ["inputLabel"],
+			baseClassNames: ["fieldLabel"],
 			additionalClassNameExtensions: []
 		};
 	},
@@ -28851,6 +28957,14 @@ var InputLabel = React.createClass({
 		var props = this.props;
 		var children = props.children;
 		var title = props.title;
+		var required = props.required;
+		var recommended = props.recommended;
+
+		if (required) {
+			title += " (required)";
+		} else if (recommended) {
+			title += " (recommended)";
+		}
 
 		children = [React.createElement("span", {
 			key: "title",
@@ -28863,8 +28977,8 @@ var InputLabel = React.createClass({
 	}
 });
 
-var ChoiceInput = React.createClass({
-	displayName: "ChoiceInput",
+var ChoiceField = React.createClass({
+	displayName: "ChoiceField",
 
 	getDefaultProps: function getDefaultProps() {
 		return {
@@ -28936,9 +29050,10 @@ var ChoiceInput = React.createClass({
 				value: choiceInfo.id }, choiceInfo.title);
 		});
 		// Create <label> and <select>
-		var children = [React.createElement(InputLabel, {
+		var children = [React.createElement(FieldLabel, {
 			key: "label",
-			title: title
+			title: title,
+			additionalClassNameExtensions: ["-fieldType-choice"]
 		}, [React.createElement("select", {
 			key: "select",
 			value: selectedChoiceID,
@@ -28964,6 +29079,47 @@ var ChoiceInput = React.createClass({
 	}
 });
 
+var FieldGroup = React.createClass({
+	displayName: "FieldGroup",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			fields: [],
+			value: {},
+			onReplaceInfoAtKeyPath: null,
+			tabIndex: 0
+		};
+	},
+
+	onChildFieldReplaceInfoAtKeyPath: function onChildFieldReplaceInfoAtKeyPath(info, keyPath) {
+		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+		if (onReplaceInfoAtKeyPath) {
+			onReplaceInfoAtKeyPath(info, keyPath);
+		}
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var fields = _props.fields;
+		var value = _props.value;
+		var title = _props.title;
+		var ID = _props.ID;
+		var tabIndex = _props.tabIndex;
+
+		var children = [React.createElement(EditorFields.FieldsHolder, {
+			key: "fields",
+			fields: fields,
+			values: value,
+			onReplaceInfoAtKeyPath: this.onChildFieldReplaceInfoAtKeyPath,
+			className: "group_fieldsHolder"
+		})];
+
+		return React.createElement("div", {
+			className: "group"
+		}, children);
+	}
+});
+
 EditorFields.FieldsHolder = React.createClass({
 	displayName: "FieldsHolder",
 
@@ -28984,26 +29140,31 @@ EditorFields.FieldsHolder = React.createClass({
 		var type = fieldJSON.type;
 		var ID = fieldJSON.id;
 		var title = fieldJSON.title;
+		var required = fieldJSON.required || false;
+		var recommended = fieldJSON.recommended || false;
 
 		if (!type) {
 			type = "text";
 		}
 
 		if (EditorFields.fieldTypeIsTextual(type)) {
-			var inputType = type;
+			var fieldType = type;
 
-			return React.createElement(InputLabel, {
+			return React.createElement(FieldLabel, {
 				key: ID,
 				title: title,
-				additionalClassNameExtensions: ["-inputType-" + type]
+				required: required,
+				recommended: recommended,
+				additionalClassNameExtensions: ["-fieldType-textual", "-fieldType-" + type]
 			}, [React.createElement("input", {
 				key: ID,
-				type: inputType,
+				type: fieldType,
 				value: value,
+				placeholder: fieldJSON.placeholder,
 				onChange: function onChange(event) {
 					var newValue = event.target.value;
 
-					if (inputType === "url") {}
+					if (fieldType === "url") {}
 
 					onReplaceInfoAtKeyPath(newValue, [ID]);
 				},
@@ -29011,10 +29172,33 @@ EditorFields.FieldsHolder = React.createClass({
 				tabIndex: 0
 			})]);
 		} else if (type === "choice") {
-			return React.createElement(ChoiceInput, {
+			return React.createElement(ChoiceField, {
 				key: ID,
 				ID: ID,
 				choiceInfos: fieldJSON.choices,
+				value: value,
+				title: title,
+				onReplaceInfoAtKeyPath: (function (_onReplaceInfoAtKeyPath) {
+					var _onReplaceInfoAtKeyPathWrapper = function onReplaceInfoAtKeyPath(_x) {
+						return _onReplaceInfoAtKeyPath.apply(this, arguments);
+					};
+
+					_onReplaceInfoAtKeyPathWrapper.toString = function () {
+						return _onReplaceInfoAtKeyPath.toString();
+					};
+
+					return _onReplaceInfoAtKeyPathWrapper;
+				})(function (info) {
+					var additionalKeyPath = arguments[1] === undefined ? [] : arguments[1];
+
+					var keyPath = [ID].concat(additionalKeyPath);
+					onReplaceInfoAtKeyPath(info, keyPath);
+				}) });
+		} else if (type === "group") {
+			return React.createElement(FieldGroup, {
+				key: ID,
+				ID: ID,
+				fields: fieldJSON.fields,
 				value: value,
 				title: title,
 				onReplaceInfoAtKeyPath: (function (_onReplaceInfoAtKeyPath) {
@@ -29079,13 +29263,15 @@ var documentSectionEventIDs = eventIDs.documentSection;
 
 var EditorFields = require("./editor-fields");
 
-var _require = require("../ui/ui-mixins");
+var _require = require("../assistants/TypesAssistant");
 
-var ButtonMixin = _require.ButtonMixin;
-var BaseClassNamesMixin = _require.BaseClassNamesMixin;
+var findParticularSubsectionOptionsInList = _require.findParticularSubsectionOptionsInList;
+var findParticularBlockTypeOptionsWithGroupAndTypeInMap = _require.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 
-var BlockTypesAssistant = require("../assistants/TypesAssistant");
-var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
+var _require2 = require("../ui/ui-mixins");
+
+var ButtonMixin = _require2.ButtonMixin;
+var BaseClassNamesMixin = _require2.BaseClassNamesMixin;
 
 var MicroEvent = require("microevent");
 
@@ -29379,7 +29565,7 @@ var TraitButton = React.createClass({
 	},
 
 	componentWillUnmount: function componentWillUnmount() {
-		TraitButton.events.off(this.didToggleFunction);
+		TraitButton.events.off(TraitButton.eventIDs.didToggle, this.didToggleFunction);
 		this.didToggleFunction = null;
 	},
 
@@ -29453,13 +29639,16 @@ var TraitButton = React.createClass({
 
 		if (showFields) {
 			children.push(React.createElement("div", {
-				key: "traitFieldsHolder",
-				className: "traitFieldsHolder" }, [React.createElement(EditorFields.FieldsHolder, {
+				key: "traitOptions",
+				className: "traitOptions" }, [React.createElement(EditorFields.FieldsHolder, {
 				key: "fields",
 				fields: traitSpec.get("fields").toJS(),
 				values: traitValue,
 				onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
-			}), React.createElement(SecondaryButton, {
+			}), React.createElement("div", {
+				key: "buttons",
+				className: "traitOptions_buttons"
+			}, [React.createElement(SecondaryButton, {
 				key: "removeButton",
 				title: "Remove",
 				className: "removeButton",
@@ -29469,7 +29658,7 @@ var TraitButton = React.createClass({
 				title: "Done",
 				className: "doneButton",
 				onClick: this.close
-			})]));
+			})])]));
 		}
 
 		return React.createElement("div", {
@@ -29582,7 +29771,7 @@ var BlockTraitsToolbar = React.createClass({
 	replaceInfoAtKeyPathForTraitWithID: function replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedBlock(traitID, function (valueBefore) {
-			return valueBefore.setIn(keyPath, info);
+			return valueBefore.setIn(keyPath, Immutable.fromJS(info));
 		});
 	},
 
@@ -29613,8 +29802,7 @@ var ItemTraitsToolbar = React.createClass({
 	replaceInfoAtKeyPathForTraitWithID: function replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedTextItem(traitID, function (valueBefore) {
-			var infoImmutable = Immutable.fromJS(info);
-			return valueBefore.setIn(keyPath, infoImmutable);
+			return valueBefore.setIn(keyPath, Immutable.fromJS(info));
 		});
 	},
 
@@ -29649,17 +29837,13 @@ var TextItemEditor = React.createClass({
 		var actions = props.actions;
 		var blockTypeGroup = props.blockTypeGroup;
 		var blockType = props.blockType;
+		var blockTypeOptions = props.blockTypeOptions;
 		var traitSpecs = props.traitSpecs;
 
 		//var textEditorInstructions = 'Press enter to create a new paragraph. Press space twice to create a new sentence.';
 		var textEditorInstructions = "enter: new paragraph · spacebar twice: new text item";
 
-		return React.createElement("div", {
-			key: "textItemEditor",
-			className: "textItemEditor",
-			id: "icing-textItemEditor",
-			onClick: this.onClick
-		}, [React.createElement(TextItemTextArea, {
+		var children = [React.createElement(TextItemTextArea, {
 			key: "textAreaHolder",
 			text: text,
 			actions: actions,
@@ -29670,7 +29854,14 @@ var TextItemEditor = React.createClass({
 		}, [React.createElement("div", {
 			key: "keyShortcuts",
 			className: "textItemEditor_instructions_keyShortcuts"
-		}, textEditorInstructions)]), React.createElement(ItemTraitsToolbar, {
+		}, textEditorInstructions)]),
+		/*
+  React.createElement('h5', {
+  	key: 'itemTraitsToolbar_heading',
+  	className: 'textItemEditor_itemTraitsToolbar_heading'
+  }, 'Above text'),
+  */
+		React.createElement(ItemTraitsToolbar, {
 			key: "traitsToolbar",
 			traitSpecs: traitSpecs,
 			traits: traits,
@@ -29678,25 +29869,29 @@ var TextItemEditor = React.createClass({
 			blockType: blockType,
 			actions: actions,
 			className: "textItemEditor_traitsToolbar"
-		})
-		/*
-  ,
-  React.createElement('h5', {
-  	key: 'blockTraitsToolbar_heading',
-  	className: 'textItemEditor_blockTraitsToolbar_heading'
-  //}, 'All items inside this block:'),
-  }, 'Block'),
-  React.createElement(BlockTraitsToolbar, {
-  	key: 'blockTraitsToolbar',
-  	traitSpecs,
-  	traits: block.get('traits', Immutable.Map()).toJS(),
-  	blockTypeGroup,
-  	blockType,
-  	actions,
-  	className: 'textItemEditor_traitsToolbar textItemEditor_blockTraitsToolbar'
-  })
-  */
-		]);
+		})];
+
+		if (false) {
+			children.push(React.createElement("h5", {
+				key: "blockTraitsToolbar_heading",
+				className: "textItemEditor_blockTraitsToolbar_heading"
+			}, blockTypeOptions.get("title")), React.createElement(BlockTraitsToolbar, {
+				key: "blockTraitsToolbar",
+				traitSpecs: traitSpecs,
+				traits: block.get("traits", Immutable.Map()).toJS(),
+				blockTypeGroup: blockTypeGroup,
+				blockType: blockType,
+				actions: actions,
+				className: "textItemEditor_traitsToolbar textItemEditor_blockTraitsToolbar"
+			}));
+		}
+
+		return React.createElement("div", {
+			key: "textItemEditor",
+			className: "textItemEditor",
+			id: "icing-textItemEditor",
+			onClick: this.onClick
+		}, children);
 	}
 });
 
@@ -29715,12 +29910,12 @@ var ParticularEditor = React.createClass({
 		event.stopPropagation();
 	},
 
-	changeFieldsInfo: function changeFieldsInfo(changeInfo) {
+	onReplaceInfoAtKeyPath: function onReplaceInfoAtKeyPath(info, infoKeyPath) {
 		var props = this.props;
-		var keyPath = props.keyPath;
+		var blockKeyPath = props.keyPath;
 		var actions = props.actions;
-		actions.updateValueForBlockAtKeyPath(keyPath, Immutable.Map(), function (valueBefore) {
-			return valueBefore.mergeDeep(changeInfo);
+		actions.updateValueForBlockAtKeyPath(blockKeyPath, Immutable.Map(), function (valueBefore) {
+			return valueBefore.setIn(infoKeyPath, Immutable.fromJS(info));
 		});
 	},
 
@@ -29741,9 +29936,10 @@ var ParticularEditor = React.createClass({
 		if (blockTypeOptions.has("fields")) {
 			elements.push(React.createElement(EditorFields.FieldsHolder, {
 				key: "fieldsHolder",
+				className: "particularEditor_fieldsHolder",
 				fields: blockTypeOptions.get("fields").toJS(),
 				values: block.get("value", Immutable.Map()).toJS(),
-				onChangeInfo: this.changeFieldsInfo
+				onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 			}));
 		}
 
@@ -30077,9 +30273,12 @@ var AddBlockElement = React.createClass({
 var ChangeSubsectionElement = React.createClass({
 	displayName: "ChangeSubsectionElement",
 
+	mixins: [BaseClassNamesMixin],
+
 	getDefaultProps: function getDefaultProps() {
 		return {
-			isCreate: false
+			isCreate: false,
+			baseClassNames: ["blocks_changeSubsection"]
 		};
 	},
 
@@ -30149,53 +30348,51 @@ var ChangeSubsectionElement = React.createClass({
 			onClickFunction = this.onChangeSubsectionType;
 		}
 
+		var subsectionID = subsectionInfo.get("id");
+
 		return React.createElement(SecondaryButton, {
-			key: subsectionInfo.id,
-			baseClassNames: ["blocks_makeSubsection_choices_" + subsectionInfo.id],
-			title: subsectionInfo.title,
-			selected: selectedSubsectionType === subsectionInfo.id,
-			onClick: onClickFunction.bind(this, subsectionInfo.id)
+			key: subsectionID,
+			baseClassNames: this.getChildClassNamesWithSuffix("_choices_" + subsectionID),
+			title: subsectionInfo.get("title"),
+			selected: selectedSubsectionType === subsectionID,
+			onClick: onClickFunction.bind(this, subsectionID)
 		});
 	},
 
 	render: function render() {
-		var props = this.props;
-		var isCreate = props.isCreate;
+		var _props = this.props;
+		var isCreate = _props.isCreate;
+		var subsectionsSpecs = _props.subsectionsSpecs;
+		var selectedSubsectionType = _props.selectedSubsectionType;
+		var followingBlockIndex = _props.followingBlockIndex;
 
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+		//var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
 
-		var classNames = ["blocks_makeSubsection"];
+		var classNameExtensions = [];
 		var children = [];
 
-		if (props.isCreate) {
+		if (isCreate) {
 			children.push(React.createElement(SecondaryButton, {
 				key: "mainButton",
-				baseClassNames: ["blocks_makeSubsection_mainButton"],
+				baseClassNames: this.getChildClassNamesWithSuffix("_mainButton"),
 				title: "Make Subsection",
 				onClick: this.onToggleActive
 			}));
 		} else {
-			classNames.push("blocks_changeSubsection-hasSelectedSubsectionType");
+			classNameExtensions.push("-hasSelectedSubsectionType");
 
-			var selectedSubsectionType = props.selectedSubsectionType;
-			var selectedSubsectionInfo = null;
-			subsectionInfos.some(function (subsectionInfo) {
-				if (subsectionInfo.id === selectedSubsectionType) {
-					selectedSubsectionInfo = subsectionInfo;
-					return true;
-				}
-			});
+			var selectedSubsectionInfo = findParticularSubsectionOptionsInList(selectedSubsectionType, subsectionsSpecs);
 
 			children.push(React.createElement(SecondaryButton, {
 				key: "mainButton",
-				baseClassNames: ["blocks_makeSubsection_mainButton"],
-				title: selectedSubsectionInfo.title,
+				baseClassNames: this.getChildClassNamesWithSuffix("_mainButton"),
+				title: selectedSubsectionInfo.get("title"),
 				onClick: this.onToggleActive
 			}));
 		}
 
 		if (this.state.active) {
-			var subsectionChoices = subsectionInfos.map(function (subsectionInfo) {
+			var subsectionChoices = subsectionsSpecs.map(function (subsectionInfo) {
 				return this.createElementForSubsectionInfo(subsectionInfo);
 			}, this);
 
@@ -30204,7 +30401,7 @@ var ChangeSubsectionElement = React.createClass({
 					key: "dividerAboveRemove"
 				}), React.createElement(SecondaryButton, {
 					key: "removeSubsection",
-					baseClassNames: ["blocks_changeSubsection_removeButton"],
+					baseClassNames: this.getChildClassNamesWithSuffix("_removeButton"),
 					title: "Remove Subsection",
 					onClick: this.onRemoveSubsection
 				}));
@@ -30212,14 +30409,14 @@ var ChangeSubsectionElement = React.createClass({
 
 			children.push(React.createElement("div", {
 				key: "choices",
-				className: "blocks_makeSubsection_choices" }, subsectionChoices));
+				className: this.getChildClassNameStringWithSuffix("_choices") }, subsectionChoices));
 
-			classNames.push("blocks_makeSubsection-active");
+			classNameExtensions.push("-active");
 		}
 
 		return React.createElement("div", {
-			key: "makeSubsection-" + props.followingBlockIndex,
-			className: classNames.join(" ")
+			key: "makeSubsection-" + followingBlockIndex,
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
 	}
 });
@@ -30248,8 +30445,6 @@ var RearrangeBlockMoveHere = React.createClass({
 		var _props = this.props;
 		var followingBlockIndex = _props.followingBlockIndex;
 		var hidden = _props.hidden;
-
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
 
 		var classNames = ["block_reorder"];
 		var classNameExtensions = [];
@@ -30782,6 +30977,7 @@ var Immutable = require("immutable");
 
 var _require = require("../assistants/TypesAssistant");
 
+var findParticularSubsectionOptionsInList = _require.findParticularSubsectionOptionsInList;
 var findParticularBlockTypeOptionsWithGroupAndTypeInMap = _require.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 var findParticularTraitOptionsInList = _require.findParticularTraitOptionsInList;
 
@@ -30808,36 +31004,37 @@ function createElementFactoryMergingProps(type, originalProps, children) {
 	};
 }
 
-PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child, traits, traitSpecs) {
+PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child, traits, traitsSpecs) {
 	if (true) {
 		traits.forEach(function (traitValue, traitID) {
 			if (traitValue == null || traitValue === false) {
 				return;
 			}
 
-			var traitOptions = findParticularTraitOptionsInList(traitID, traitSpecs);
-			var valueForRepresentation = undefined;
-			// Fields
-			if (traitOptions.has("fields")) {
-				valueForRepresentation = Immutable.Map({
-					originalElement: child,
-					fields: traitValue
-				});
-			}
-			// On/off trait
-			else {
-				valueForRepresentation = Immutable.Map({
-					originalElement: child
-				});
-			}
+			var traitOptions = findParticularTraitOptionsInList(traitID, traitsSpecs);
 
 			if (traitOptions.has("innerHTMLRepresentation")) {
 				var HTMLRepresentation = traitOptions.get("innerHTMLRepresentation");
-				if (HTMLRepresentation !== null && HTMLRepresentation !== false) {
-					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
-				} else {
+				if (HTMLRepresentation === false) {
 					// For example, hide trait
 					child = null;
+				} else if (HTMLRepresentation !== null) {
+					var valueForRepresentation = undefined;
+					// Fields
+					if (traitOptions.has("fields")) {
+						valueForRepresentation = Immutable.Map({
+							originalElement: child,
+							fields: traitValue
+						});
+					}
+					// On/off trait
+					else {
+						valueForRepresentation = Immutable.Map({
+							originalElement: child
+						});
+					}
+
+					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
 				}
 			}
 		});
@@ -30911,39 +31108,30 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child,
 	}
 };
 
-PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function (subsectionType, subsectionElements) {
-	var subsectionTypesToHolderTagNames = {
-		unorderedList: "ul",
-		orderedList: "ol",
-		quote: "blockquote"
-	};
-	var elementsToReturn = [];
-	var tagName = subsectionTypesToHolderTagNames[subsectionType];
-	if (tagName) {
-		// Wrap elements in holder element.
-		elementsToReturn = [React.createElement(tagName, {}, subsectionElements)];
+PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function (subsectionType, subsectionElements, subsectionsSpecs) {
+	var subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
+
+	var outerTagName = subsectionInfo.get("outerHTMLTagName");
+	if (outerTagName) {
+		// Wrap elements in holder element. Return type is array, so wrap in an array too.
+		return [React.createElement(outerTagName, {
+			key: "outerElement" }, subsectionElements)];
 	} else {
-		elementsToReturn = subsectionElements;
+		return subsectionElements;
 	}
-	return elementsToReturn;
 };
 
-PreviewElementsCreator.reactElementsForSubsectionChild = function (subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions, blockIndex) {
-	var subsectionTypesToChildTagNames = {
-		unorderedList: "li",
-		orderedList: "li"
-	};
-	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
+PreviewElementsCreator.reactElementsForSubsectionChild = function (subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions, blockIndex, subsectionsSpecs) {
+	var subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
+
+	var blockCreationOptions = subsectionInfo.get("blockHTMLOptions");
+	var subsectionChildHTMLRepresentation = subsectionInfo.get("childHTMLRepresentation");
 
 	var tagNameForBlock = blockTypeOptions.get("outerHTMLTagName", "div");
-	/*
- if (blockTypeGroup === 'text') {
- 	tagNameForBlock = PreviewElementsCreator.tagNameForTextBlockType(blockType);
- }*/
-
-	// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
-	if (tagNameForSubsectionChild && tagNameForBlock === "p") {
-		tagNameForBlock = null;
+	if (blockCreationOptions) {
+		if (blockCreationOptions.get("noParagraph", false) && tagNameForBlock === "p") {
+			tagNameForBlock = null;
+		}
 	}
 
 	var innerElements;
@@ -30964,37 +31152,41 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function (subsectionTyp
  }
  */
 
-	if (tagNameForSubsectionChild) {
-		return [React.createElement(tagNameForSubsectionChild, {
-			key: "subsectionChild-" + blockIndex
-		}, innerElements)];
+	if (subsectionChildHTMLRepresentation) {
+		var valueForRepresentation = Immutable.Map({
+			originalElement: innerElements
+		});
+
+		return HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(subsectionChildHTMLRepresentation, valueForRepresentation);
+		/*
+  return [
+  	React.createElement(tagNameForSubsectionChild, {
+  		key: `subsectionChild-${blockIndex}`
+  	},
+  		innerElements
+  	)
+  ];
+  */
 	} else {
 		return innerElements;
 	}
 };
 
-PreviewElementsCreator.tagNameForTextBlockType = function (blockType) {
-	var tagNamesToBlockTypes = {
-		body: "p",
-		heading: "h1",
-		subhead1: "h2",
-		subhead2: "h3",
-		subhead3: "h4"
-	};
-	var tagName = tagNamesToBlockTypes[blockType];
-	if (!tagName) {
-		tagName = "div";
-	}
-	return tagName;
-};
-
 PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, specsImmutable) {
+	var subsectionsSpecs = specsImmutable.get("subsectionTypes", Immutable.List());
 	var traitsSpecs = specsImmutable.get("traits", Immutable.List());
 	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroups", Immutable.Map());
 
 	var mainElements = [];
-	var currentSubsectionType = specsImmutable.get("defaultSectionType", "normal");
+	var currentSubsectionType = specsImmutable.get("defaultSubsectionType", "normal");
 	var currentSubsectionElements = [];
+
+	var processCurrentSubsectionChildren = function processCurrentSubsectionChildren() {
+		if (currentSubsectionElements.length > 0) {
+			mainElements = mainElements.concat(PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements, subsectionsSpecs));
+			currentSubsectionElements = [];
+		}
+	};
 
 	blocksImmutable.forEach(function (block, blockIndex) {
 		var typeGroup = block.get("typeGroup");
@@ -31002,10 +31194,7 @@ PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, spec
 
 		if (typeGroup === "subsection") {
 			// Wrap last elements.
-			if (currentSubsectionElements.length > 0) {
-				mainElements = mainElements.concat(PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements));
-				currentSubsectionElements = [];
-			}
+			processCurrentSubsectionChildren();
 
 			currentSubsectionType = type;
 		} else {
@@ -31053,15 +31242,13 @@ PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, spec
 				}
 
 				if (elements) {
-					currentSubsectionElements = currentSubsectionElements.concat(PreviewElementsCreator.reactElementsForSubsectionChild(currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex));
+					currentSubsectionElements = currentSubsectionElements.concat(PreviewElementsCreator.reactElementsForSubsectionChild(currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex, subsectionsSpecs));
 				}
 			})();
 		}
 	});
 
-	if (currentSubsectionElements.length > 0) {
-		mainElements = mainElements.concat(PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements));
-	}
+	processCurrentSubsectionChildren();
 
 	return mainElements;
 };
@@ -31078,6 +31265,8 @@ PreviewElementsCreator.MainElement = React.createClass({
 	},
 
 	render: function render() {
+		console.log("Immutable.fromJS('info')", Immutable.fromJS("info"));
+
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;

@@ -32,12 +32,13 @@
     "npm": "1.4.x"
   },
   "dependencies": {
+    "csv-parse": "^0.1.0",
     "flux": "^2.0.1",
     "immutable": "^3.6.4",
     "microevent": "^1.0.0",
     "normalize-url": "^1.2.0",
     "object-assign": "^2.0.0",
-	"qwest": "^1.5.4",
+    "qwest": "^1.5.4",
     "react": "^0.13.1"
   },
   "scripts": {
@@ -47,6 +48,6 @@
   "devDependencies": {
     "envify": "^3.2.0",
     "guilty-gulp": "^1.2.1",
-	"gulp": "^3.8.10"
+    "gulp": "^3.8.10"
   }
 }

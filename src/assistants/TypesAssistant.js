@@ -6,6 +6,12 @@ var TypesAssistant = {
 	
 };
 
+TypesAssistant.findParticularSubsectionOptionsInList = function(subsectionIDToFind, subsectionOptionsList) {
+	return subsectionOptionsList.find(function(subsectionOptions) {
+		return (subsectionOptions.get('id') === subsectionIDToFind);
+	});
+};
+
 TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function(chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
 	// Find options by searching for the particular ID
 	var chosenBlockTypeOptions = null;
@@ -20,8 +26,8 @@ TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function(ch
 	return chosenBlockTypeOptions;
 };
 
-TypesAssistant.findParticularTraitOptionsInList = function(traitIDToFind, traitOptionsMap) {
-	return traitOptionsMap.find(function(traitOptions) {
+TypesAssistant.findParticularTraitOptionsInList = function(traitIDToFind, traitOptionsList) {
+	return traitOptionsList.find(function(traitOptions) {
 		return (traitOptions.get('id') === traitIDToFind);
 	});
 };

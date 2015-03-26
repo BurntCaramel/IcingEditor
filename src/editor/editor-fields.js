@@ -18,6 +18,7 @@ var changeInfoWithIDAndValue = function(ID, value) {
 EditorFields.fieldTypeIsTextual = function(fieldType) {
 	var textualFieldTypes = {
 		"text": true,
+		"text-long": true,
 		"url": true,
 		"email": true,
 		"tel": true,
@@ -32,35 +33,12 @@ EditorFields.fieldTypeIsTextual = function(fieldType) {
 	}
 }
 
-var InputLabel = React.createClass({
-	getDefaultProps: function() {
-		return {
-			title: ''
-		}
-	},
-	
-	render: function() {
-		var props = this.props;
-		var title = this.props.title;
-		
-		var children = [
-			React.createElement('span', {
-				className: 'inputLabel_title'
-			}, title)
-		];
-	
-		return React.createElement('label', {
-			className: 'inputLabel'
-		}, children);
-	}
-});
-
-var InputLabel = React.createClass({
+var FieldLabel = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
 		return {
-			baseClassNames: ['inputLabel'],
+			baseClassNames: ['fieldLabel'],
 			additionalClassNameExtensions: []
 		}
 	},
@@ -69,8 +47,17 @@ var InputLabel = React.createClass({
 		let props = this.props;
 		let {
 			children,
-			title
+			title,
+			required,
+			recommended
 		} = props;
+		
+		if (required) {
+			title += ' (required)'
+		}
+		else if (recommended) {
+			title += ' (recommended)'
+		}
 		
 		children = [
 			React.createElement('span', {
@@ -85,8 +72,8 @@ var InputLabel = React.createClass({
 	}
 });
 
-var ChoiceInput = React.createClass({
-	getDefaultProps: function() {
+let ChoiceField = React.createClass({
+	getDefaultProps() {
 		return {
 			choiceInfos: [],
 			value: {},
@@ -95,13 +82,13 @@ var ChoiceInput = React.createClass({
 		};
 	},
 	
-	getDefaultSelectedChoiceID: function() {
+	getDefaultSelectedChoiceID() {
 		// Choose first item by default.
 		var choiceInfos = this.props.choiceInfos;
 		return choiceInfos[0].id;
 	},
 	
-	getSelectedChoiceID: function() {
+	getSelectedChoiceID() {
 		var value = this.props.value;
 		var selectedChoiceID = value ? value.choice_selectedID : null;
 		if (!selectedChoiceID) {
@@ -110,7 +97,7 @@ var ChoiceInput = React.createClass({
 		return selectedChoiceID;
 	},
 	
-	onSelectChange: function(event) {
+	onSelectChange(event) {
 		let newSelectedChoiceID = event.target.value;
 		let info = {
 			choice_selectedID: newSelectedChoiceID
@@ -123,7 +110,7 @@ var ChoiceInput = React.createClass({
 		}
 	},
 	
-	onChildFieldReplaceInfoAtKeyPath: function(info, keyPath) {
+	onChildFieldReplaceInfoAtKeyPath(info, keyPath) {
 		let selectedChoiceID = this.getSelectedChoiceID();
 		
 		keyPath = [selectedChoiceID].concat(keyPath);
@@ -134,7 +121,7 @@ var ChoiceInput = React.createClass({
 		}
 	},
 	
-	render: function() {
+	render() {
 		let {
 			choiceInfos,
 			value,
@@ -159,9 +146,10 @@ var ChoiceInput = React.createClass({
 		});
 		// Create <label> and <select>
 		var children = [
-			React.createElement(InputLabel, {
+			React.createElement(FieldLabel, {
 				key: 'label',
-				title
+				title,
+				additionalClassNameExtensions: ['-fieldType-choice']
 			}, [
 				React.createElement('select', {
 					key: 'select',
@@ -192,6 +180,48 @@ var ChoiceInput = React.createClass({
 	}
 });
 
+let FieldGroup = React.createClass({
+	getDefaultProps() {
+		return {
+			fields: [],
+			value: {},
+			onReplaceInfoAtKeyPath: null,
+			tabIndex: 0
+		};
+	},
+	
+	onChildFieldReplaceInfoAtKeyPath(info, keyPath) {
+		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
+		if (onReplaceInfoAtKeyPath) {
+			onReplaceInfoAtKeyPath(info, keyPath);
+		}
+	},
+	
+	render() {
+		let {
+			fields,
+			value,
+			title,
+			ID,
+			tabIndex
+		} = this.props;
+		
+		let children = [
+			React.createElement(EditorFields.FieldsHolder, {
+				key: 'fields',
+				fields,
+				values: value,
+				onReplaceInfoAtKeyPath: this.onChildFieldReplaceInfoAtKeyPath,
+				className: 'group_fieldsHolder'
+			})
+		];
+		
+		return React.createElement('div', {
+			className: 'group'
+		}, children);
+	}
+});
+
 EditorFields.FieldsHolder = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
@@ -212,27 +242,32 @@ EditorFields.FieldsHolder = React.createClass({
 		var type = fieldJSON.type;
 		var ID = fieldJSON.id;
 		var title = fieldJSON.title;
+		let required = fieldJSON.required || false;
+		let recommended = fieldJSON.recommended || false;
 	
 		if (!type) {
 			type = 'text';
 		}
 	
 		if (EditorFields.fieldTypeIsTextual(type)) {
-			var inputType = type;
+			var fieldType = type;
 		
-			return React.createElement(InputLabel, {
+			return React.createElement(FieldLabel, {
 				key: ID,
 				title,
-				additionalClassNameExtensions: [`-inputType-${type}`]
+				required,
+				recommended,
+				additionalClassNameExtensions: ['-fieldType-textual', `-fieldType-${type}`]
 			}, [
 				React.createElement('input', {
 					key: ID,
-					type: inputType,
-					value: value,
-					onChange: function(event) {
+					type: fieldType,
+					value,
+					placeholder: fieldJSON.placeholder,
+					onChange(event) {
 						var newValue = event.target.value;
 					
-						if (inputType === 'url') {
+						if (fieldType === 'url') {
 							//let normalizedURL = normalizeURL(newValue);
 							//console.log('URL', normalizedURL);
 						}
@@ -248,13 +283,26 @@ EditorFields.FieldsHolder = React.createClass({
 			]);
 		}
 		else if (type === 'choice') {
-			return React.createElement(ChoiceInput, {
+			return React.createElement(ChoiceField, {
 				key: ID,
 				ID,
 				choiceInfos: fieldJSON.choices,
 				value: value,
-				title: title,
-				onReplaceInfoAtKeyPath: function(info, additionalKeyPath = []) {
+				title,
+				onReplaceInfoAtKeyPath(info, additionalKeyPath = []) {
+					let keyPath = [ID].concat(additionalKeyPath);
+					onReplaceInfoAtKeyPath(info, keyPath);
+				},
+			});
+		}
+		else if (type === 'group') {
+			return React.createElement(FieldGroup, {
+				key: ID,
+				ID,
+				fields: fieldJSON.fields,
+				value: value,
+				title,
+				onReplaceInfoAtKeyPath(info, additionalKeyPath = []) {
 					let keyPath = [ID].concat(additionalKeyPath);
 					onReplaceInfoAtKeyPath(info, keyPath);
 				},

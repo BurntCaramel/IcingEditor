@@ -9,6 +9,7 @@ let UIMixins = require('../ui/ui-mixins');
 let Immutable = require('immutable');
 
 let {
+	findParticularSubsectionOptionsInList,
 	findParticularBlockTypeOptionsWithGroupAndTypeInMap,
 	findParticularTraitOptionsInList
 } = require('../assistants/TypesAssistant');
@@ -39,39 +40,40 @@ function createElementFactoryMergingProps(type, originalProps, children) {
 	}
 }
 
-PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits, traitSpecs) {
+PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, traits, traitsSpecs) {
 	if (true) {
 		traits.forEach(function(traitValue, traitID) {
 			if (traitValue == null || traitValue === false) {
 				return;
 			}
 			
-			let traitOptions = findParticularTraitOptionsInList(traitID, traitSpecs);
-			let valueForRepresentation;
-			// Fields
-			if (traitOptions.has('fields')) {
-				valueForRepresentation = Immutable.Map({
-					'originalElement': child,
-					'fields': traitValue
-				});
-			}
-			// On/off trait
-			else {
-				valueForRepresentation = Immutable.Map({
-					'originalElement': child
-				});
-			}
+			let traitOptions = findParticularTraitOptionsInList(traitID, traitsSpecs);
 			
 			if (traitOptions.has('innerHTMLRepresentation')) {
 				let HTMLRepresentation = traitOptions.get('innerHTMLRepresentation');
-				if (HTMLRepresentation !== null && HTMLRepresentation !== false) {
+				if (HTMLRepresentation === false) {
+					// For example, hide trait
+					child = null;
+				}
+				else if (HTMLRepresentation !== null) {
+					let valueForRepresentation;
+					// Fields
+					if (traitOptions.has('fields')) {
+						valueForRepresentation = Immutable.Map({
+							'originalElement': child,
+							'fields': traitValue
+						});
+					}
+					// On/off trait
+					else {
+						valueForRepresentation = Immutable.Map({
+							'originalElement': child
+						});
+					}
+					
 					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 						HTMLRepresentation, valueForRepresentation
 					);
-				}
-				else {
-					// For example, hide trait
-					child = null;
 				}
 			}
 		});
@@ -136,44 +138,36 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 };
 
 
-PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements) {
-	var subsectionTypesToHolderTagNames = {
-		"unorderedList": "ul",
-		"orderedList": "ol",
-		"quote": "blockquote"
-	};
-	var elementsToReturn = [];
-	var tagName = subsectionTypesToHolderTagNames[subsectionType];
-	if (tagName) {
-		// Wrap elements in holder element.
-		elementsToReturn = [
-			React.createElement(tagName, {}, subsectionElements)
+PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements, subsectionsSpecs) {
+	let subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
+	
+	let outerTagName = subsectionInfo.get('outerHTMLTagName');
+	if (outerTagName) {
+		// Wrap elements in holder element. Return type is array, so wrap in an array too.
+		return [
+			React.createElement(outerTagName, {
+				key: 'outerElement',
+			}, subsectionElements)
 		];
 	}
 	else {
-		elementsToReturn = subsectionElements;
+		return subsectionElements;
 	}
-	return elementsToReturn;
 };
 
 PreviewElementsCreator.reactElementsForSubsectionChild = function(
-	subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions, blockIndex
+	subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions, blockIndex, subsectionsSpecs
 ) {
-	var subsectionTypesToChildTagNames = {
-		"unorderedList": "li",
-		"orderedList": "li"
-	};
-	var tagNameForSubsectionChild = subsectionTypesToChildTagNames[subsectionType];
+	let subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
+	
+	let blockCreationOptions = subsectionInfo.get('blockHTMLOptions');
+	let subsectionChildHTMLRepresentation = subsectionInfo.get('childHTMLRepresentation');
 	
 	var tagNameForBlock = blockTypeOptions.get('outerHTMLTagName', 'div');
-	/*
-	if (blockTypeGroup === 'text') {
-		tagNameForBlock = PreviewElementsCreator.tagNameForTextBlockType(blockType);
-	}*/
-	
-	// Paragraph elements by default go bare, e.g. <li> instead of <li><p>
-	if (tagNameForSubsectionChild && tagNameForBlock === 'p') {
-		tagNameForBlock = null;
+	if (blockCreationOptions) {
+		if (blockCreationOptions.get('noParagraph', false) && tagNameForBlock === 'p') {
+			tagNameForBlock = null;	
+		}
 	}
 	
 	var innerElements;
@@ -197,7 +191,15 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 	}
 	*/
 	
-	if (tagNameForSubsectionChild) {
+	if (subsectionChildHTMLRepresentation) {
+		let valueForRepresentation = Immutable.Map({
+			'originalElement': innerElements
+		});
+		
+		return HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
+			subsectionChildHTMLRepresentation, valueForRepresentation
+		);
+		/*
 		return [
 			React.createElement(tagNameForSubsectionChild, {
 				key: `subsectionChild-${blockIndex}`
@@ -205,34 +207,32 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 				innerElements
 			)
 		];
+		*/
 	}
 	else {
 		return innerElements;
 	}
 };
 	
-PreviewElementsCreator.tagNameForTextBlockType = function(blockType) {
-	var tagNamesToBlockTypes = {
-		"body": "p",
-		"heading": "h1",
-		"subhead1": "h2",
-		"subhead2": "h3",
-		"subhead3": "h4"
-	};
-	var tagName = tagNamesToBlockTypes[blockType];
-	if (!tagName) {
-		tagName = 'div';
-	}
-	return tagName;
-};
-	
 PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
-	var traitsSpecs = specsImmutable.get('traits', Immutable.List());
-	var blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
+	let subsectionsSpecs = specsImmutable.get('subsectionTypes', Immutable.List());
+	let traitsSpecs = specsImmutable.get('traits', Immutable.List());
+	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
 	
 	var mainElements = [];
-	var currentSubsectionType = specsImmutable.get('defaultSectionType', 'normal');
+	var currentSubsectionType = specsImmutable.get('defaultSubsectionType', 'normal');
 	var currentSubsectionElements = [];
+	
+	let processCurrentSubsectionChildren = function() {
+		if (currentSubsectionElements.length > 0) {
+			mainElements = mainElements.concat(
+				PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(
+					currentSubsectionType, currentSubsectionElements, subsectionsSpecs
+				)
+			);
+			currentSubsectionElements = [];
+		}
+	};
 	
 	blocksImmutable.forEach(function(block, blockIndex) {
 		var typeGroup = block.get('typeGroup');
@@ -240,14 +240,7 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 		
 		if (typeGroup === 'subsection') {
 			// Wrap last elements.
-			if (currentSubsectionElements.length > 0) {
-				mainElements = mainElements.concat(
-					PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(
-						currentSubsectionType, currentSubsectionElements
-					)
-				);
-				currentSubsectionElements = [];
-			}
+			processCurrentSubsectionChildren();
 			
 			currentSubsectionType = type;
 		}
@@ -301,20 +294,14 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 			if (elements) {
 				currentSubsectionElements = currentSubsectionElements.concat(
 					PreviewElementsCreator.reactElementsForSubsectionChild(
-						currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex
+						currentSubsectionType, typeGroup, type, elements, traits, blockTypeOptions, blockIndex, subsectionsSpecs
 					)
 				);
 			}
 		}
 	});
 	
-	if (currentSubsectionElements.length > 0) {
-		mainElements = mainElements.concat(
-			PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(
-				currentSubsectionType, currentSubsectionElements
-			)
-		);
-	}
+	processCurrentSubsectionChildren();
 	
 	return mainElements;
 };
@@ -329,6 +316,8 @@ PreviewElementsCreator.MainElement = React.createClass({
 	},
 	
 	render: function() {
+		console.log("Immutable.fromJS('info')", Immutable.fromJS('info'));
+		
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;

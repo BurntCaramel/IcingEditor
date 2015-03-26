@@ -11,16 +11,19 @@ var Immutable = require('immutable');
 var eventIDs = require('../actions/actions-content-eventIDs');
 var documentSectionEventIDs = eventIDs.documentSection;
 
-var EditorFields = require('./editor-fields');
+let EditorFields = require('./editor-fields');
+
+let {
+	findParticularSubsectionOptionsInList,
+	findParticularBlockTypeOptionsWithGroupAndTypeInMap
+} = require('../assistants/TypesAssistant');
+
 let {
 	ButtonMixin,
 	BaseClassNamesMixin
 } = require('../ui/ui-mixins');
 
-var BlockTypesAssistant = require('../assistants/TypesAssistant');
-var findParticularBlockTypeOptionsWithGroupAndTypeInMap = BlockTypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
-
-var MicroEvent = require('microevent');
+let MicroEvent = require('microevent');
 
 
 var TextItemTextArea = React.createClass({
@@ -302,7 +305,7 @@ var TraitButton = React.createClass({
 	},
 	
 	componentWillUnmount() {
-		TraitButton.events.off(this.didToggleFunction);
+		TraitButton.events.off(TraitButton.eventIDs.didToggle, this.didToggleFunction);
 		this.didToggleFunction = null;
 	},
 	
@@ -381,8 +384,8 @@ var TraitButton = React.createClass({
 		if (showFields) {
 			children.push(
 				React.createElement('div', {
-					key: 'traitFieldsHolder',
-					className: 'traitFieldsHolder',
+					key: 'traitOptions',
+					className: 'traitOptions',
 				}, [
 					React.createElement(EditorFields.FieldsHolder, {
 						key: 'fields',
@@ -390,18 +393,23 @@ var TraitButton = React.createClass({
 						values: traitValue,
 						onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 					}),
-					React.createElement(SecondaryButton, {
-						key: 'removeButton',
-						title: 'Remove',
-						className: 'removeButton',
-						onClick: this.removeTrait
-					}),
-					React.createElement(SecondaryButton, {
-						key: 'doneButton',
-						title: 'Done',
-						className: 'doneButton',
-						onClick: this.close
-					})
+					React.createElement('div', {
+						key: 'buttons',
+						className: 'traitOptions_buttons'
+					}, [
+						React.createElement(SecondaryButton, {
+							key: 'removeButton',
+							title: 'Remove',
+							className: 'removeButton',
+							onClick: this.removeTrait
+						}),
+						React.createElement(SecondaryButton, {
+							key: 'doneButton',
+							title: 'Done',
+							className: 'doneButton',
+							onClick: this.close
+						})
+					])
 				])
 			);
 		}
@@ -516,7 +524,7 @@ var BlockTraitsToolbar = React.createClass({
 	replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedBlock(traitID, function(valueBefore) {
-			return valueBefore.setIn(keyPath, info);
+			return valueBefore.setIn(keyPath, Immutable.fromJS(info));
 		});
 	},
 	
@@ -545,8 +553,7 @@ var ItemTraitsToolbar = React.createClass({
 	replaceInfoAtKeyPathForTraitWithID(info, keyPath, traitID) {
 		var actions = this.props.actions;
 		actions.changeMapTraitUsingFunctionForEditedTextItem(traitID, function(valueBefore) {
-			let infoImmutable = Immutable.fromJS(info);
-			return valueBefore.setIn(keyPath, infoImmutable);
+			return valueBefore.setIn(keyPath, Immutable.fromJS(info));
 		});
 	},
 	
@@ -581,18 +588,14 @@ var TextItemEditor = React.createClass({
 			actions,
 			blockTypeGroup,
 			blockType,
+			blockTypeOptions,
 			traitSpecs
 		} = props;
 		
 		//var textEditorInstructions = 'Press enter to create a new paragraph. Press space twice to create a new sentence.';
 		var textEditorInstructions = 'enter: new paragraph · spacebar twice: new text item';
 		
-		return React.createElement('div', {
-			key: 'textItemEditor',
-			className: 'textItemEditor',
-			id: 'icing-textItemEditor',
-			onClick: this.onClick
-		}, [
+		let children = [
 			React.createElement(TextItemTextArea, {
 				key: 'textAreaHolder',
 				text,
@@ -608,6 +611,12 @@ var TextItemEditor = React.createClass({
 					className: 'textItemEditor_instructions_keyShortcuts'
 				}, textEditorInstructions)
 			]),
+			/*
+			React.createElement('h5', {
+				key: 'itemTraitsToolbar_heading',
+				className: 'textItemEditor_itemTraitsToolbar_heading'
+			}, 'Above text'),
+			*/
 			React.createElement(ItemTraitsToolbar, {
 				key: 'traitsToolbar',
 				traitSpecs,
@@ -617,24 +626,32 @@ var TextItemEditor = React.createClass({
 				actions,
 				className: 'textItemEditor_traitsToolbar'
 			})
-			/*
-			,
-			React.createElement('h5', {
-				key: 'blockTraitsToolbar_heading',
-				className: 'textItemEditor_blockTraitsToolbar_heading'
-			//}, 'All items inside this block:'),
-			}, 'Block'),
-			React.createElement(BlockTraitsToolbar, {
-				key: 'blockTraitsToolbar',
-				traitSpecs,
-				traits: block.get('traits', Immutable.Map()).toJS(),
-				blockTypeGroup,
-				blockType,
-				actions,
-				className: 'textItemEditor_traitsToolbar textItemEditor_blockTraitsToolbar'
-			})
-			*/
-		]);
+		];
+		
+		if (false) {
+			children.push(
+				React.createElement('h5', {
+					key: 'blockTraitsToolbar_heading',
+					className: 'textItemEditor_blockTraitsToolbar_heading'
+				}, blockTypeOptions.get('title')),
+				React.createElement(BlockTraitsToolbar, {
+					key: 'blockTraitsToolbar',
+					traitSpecs,
+					traits: block.get('traits', Immutable.Map()).toJS(),
+					blockTypeGroup,
+					blockType,
+					actions,
+					className: 'textItemEditor_traitsToolbar textItemEditor_blockTraitsToolbar'
+				})
+			);
+		}
+		
+		return React.createElement('div', {
+			key: 'textItemEditor',
+			className: 'textItemEditor',
+			id: 'icing-textItemEditor',
+			onClick: this.onClick
+		}, children);
 	}
 });
 
@@ -651,12 +668,12 @@ var ParticularEditor = React.createClass({
 		event.stopPropagation();
 	},
 	
-	changeFieldsInfo(changeInfo) {
+	onReplaceInfoAtKeyPath(info, infoKeyPath) {
 		var props = this.props;
-		var keyPath = props.keyPath;
+		var blockKeyPath = props.keyPath;
 		var actions = props.actions;
-		actions.updateValueForBlockAtKeyPath(keyPath, Immutable.Map(), function(valueBefore) {
-			return valueBefore.mergeDeep(changeInfo);
+		actions.updateValueForBlockAtKeyPath(blockKeyPath, Immutable.Map(), function(valueBefore) {
+			return valueBefore.setIn(infoKeyPath, Immutable.fromJS(info));
 		});
 	},
 	
@@ -682,9 +699,10 @@ var ParticularEditor = React.createClass({
 			elements.push(
 				React.createElement(EditorFields.FieldsHolder, {
 					key: 'fieldsHolder',
+					className: 'particularEditor_fieldsHolder',
 					fields: blockTypeOptions.get('fields').toJS(),
 					values: block.get('value', Immutable.Map()).toJS(),
-					onChangeInfo: this.changeFieldsInfo
+					onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 				})
 			);
 		}
@@ -1046,9 +1064,12 @@ let AddBlockElement = React.createClass({
 })
 
 var ChangeSubsectionElement = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
 	getDefaultProps() {
 		return {
-			isCreate: false
+			isCreate: false,
+			baseClassNames: ['blocks_changeSubsection']
 		};
 	},
 	
@@ -1120,58 +1141,57 @@ var ChangeSubsectionElement = React.createClass({
 			onClickFunction = this.onChangeSubsectionType;
 		}
 		
+		let subsectionID = subsectionInfo.get('id');
+		
 		return React.createElement(SecondaryButton, {
-			key: subsectionInfo.id,
-			baseClassNames: ['blocks_makeSubsection_choices_' + subsectionInfo.id],
-			title: subsectionInfo.title,
-			selected: (selectedSubsectionType === subsectionInfo.id),
-			onClick: onClickFunction.bind(this, subsectionInfo.id)
+			key: subsectionID,
+			baseClassNames: this.getChildClassNamesWithSuffix(`_choices_${subsectionID}`),
+			title: subsectionInfo.get('title'),
+			selected: (selectedSubsectionType === subsectionID),
+			onClick: onClickFunction.bind(this, subsectionID)
 		});
 	},
 	
 	render() {
-		var props = this.props;
-		var isCreate = props.isCreate;
+		let {
+			isCreate,
+			subsectionsSpecs,
+			selectedSubsectionType,
+			followingBlockIndex
+		} = this.props;
 		
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+		//var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
 		
-		var classNames = ['blocks_makeSubsection'];
+		let classNameExtensions = [];
 		var children = [];
 		
-		if (props.isCreate) {
+		if (isCreate) {
 			children.push(
 				React.createElement(SecondaryButton, {
 					key: 'mainButton',
-					baseClassNames: ['blocks_makeSubsection_mainButton'],
+					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
 					title: 'Make Subsection',
 					onClick: this.onToggleActive
 				})
 			);
 		}
 		else {
-			classNames.push('blocks_changeSubsection-hasSelectedSubsectionType')
+			classNameExtensions.push('-hasSelectedSubsectionType');
 			
-			var selectedSubsectionType = props.selectedSubsectionType;
-			var selectedSubsectionInfo = null;
-			subsectionInfos.some(function(subsectionInfo) {
-				if (subsectionInfo.id === selectedSubsectionType) {
-					selectedSubsectionInfo = subsectionInfo;
-					return true;
-				}
-			});
+			let selectedSubsectionInfo = findParticularSubsectionOptionsInList(selectedSubsectionType, subsectionsSpecs);
 			
 			children.push(
 				React.createElement(SecondaryButton, {
 					key: 'mainButton',
-					baseClassNames: ['blocks_makeSubsection_mainButton'],
-					title: selectedSubsectionInfo.title,
+					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
+					title: selectedSubsectionInfo.get('title'),
 					onClick: this.onToggleActive
 				})
 			);
 		}
 		
 		if (this.state.active) {
-			var subsectionChoices = subsectionInfos.map(function(subsectionInfo) {
+			var subsectionChoices = subsectionsSpecs.map(function(subsectionInfo) {
 				return this.createElementForSubsectionInfo(subsectionInfo);
 			}, this);
 			
@@ -1182,7 +1202,7 @@ var ChangeSubsectionElement = React.createClass({
 					}),
 					React.createElement(SecondaryButton, {
 						key: 'removeSubsection',
-						baseClassNames: ['blocks_changeSubsection_removeButton'],
+						baseClassNames: this.getChildClassNamesWithSuffix('_removeButton'),
 						title: 'Remove Subsection',
 						onClick: this.onRemoveSubsection
 					})
@@ -1192,18 +1212,16 @@ var ChangeSubsectionElement = React.createClass({
 			children.push(
 				React.createElement('div', {
 					key: 'choices',
-					className: 'blocks_makeSubsection_choices',
+					className: this.getChildClassNameStringWithSuffix('_choices'),
 				}, subsectionChoices)
 			);
 			
-			classNames.push(
-				'blocks_makeSubsection-active'
-			);
+			classNameExtensions.push('-active');
 		}
 		
 		return React.createElement('div', {
-			key: ('makeSubsection-' + props.followingBlockIndex),
-			className: classNames.join(' ')
+			key: ('makeSubsection-' + followingBlockIndex),
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
 	}
 });
@@ -1233,8 +1251,6 @@ var RearrangeBlockMoveHere = React.createClass({
 			followingBlockIndex,
 			hidden
 		} = this.props;
-		
-		var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
 		
 		var classNames = ['block_reorder'];
 		var classNameExtensions = [];
