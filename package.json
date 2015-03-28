@@ -1,30 +1,31 @@
 {
   "name": "burnt-icing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "index.js",
-  "description": "Content editor",
-  "homepage": "http://www.burntcaramel.com/",
+  "description": "Extensible content editor",
+  "homepage": "http://www.burntcaramel.com/icing/",
   "keywords": [
     "content",
     "edit",
     "editor",
     "text",
     "image",
-    "embed"
+    "embed",
+	"icing"
   ],
   "author": {
     "name": "Patrick Smith",
     "email": "patrick@burntcaramel.com",
     "url": "http://www.burntcaramel.com/"
   },
-  "private": true,
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@burntcaramel.beanstalkapp.com/burntcaramel/burnt-icing.git"
+    "url": "git://github.com/BurntIcing/IcingEditor.git"
   },
   "licenses": [
     {
-      "type": "Private"
+      "type": "Apache-2.0",
+	  "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
     }
   ],
   "engines": {
@@ -38,7 +39,7 @@
     "microevent": "^1.0.0",
     "normalize-url": "^1.2.0",
     "object-assign": "^2.0.0",
-    "qwest": "^1.5.4",
+    "qwest": "^1.5.10",
     "react": "^0.13.1"
   },
   "scripts": {

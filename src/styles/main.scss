@@ -181,7 +181,7 @@ body
 	.block-media
 	{
 		padding: 5px;
-		background-color: rgba(black, 0.1);
+		//background-color: rgba(black, 0.1);
 		
 		&:not(.block-edited):hover {
 			background-color: rgba(black, 1/16);
@@ -340,19 +340,20 @@ body
 	}
 	
 	.textItemEditor_instructions {
-		overflow: hidden;
+		position: absolute;
+		top: -16px;
+		right: 0;
 		opacity: 0.25;
-		font-size: 11px;
+		font-size: 10px;
 		line-height: 1;
-		margin-bottom: 4px;
 	}
 	.textItemEditor_instructions_keyShortcuts {
-		float: right;
+		
 	}
 	
 	.textItemEditor_traitsToolbar
 	{
-		clear: both;
+		margin-top: 4px;
 		
 		.buttonHolder {
 			display: inline-block;
@@ -423,6 +424,7 @@ body
 		.fieldLabel,
 		.choice,
 		.group,
+		.fieldsMultiple,
 		.choice_fieldsHolder,
 		.group_fieldsHolder {
 			flex: 4 0 100%;
@@ -442,6 +444,10 @@ body
 		.fieldLabel_title {
 			display: block;
 			font-size: 10px;
+		}
+		
+		.fieldsMultiple .fieldLabel {
+			display: block;
 		}
 		
 		.input-textual,
@@ -540,14 +546,14 @@ body
 		width: $editorInputWidth;
 		margin-left: 3vw;
 		
-		.particularEditor_fieldsHolder {
-			.fieldLabel_title {
-				font-size: 12px;
-			}
-		}
-		
 		.textItemEditor_blockTraitsToolbar {
 			margin-top: 20px;
+		}
+	}
+	.particularEditor_fieldsHolder,
+	.document_contentSettings_fields {
+		.fieldLabel_title {
+			font-size: 12px;
 		}
 	}
 	
@@ -606,22 +612,19 @@ body
 		}
 	}
 	
-	
-	@if false
-	{
-	@media (max-width: 1100px) {
-		left: 0;
-		
-		.blocks {
-			position: relative;
-			left: 0;
-		}
-		.blocks-hasEditedBlock {
-			//left: -100%;
-			left: -480px;
-		}
+	.document_loadingSpecs,
+	.document_loadingContent,
+	.blocks_loading,
+	.preview_loading,
+	.document_contentSettings_heading {
+		text-align: center;
+		font-size: 16px;
+		font-weight: normal;
+		margin-top: 8px;
+		margin-bottom: 16px;
 	}
-	}
+
+
 	
 	@media (max-width: 850px) {
 		max-width: none;

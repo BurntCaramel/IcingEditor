@@ -16,6 +16,10 @@ TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function(ch
 	// Find options by searching for the particular ID
 	var chosenBlockTypeOptions = null;
 	var chosenTypesList = blockGroupIDsToTypesMap.get(chosenBlockTypeGroup);
+	if (!chosenTypesList) {
+		return null;
+	}
+	
 	chosenTypesList.some(function(blockTypeOptions) {
 		if (blockTypeOptions.get('id') === chosenBlockType) {
 			chosenBlockTypeOptions = blockTypeOptions;

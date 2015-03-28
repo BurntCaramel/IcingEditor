@@ -4,8 +4,6 @@
 
 let React = require('react');
 let objectAssign = require('object-assign');
-let UIMixins = require('../ui/ui-mixins');
-//var Toolbars = require('./editor-toolbars');
 let Immutable = require('immutable');
 
 let {
@@ -14,7 +12,7 @@ let {
 	findParticularTraitOptionsInList
 } = require('../assistants/TypesAssistant');
 
-let HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
+let HTMLRepresentationAssistant = require('../assistants/HTMLRepresentationAssistant');
 
 
 var PreviewElementsCreator = {
@@ -216,8 +214,8 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 	
 PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
 	let subsectionsSpecs = specsImmutable.get('subsectionTypes', Immutable.List());
-	let traitsSpecs = specsImmutable.get('traits', Immutable.List());
-	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
+	let traitsSpecs = specsImmutable.get('traitTypes', Immutable.List());
+	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroup', Immutable.Map());
 	
 	var mainElements = [];
 	var currentSubsectionType = specsImmutable.get('defaultSubsectionType', 'normal');
@@ -323,21 +321,12 @@ PreviewElementsCreator.MainElement = React.createClass({
 		var specsImmutable = props.specsImmutable;
 		
 		var classNames = ['blocks'];
-	
-		var elements = [];
-	
-		if (contentImmutable) {
-			var content = contentImmutable.toJS();
-			var blocks = content.blocks;
-			var blocksImmutable = contentImmutable.get('blocks');
-	
-			elements = PreviewElementsCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
-		}
-		else {
-			elements = React.createElement('div', {
-				key: 'loading'
-			}, 'Loading…');
-		}
+		
+		var content = contentImmutable.toJS();
+		var blocks = content.blocks;
+		var blocksImmutable = contentImmutable.get('blocks');
+
+		let elements = PreviewElementsCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
 	
 		return React.createElement('div', {
 			key: 'blocks',
@@ -346,7 +335,7 @@ PreviewElementsCreator.MainElement = React.createClass({
 	}
 });
 
-PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specsImmutable) {
+PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specsImmutable, {pretty = true} = {}) {
 	var previewElement = React.createElement(PreviewElementsCreator.MainElement, {
 		key: 'main',
 		contentImmutable: contentImmutable,
@@ -355,42 +344,48 @@ PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specs
 	
 	var previewHTML = React.renderToStaticMarkup(previewElement);
 	
+	// Strip wrapping div.
 	previewHTML = previewHTML.replace(/^<div class="blocks">|<\/div>$/gm, '');
 	
-	var inlineTagNames = {
-		"span": true,
-		"strong": true,
-		"em": true,
-		"a": true
-	};
+	if (pretty) {
+		var inlineTagNames = {
+			"span": true,
+			"strong": true,
+			"em": true,
+			"a": true,
+			"img": true,
+			"small": true
+		};
 	
-	var holdingTagNames = {
-		"ul": true,
-		"ol": true,
-		"blockquote": true
-	};
-	
-	previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function(match, closingSlash, tagName, offset, string) {
-		// Inline elements are kept as-is
-		if (inlineTagNames[tagName]) {
-			return match;
-		}
-		// Block elements are given line breaks for nicer presentation.
-		else {
-			if (closingSlash.length > 0) {
-				return '<' + closingSlash + tagName + '>' + "\n";
-				//return "\n" + '<' + closingSlash + tagName + '>' + "\n";
+		var holdingTagNames = {
+			"ul": true,
+			"ol": true,
+			"blockquote": true
+		};
+		
+		// Add new lines for presentation
+		previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function(match, optionalClosingSlash, tagName, offset, string) {
+			// Inline elements are kept as-is
+			if (inlineTagNames[tagName]) {
+				return match;
 			}
+			// Block elements are given line breaks for nicer presentation.
 			else {
-				if (holdingTagNames[tagName]) {
-					return '<' + tagName + '>' + "\n";
+				if (optionalClosingSlash.length > 0) {
+					return '<' + optionalClosingSlash + tagName + '>' + "\n";
+					//return "\n" + '<' + optionalClosingSlash + tagName + '>' + "\n";
 				}
 				else {
-					return '<' + tagName + '>';
+					if (holdingTagNames[tagName]) {
+						return '<' + tagName + '>' + "\n";
+					}
+					else {
+						return '<' + tagName + '>';
+					}
 				}
 			}
-		}
-	});
+		});
+	}
 	
 	return previewHTML;
 }

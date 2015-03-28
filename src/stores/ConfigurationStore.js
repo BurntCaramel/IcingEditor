@@ -4,7 +4,7 @@ var Immutable = require('immutable');
 var qwest = require('qwest');
 
 
-var SettingsStore = {
+var ConfigurationStore = {
 	on: MicroEvent.prototype.bind,
 	trigger: MicroEvent.prototype.trigger,
 	off: MicroEvent.prototype.unbind
@@ -45,35 +45,43 @@ var getKeyFromSettingsJSON = function(key, fallback) {
 	return settingsJSON[key];
 };
 
-SettingsStore.getActionURL = function() {
-	return getKeyFromSettingsJSON('actionURL');
+ConfigurationStore.getActionURL = function(path) {
+	let actionURL = getKeyFromSettingsJSON('actionURL');
+	if (actionURL && path) {
+		actionURL += path;
+	}
+	return actionURL;
 };
 
-SettingsStore.getActionsFunctions = function() {
+ConfigurationStore.getActionsFunctions = function() {
 	return getKeyFromSettingsJSON('actionFunctions');
 };
 
-SettingsStore.wantsMainToolbar = function() {
+ConfigurationStore.wantsMainToolbar = function() {
 	return getKeyFromSettingsJSON('wantsMainToolbar', true);
 };
 
-SettingsStore.getWantsSaveFunctionality = function() {
+ConfigurationStore.getWantsSaveFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsSaveFunctionality', true);
 };
 	
-SettingsStore.getWantsViewHTMLFunctionality = function() {
+ConfigurationStore.getWantsViewHTMLFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsViewHTMLFunctionality', false);
 };
 
-SettingsStore.getWantsPlaceholderFunctionality = function() {
+ConfigurationStore.getWantsContentSettingsFunctionality = function() {
+	return getKeyFromSettingsJSON('wantsContentSettingsFunctionality', true);
+};
+
+ConfigurationStore.getWantsPlaceholderFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsPlaceholderFunctionality', false);
 };
 
-SettingsStore.getShowsDocumentTitle = function() {
+ConfigurationStore.getShowsDocumentTitle = function() {
 	return false;
 };
 
-SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function(documentID, sectionID) { //TODO: documentID, sectionID
+ConfigurationStore.getAvailableBlockTypesForDocumentSectionAlternate = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [
 		{'id': 'body', 'title': 'Body'},
 		{'id': 'heading', 'title': 'Heading'},
@@ -90,7 +98,7 @@ SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function(docum
 	];
 };
 
-SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
+ConfigurationStore.getAvailableBlockTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [
 		{'id': 'body', 'title': 'Paragraph'},
 		{'id': 'heading', 'title': 'Heading 1'},
@@ -101,7 +109,7 @@ SettingsStore.getAvailableBlockTypesForDocumentSection = function(documentID, se
 	];
 };
 
-SettingsStore.getAvailableSubsectionTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
+ConfigurationStore.getAvailableSubsectionTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [
 		{'id': 'normal', 'title': 'Normal'},
 		{'id': 'unorderedList', 'title': 'Unordered List'},
@@ -109,7 +117,7 @@ SettingsStore.getAvailableSubsectionTypesForDocumentSection = function(documentI
 	];
 };
 
-SettingsStore.getAvailableBlockTypesGroups = function() {
+ConfigurationStore.getAvailableBlockTypesGroups = function() {
 	return Immutable.fromJS([
 		{
 			"id": "text",
@@ -126,7 +134,7 @@ SettingsStore.getAvailableBlockTypesGroups = function() {
 	]);
 }
 
-SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
+ConfigurationStore.getAvailableBlockTypesGroupedForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [
 		{
 			"id": "text",
@@ -163,24 +171,24 @@ SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function(documen
 	];
 };
 
-SettingsStore.getInitialDocumentState = function() {
+ConfigurationStore.getInitialDocumentState = function() {
 	return getKeyFromSettingsJSON('initialDocumentState', {});
 };
 
-SettingsStore.getInitialAvailableDocuments = function() {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), 'availableDocuments', []);
+ConfigurationStore.getInitialAvailableDocuments = function() {
+	return getKeyFromObject(ConfigurationStore.getInitialDocumentState(), 'availableDocuments', []);
 };
 
-SettingsStore.getInitialDocumentID = function() {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), 'documentID');
+ConfigurationStore.getInitialDocumentID = function() {
+	return getKeyFromObject(ConfigurationStore.getInitialDocumentState(), 'documentID');
 };
 
-SettingsStore.getInitialDocumentSectionID = function() {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), 'documentSectionID');
+ConfigurationStore.getInitialDocumentSectionID = function() {
+	return getKeyFromObject(ConfigurationStore.getInitialDocumentState(), 'documentSectionID');
 };
 
-SettingsStore.getInitialContentJSONForDocument = function(documentID) {
-	var initialContentJSON = getKeyFromObject(SettingsStore.getInitialDocumentState(), 'contentJSONByDocumentID');
+ConfigurationStore.getInitialContentJSONForDocument = function(documentID) {
+	var initialContentJSON = getKeyFromObject(ConfigurationStore.getInitialDocumentState(), 'contentJSONByDocumentID');
 	//console.log('initialContentJSON', initialContentJSON);
 	
 	if (!initialContentJSON) {
@@ -196,15 +204,15 @@ SettingsStore.getInitialContentJSONForDocument = function(documentID) {
 
 
 var availableDocuments = null;
-SettingsStore.getAvailableDocuments = function() {
+ConfigurationStore.getAvailableDocuments = function() {
 	if (!availableDocuments) {
-		availableDocuments = SettingsStore.getInitialAvailableDocuments();
+		availableDocuments = ConfigurationStore.getInitialAvailableDocuments();
 	}
 	
 	return availableDocuments;
 };
 
-SettingsStore.getAvailableSectionIDsForDocumentID = function(documentID) {
+ConfigurationStore.getAvailableSectionIDsForDocumentID = function(documentID) {
 	return [];
 };
 
@@ -212,32 +220,25 @@ SettingsStore.getAvailableSectionIDsForDocumentID = function(documentID) {
 var currentDocumentID = null;
 var currentDocumentSectionID = null;
 
-SettingsStore.getCurrentDocumentID = function() {
+ConfigurationStore.getCurrentDocumentID = function() {
 	if (!currentDocumentID) {
-		currentDocumentID = SettingsStore.getInitialDocumentID();
+		currentDocumentID = ConfigurationStore.getInitialDocumentID();
 	}
 	
 	return currentDocumentID;
 };
-SettingsStore.setCurrentDocumentID = function(newDocumentID) {
+ConfigurationStore.setCurrentDocumentID = function(newDocumentID) {
 	currentDocumentID = newDocumentID;
 	
 	this.trigger('currentDocumentDidChange');
 };
 
-SettingsStore.getCurrentDocumentSectionID = function() {
+ConfigurationStore.getCurrentDocumentSectionID = function() {
 	if (!currentDocumentSectionID) {
-		currentDocumentSectionID = SettingsStore.getInitialDocumentSectionID();
+		currentDocumentSectionID = ConfigurationStore.getInitialDocumentSectionID();
 	}
 	return currentDocumentSectionID;
 };
 
 
-SettingsStore.getContentSpecsForDocumentSection = function(documentID, sectionID) {
-	var contentSpecsJSON = require('../dummy/dummy-content-specs.json');
-	var contentSpecs = Immutable.fromJS(contentSpecsJSON);
-	return contentSpecs;
-};
-
-
-module.exports = SettingsStore;
+module.exports = ConfigurationStore;

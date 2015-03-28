@@ -22,7 +22,9 @@ window.burntIcing = {
 			documentSectionID: "main",
 			contentJSONByDocumentID: {
 				"untitled": {
-					"main": null
+					"sections": {
+						"main": null
+					}
 				}
 			}
 		}

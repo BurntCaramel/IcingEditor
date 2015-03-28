@@ -4,14 +4,14 @@
 
 var React = require('react');
 var AppDispatcher = require('../app-dispatcher');
-var SettingsStore = require('../stores/store-settings');
-var PreviewStore = require('../stores/store-preview');
+var ConfigurationStore = require('../stores/ConfigurationStore');
+var PreviewStore = require('../stores/PreviewStore');
 var ReorderingStore = require('../stores/ReorderingStore');
 var Immutable = require('immutable');
-var eventIDs = require('../actions/actions-content-eventIDs');
+var eventIDs = require('../actions/ContentActionsEventIDs');
 var documentSectionEventIDs = eventIDs.documentSection;
 
-let EditorFields = require('./editor-fields');
+let EditorFields = require('./EditorFields');
 
 let {
 	findParticularSubsectionOptionsInList,
@@ -22,6 +22,8 @@ let {
 	ButtonMixin,
 	BaseClassNamesMixin
 } = require('../ui/ui-mixins');
+
+let KeyCodes = require('../ui/KeyCodes');
 
 let MicroEvent = require('microevent');
 
@@ -112,10 +114,19 @@ var TextItemTextArea = React.createClass({
 	onKeyDown(e) {
 		e.stopPropagation();
 		
-		var actions = this.props.actions;
+		let {
+			actions,
+			onModifierKeyChange
+		} = this.props;
+		
+		let keyCode = e.which;
+		
+		if (KeyCodes.isModifier(keyCode)) {
+			onModifierKeyChange(keyCode, true);
+		}
 		
 		//console.log('key down', e.which);
-		if (e.which == 32) { // Space key
+		if (keyCode == KeyCodes.Space) { // Space key
 			if (this.state.spaceWasJustPressed) {
 				actions.addNewTextItemAfterEditedTextItem();
 				this.setState({spaceWasJustPressed: false});
@@ -129,7 +140,7 @@ var TextItemTextArea = React.createClass({
 			this.setState({spaceWasJustPressed: false});
 		}
 		
-		if (e.which == 8) { // Delete/Backspace key
+		if (keyCode == KeyCodes.DeleteOrBackspace) { // Delete/Backspace key
 			/*if (this.hasNoText()) {
 				actions.removeEditedTextItem();
 				e.preventDefault();
@@ -140,7 +151,7 @@ var TextItemTextArea = React.createClass({
 				e.preventDefault();
 			}
 		}
-		else if (e.which == 9) { // Tab key
+		else if (keyCode == KeyCodes.Tab) { // Tab key
 			if (e.shiftKey) {
 				actions.editPreviousItemBeforeEditedTextItem();
 			}
@@ -150,16 +161,7 @@ var TextItemTextArea = React.createClass({
 	
 			e.preventDefault();
 		}
-	},
-	
-	onKeyPress(e) {
-		e.stopPropagation();
-		
-		var actions = this.props.actions;
-		
-		//console.log('key press', e);
-
-		if (e.which == 13) { // Return/enter key.
+		else if (keyCode == KeyCodes.ReturnOrEnter) { // Return/enter key.
 			if (e.shiftKey) {
 				actions.addLineBreakAfterEditedTextItem();
 			}
@@ -167,20 +169,19 @@ var TextItemTextArea = React.createClass({
 			else if (e.metaKey) {
 				actions.finishEditing();
 			}
-			// Option key
-			else if (e.altKey) {
-				actions.addNewTextItemAfterEditedTextItem();
-			}
 			else {
-				if (this.hasNoText()) {
-					actions.splitBlockBeforeEditedTextItem();
+				let splitBlock = !e.altKey; // Option key
+				if (this.hasNoText() && false) {
+					if (splitBlock) {
+						actions.splitBlockBeforeEditedTextItem();
+					}
 				}
 				else {
 					var textSelectionRange = this.getTextSelectionRange();
 					actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
 					
 					// If text was selected, just break it into its own item but not into its own block.
-					if (textSelectionRange.start === textSelectionRange.end) {
+					if (splitBlock /*&& textSelectionRange.start === textSelectionRange.end*/) {
 						actions.splitBlockBeforeEditedTextItem();
 					}
 				}
@@ -188,6 +189,28 @@ var TextItemTextArea = React.createClass({
 			
 			e.preventDefault();
 		}
+	},
+	
+	onKeyUp(e) {
+		e.stopPropagation();
+		
+		let {
+			onModifierKeyChange
+		} = this.props;
+		
+		let keyCode = e.which;
+		
+		if (KeyCodes.isModifier(keyCode)) {
+			onModifierKeyChange(keyCode, false);
+		}
+	},
+	
+	onKeyPress(e) {
+		e.stopPropagation();
+		
+		var actions = this.props.actions;
+		
+		//console.log('key press', e.which);
 	},
 	
 	render() {
@@ -206,6 +229,7 @@ var TextItemTextArea = React.createClass({
 			//key: 'textarea',
 			onChange: this.onChange,
 			onKeyDown: this.onKeyDown,
+			onKeyUp: this.onKeyUp,
 			onKeyPress: this.onKeyPress,
 			onPaste: this.onPaste,
 			tabIndex
@@ -574,13 +598,36 @@ var TextItemEditor = React.createClass({
 		};
 	},
 	
+	getInitialState() {
+		return {
+			shiftKeyIsPressed: false,
+			optionKeyIsPressed: false,
+			commandKeyIsPressed: false
+		};
+	},
+	
 	onClick(event) {
 		// Prevent block from getting click event.
 		event.stopPropagation();
 	},
 	
+	onModifierKeyChange(modifierKeyCode, isOn) {
+		let stateChange = {};
+		
+		if (modifierKeyCode === KeyCodes.ShiftModifier) {
+			stateChange.shiftKeyIsPressed = isOn
+		}
+		else if (modifierKeyCode === KeyCodes.OptionModifier) {
+			stateChange.optionKeyIsPressed = isOn
+		}
+		else if (modifierKeyCode === KeyCodes.CommandModifier) {
+			stateChange.commandKeyIsPressed = isOn
+		}
+		
+		this.setState(stateChange);
+	},
+	
 	render() {
-		var props = this.props;
 		var {
 			block,
 			text,
@@ -590,27 +637,43 @@ var TextItemEditor = React.createClass({
 			blockType,
 			blockTypeOptions,
 			traitSpecs
-		} = props;
+		} = this.props;
+		let {
+			shiftKeyIsPressed,
+			optionKeyIsPressed,
+			commandKeyIsPressed
+		} = this.state;
 		
 		//var textEditorInstructions = 'Press enter to create a new paragraph. Press space twice to create a new sentence.';
-		var textEditorInstructions = 'enter: new paragraph · spacebar twice: new text item';
+		var textEditorInstructions;
+		if (optionKeyIsPressed) {
+			textEditorInstructions = 'option-return/alt-enter: split text';
+		}
+		else if (commandKeyIsPressed) {
+			textEditorInstructions = 'command-return/control-enter: finish editing';
+		}
+		else {
+			textEditorInstructions = 'return/enter: new paragraph · spacebar twice: new text item';
+		}
+		
+		let instructionsElement = React.createElement('div', {
+			key: 'instructions',
+			className: 'textItemEditor_instructions'
+		}, [
+			React.createElement('div', {
+				key: 'keyShortcuts',
+				className: 'textItemEditor_instructions_keyShortcuts'
+			}, textEditorInstructions)
+		]);
 		
 		let children = [
 			React.createElement(TextItemTextArea, {
 				key: 'textAreaHolder',
 				text,
 				actions,
+				onModifierKeyChange: this.onModifierKeyChange,
 				traitSpecs
 			}),
-			React.createElement('div', {
-				key: 'instructions',
-				className: 'textItemEditor_instructions'
-			}, [
-				React.createElement('div', {
-					key: 'keyShortcuts',
-					className: 'textItemEditor_instructions_keyShortcuts'
-				}, textEditorInstructions)
-			]),
 			/*
 			React.createElement('h5', {
 				key: 'itemTraitsToolbar_heading',
@@ -625,7 +688,8 @@ var TextItemEditor = React.createClass({
 				blockType,
 				actions,
 				className: 'textItemEditor_traitsToolbar'
-			})
+			}),
+			instructionsElement
 		];
 		
 		if (false) {
@@ -1160,7 +1224,7 @@ var ChangeSubsectionElement = React.createClass({
 			followingBlockIndex
 		} = this.props;
 		
-		//var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+		//var subsectionInfos = ConfigurationStore.getAvailableSubsectionTypesForDocumentSection();
 		
 		let classNameExtensions = [];
 		var children = [];
@@ -1320,16 +1384,33 @@ var MainToolbar = React.createClass({
 		actions.saveChanges();
 	},
 	
-	getIsPreviewing() {
-		return PreviewStore.getIsPreviewing();
+	getIsShowingSettings() {
+		return this.props.isShowingSettings;
 	},
 	
-	onTogglePreview() {
-		var {
+	onToggleShowSettings() {
+		let {
 			actions
 		} = this.props;
 		
-		if (PreviewStore.getIsPreviewing()) {
+		if (this.getIsShowingSettings()) {
+			actions.hideSettings();
+		}
+		else {
+			actions.showSettings();
+		}
+	},
+	
+	getIsPreviewing() {
+		return this.props.isPreviewing;
+	},
+	
+	onTogglePreview() {
+		let {
+			actions
+		} = this.props;
+		
+		if (this.getIsPreviewing()) {
 			actions.exitHTMLPreview();
 		}
 		else {
@@ -1338,15 +1419,15 @@ var MainToolbar = React.createClass({
 	},
 	
 	getIsReordering() {
-		return ReorderingStore.getIsReordering();
+		return this.props.isReordering;
 	},
 	
 	onToggleReordering() {
-		var {
+		let {
 			actions
 		} = this.props;
 		
-		if (ReorderingStore.getIsReordering()) {
+		if (this.getIsReordering()) {
 			actions.finishReordering();
 		}
 		else {
@@ -1355,7 +1436,7 @@ var MainToolbar = React.createClass({
 	},
 	
 	createSelectForAvailableDocuments() {
-		var availableDocuments = SettingsStore.getAvailableDocuments();
+		var availableDocuments = ConfigurationStore.getAvailableDocuments();
 		var documentCount = availableDocuments.length;
 		
 		var options = null;
@@ -1389,7 +1470,7 @@ var MainToolbar = React.createClass({
 		
 		var children = [];
 		
-		if (SettingsStore.getWantsSaveFunctionality()) {
+		if (ConfigurationStore.getWantsSaveFunctionality()) {
 			children.push(
 				React.createElement(ToolbarButton, {
 					key: 'save',
@@ -1410,7 +1491,7 @@ var MainToolbar = React.createClass({
 			);
 		}
 		
-		if (SettingsStore.getWantsViewHTMLFunctionality()) {
+		if (ConfigurationStore.getWantsViewHTMLFunctionality()) {
 			children.push(
 				React.createElement(ToolbarButton, {
 					key: 'html',
@@ -1421,7 +1502,18 @@ var MainToolbar = React.createClass({
 			);
 		}
 		
-		if (SettingsStore.getShowsDocumentTitle()) {
+		if (ConfigurationStore.getWantsContentSettingsFunctionality()) {
+			children.push(
+				React.createElement(ToolbarButton, {
+					key: 'settings',
+					title: 'Settings',
+					onClick: this.onToggleShowSettings,
+					selected: this.getIsShowingSettings()
+				})
+			);
+		}
+		
+		if (ConfigurationStore.getShowsDocumentTitle()) {
 			children.push(
 				this.createSelectForAvailableDocuments()
 			);

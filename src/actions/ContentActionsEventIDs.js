@@ -3,8 +3,15 @@
 */
 
 var ActionsContentEventIDs = {
+	specs: {
+		loadSpecsWithURLs: 'specs.loadSpecsWithURLs'
+	},
+	document: {
+		loadContent: 'document.loadContent',
+		setSpecsURLs: 'document.setSpecsURLs'
+	},
 	documentSection: {
-		setContent: 'documentSection.setContent',
+		setContentJSON: 'documentSection.setContentJSON',
 		saveChanges: 'documentSection.saveChanges',
 		edit: {
 			blockWithKeyPath: 'documentSection.edit.blockWithKeyPath',
@@ -56,6 +63,8 @@ var ActionsContentEventIDs = {
 			keepAtCurrentSpot: 'documentSection.focusedBlockForReordering.keepAtCurrentSpot',
 			moveToBeforeBlockAtIndex: 'documentSection.focusedBlockForReordering.moveToBeforeBlockAtIndex'
 		},
+		showSettings: 'documentSection.showSettings',
+		hideSettings: 'documentSection.hideSettings',
 		enterHTMLPreview: 'documentSection.enterHTMLPreview',
 		exitHTMLPreview: 'documentSection.exitHTMLPreview',
 		beginReordering: 'documentSection.beginReordering',

@@ -3,10 +3,10 @@
 */
 
 var React = require('react');
-var Toolbars = require('./editor-toolbars');
+var Toolbars = require('./EditorToolbars');
 var Immutable = require('immutable');
-var ContentStore = require('../stores/store-content.js');
-var SettingsStore = require('../stores/store-settings.js');
+var ContentStore = require('../stores/ContentStore');
+var ConfigurationStore = require('../stores/ConfigurationStore');
 var ReorderingStore = require('../stores/ReorderingStore');
 
 let {
@@ -18,11 +18,9 @@ let {
 	BaseClassNamesMixin
 } = require('../ui/ui-mixins');
 
-let {
-	KeyCodes
-} = require('../ui/ui-constants');
+let KeyCodes = require('../ui/KeyCodes');
 
-var HTMLRepresentationAssistant = require('../assistants/html-representation-assistant');
+var HTMLRepresentationAssistant = require('../assistants/HTMLRepresentationAssistant');
 
 
 var SubsectionElement = React.createClass({
@@ -526,8 +524,8 @@ EditorElementCreator.reactElementsWithBlocks = function(
 	}
 ) {
 	let subsectionsSpecs = specsImmutable.get('subsectionTypes', Immutable.List());
-	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroups', Immutable.Map());
-	let traitSpecs = specsImmutable.get('traits', Immutable.List());
+	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroup', Immutable.Map());
+	let traitSpecs = specsImmutable.get('traitTypes', Immutable.List());
 	
 	let currentSubsectionType = specsImmutable.get('defaultSubsectionType', 'normal');
 	let currentSubsectionChildIndex = 0;
@@ -638,15 +636,17 @@ EditorElementCreator.reactElementsWithBlocks = function(
 		actions.insertBlockOfTypeAtIndex(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), blockCount);
 	};
 	
-	elements.push(
-		React.createElement(Toolbars.AddBlockElement, {
-			key: `addBlock-end`,
-			addAtEnd: true,
-			blockTypeGroups,
-			blockGroupIDsToTypesMap,
-			onCreateBlockOfType: createBlockOfTypeAtEnd
-		})	
-	);
+	if (!isReordering) {
+		elements.push(
+			React.createElement(Toolbars.AddBlockElement, {
+				key: `addBlock-end`,
+				addAtEnd: true,
+				blockTypeGroups,
+				blockGroupIDsToTypesMap,
+				onCreateBlockOfType: createBlockOfTypeAtEnd
+			})	
+		);
+	}
 	
 	return elements;
 };
@@ -681,9 +681,9 @@ EditorElementCreator.MainElement = React.createClass({
 	onKeyPress(event) {
 		let actions = this.props.actions;
 		
-		if (event.which === KeyCodes.RETURN_OR_ENTER) {
+		/*if (event.which === KeyCodes.ReturnOrEnter) {
 			actions.insertRelatedBlockAfterEditedBlock();
-		}
+		}*/
 	},
 	
 	updateTextItemEditorPosition() {
@@ -718,29 +718,20 @@ EditorElementCreator.MainElement = React.createClass({
 		
 		var classNames = ['blocks'];
 	
-		var elements = [];
-	
-		if (contentImmutable && contentImmutable.has('blocks')) {
-			var blocksImmutable = contentImmutable.get('blocks');
-			elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
-					specsImmutable,
-					blockTypeGroups,
-					editedBlockIdentifier,
-					editedBlockKeyPath,
-					editedTextItemIdentifier,
-					editedTextItemKeyPath,
-					isReordering,
-					focusedBlockIdentifierForReordering,
-					focusedBlockKeyPathForReordering,
-					actions
-				}
-			);
-		}
-		else {
-			elements = React.createElement('div', {
-				key: 'loadingIndicator'
-			}, 'Loading…');
-		}
+		let blocksImmutable = contentImmutable.get('blocks');
+		let elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
+				specsImmutable,
+				blockTypeGroups,
+				editedBlockIdentifier,
+				editedBlockKeyPath,
+				editedTextItemIdentifier,
+				editedTextItemKeyPath,
+				isReordering,
+				focusedBlockIdentifierForReordering,
+				focusedBlockKeyPathForReordering,
+				actions
+			}
+		);
 	
 		var isEditingBlock = (editedBlockIdentifier != null);
 		if (isEditingBlock) {

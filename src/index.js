@@ -2,7 +2,7 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-let editor = require('./editor/editor.js');
+let editor = require('./editor/EditorController');
 
 if (!window.burntIcing) {
 	console.error('Icing requires window.burntIcing property to be set up in JavaScript');

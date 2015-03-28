@@ -1,0 +1,253 @@
+{
+	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
+	"specsIdentifier": {"id": "burntcaramel-csv", "version": "1.0.0"},
+	"informationTransformersByIdentifier": {
+		"CSVTextToJSON": {
+			"inputTypes": ["text"],
+			"outputTypes": ["JSON"]
+		}
+	},
+	"blockTypesByGroup": {
+		"particular": [
+			{
+				"id": "table",
+				"title": "Table",
+				"fieldsAreRequired": true,
+				"fields": [
+					{
+						"id": "CSV",
+						"type": "text-long",
+						"title": "CSV Text",
+						"transformer": "CSVTextToJSON"
+					}
+				],
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "table",
+						"children": [
+							{
+								"tagName": "thead",
+								"children": [
+									{
+										"every": {
+											"source": ["fields", "CSV", "columnIdentifiers"],
+											"itemIdentifier": "columnIdentifier",
+											"type": "text"
+										},
+										"children": [
+											{
+												"tagName": "th",
+												"children": [
+													{
+														"text": ["columnIdentifier"]
+													}
+												]
+											}
+										]
+									}
+								]
+							},
+							{
+								"tagName": "tbody",
+								"children": [
+									{
+										"every": {
+											"source": ["fields", "CSV", "rows"],
+											"itemIdentifier": "row",
+											"type": "dictionary"
+										},
+										"children": [
+											{
+												"tagName": "tr",
+												"children": [
+													{
+														"every": {
+															"source": ["row"],
+															"itemIdentifier": "item",
+															"type": "text"
+														},
+														"children": [
+															{
+																"tagName": "td",
+																"children": [
+																	{
+																		"text": ["item"]
+																	}
+																]
+															}
+														]
+													}
+												]
+											}
+										]
+									}
+								]
+							}
+				],
+				"onlineHTMLRepresentationCreator": {
+					"POST": "contactDetails/1.0/",
+					"JavaScript": "http://representations.burnticing.org/blocks/contactDetails/1.0/contactDetails.1.0.js"
+				}
+			}
+		]
+	},
+	"traits": [
+		{
+			"id": "bold",
+			"title": "Bold",
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "strong",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "italic",
+			"title": "Italic",
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "em",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"id": "link",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": {
+				"text": true,
+				"media": true,
+				"particular": true
+			},
+			"disabled": false,
+			"title": "Link",
+			"type": "fields",
+			"fields": [
+				{
+					"id": "typeChoice",
+					"title": "Link Type",
+					"type": "choice",
+					"choices": [
+						{
+							"id": "URL",
+							"title": "URL",
+							"fields": [
+								{
+									"type": "url",
+									"id": "URL",
+									"title": "URL"
+								}
+							]
+						},
+						{
+							"id": "email",
+							"title": "Email",
+							"fields": [
+								{
+									"type": "email",
+									"id": "emailAddress",
+									"title": "Email Address"
+								}
+							]
+						}
+					]
+				}
+			],
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "a",
+					"attributes": {
+						"href": {
+							"firstWhichIsPresent": [
+								["fields", "typeChoice", "URL", "URL"],
+								{
+									"join": [
+										"mailto:",
+										["fields", "typeChoice", "email", "emailAddress"]
+									]
+								}
+							]
+						}
+					},
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
+				}
+			],
+			"valueDescription": [
+				{
+					"checkIsPresent": ["fields", "typeChoice", "URL"],
+					"join": [
+						"Link to URL: ",
+						["fields", "typeChoice", "URL", "URL"]
+					]
+				},
+				{
+					"checkFieldPresent": ["typeChoice", "email"],
+					"join": [
+						"Link to email address: ",
+						["fields", "typeChoice", "email", "emailAddress"]
+					]
+				}
+			]
+		},
+		{
+			"id": "class",
+			"disabled": true,
+			"title": "Class",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": true,
+			"type": "fields",
+			"fields": [
+				{
+					"id": "classNames",
+					"title": "Class Names",
+					"type": "text"
+				}
+			]
+		},
+		{
+			"id": "primary",
+			"disabled": true,
+			"title": "Primary"
+		},
+		{
+			"id": "secondary",
+			"disabled": true,
+			"title": "Secondary"
+		},
+		{
+			"id": "hide",
+			"title": "Don’t Show",
+			"allowedForAnyTextItems": true,
+			"allowedForBlockTypesByGroupType": true,
+			"innerHTMLRepresentation": null
+		}
+	],
+	"itemsByBlock": {
+		"*": {
+			"text": [
+				
+			]
+		},
+		"media": {
+			"image externalImage": [
+				{"id": "resolution-1x", "title": "1x Resolution"},
+				{"id": "resolution-2x", "title": "2x Resolution"}
+			]
+		}
+	}
+}

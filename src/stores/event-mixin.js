@@ -1,9 +1,9 @@
 var MicroEvent = require('microevent');
 
 module.exports = {
-	mixin: function(store) {
-		store.on = MicroEvent.prototype.bind;
-		store.trigger = MicroEvent.prototype.trigger;
-		store.off = MicroEvent.prototype.unbind;
+	mixin: function(object) {
+		object.on = MicroEvent.prototype.bind;
+		object.trigger = MicroEvent.prototype.trigger;
+		object.off = MicroEvent.prototype.unbind;
 	}
 };

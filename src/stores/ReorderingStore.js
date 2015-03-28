@@ -1,10 +1,10 @@
 var AppDispatcher = require('../app-dispatcher');
 var Immutable = require('immutable');
 var MicroEvent = require('microevent');
-var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
+var ContentActionsEventIDs = require('../actions/ContentActionsEventIDs');
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
-let ContentStore = require('./store-content');
+let ContentStore = require('./ContentStore');
 
 
 //var documentSectionActivity = Immutable.Map({});

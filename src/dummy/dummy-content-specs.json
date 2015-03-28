@@ -49,7 +49,7 @@
 			"outerHTMLTagName": "blockquote"
 		}
 	],
-	"blockTypesByGroups": {
+	"blockTypesByGroup": {
 		"text": [
 			{"id": "body", "title": "Paragraph", "outerHTMLTagName": "p"},
 			{"id": "heading", "title": "Heading 1", "outerHTMLTagName": "h1"},
@@ -266,7 +266,7 @@
 			}
 		]
 	},
-	"traits": [
+	"traitTypes": [
 		{
 			"id": "bold",
 			"title": "Bold",
@@ -413,18 +413,5 @@
 			"allowedForBlockTypesByGroupType": true,
 			"innerHTMLRepresentation": null
 		}
-	],
-	"itemsByBlock": {
-		"*": {
-			"text": [
-				
-			]
-		},
-		"media": {
-			"image externalImage": [
-				{"id": "resolution-1x", "title": "1x Resolution"},
-				{"id": "resolution-2x", "title": "2x Resolution"}
-			]
-		}
-	}
+	]
 }

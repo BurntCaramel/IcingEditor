@@ -1,16 +1,16 @@
 var AppDispatcher = require('../app-dispatcher');
 var Immutable = require('immutable');
 var MicroEvent = require('microevent');
-var ContentStore = require('./store-content');
-var SettingsStore = require('./store-settings');
+var ContentStore = require('./ContentStore');
+var ConfigurationStore = require('./ConfigurationStore');
 var qwest = require('qwest');
-var ContentActionsEventIDs = require('../actions/actions-content-eventIDs');
+var ContentActionsEventIDs = require('../actions/ContentActionsEventIDs');
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 
 var documentSectionActivity = Immutable.Map({});
 
-var ContentStoreSaving = {
+var ContentSavingStore = {
 	on: MicroEvent.prototype.bind,
 	trigger: MicroEvent.prototype.trigger,
 	off: MicroEvent.prototype.unbind
@@ -21,7 +21,7 @@ var isSavingContentForDocumentSection = function(documentID, sectionID) {
 	var isSaving = documentSectionActivity.getIn([documentID, sectionID, 'isSaving'], false);
 	return isSaving;
 };
-ContentStoreSaving.isSavingContentForDocumentSection = isSavingContentForDocumentSection;
+ContentSavingStore.isSavingContentForDocumentSection = isSavingContentForDocumentSection;
 	
 var setSavingContentForDocumentSection = function(documentID, sectionID, isSaving) {
 	var isSavingCurrent = isSavingContentForDocumentSection(documentID, sectionID);
@@ -31,8 +31,8 @@ var setSavingContentForDocumentSection = function(documentID, sectionID, isSavin
 	
 	documentSectionActivity = documentSectionActivity.setIn([documentID, sectionID, 'isSaving'], isSaving);
 	
-	ContentStoreSaving.trigger('isSavingDidChangeForDocumentSection', documentID, sectionID, isSaving);
-	//ContentStoreSaving.trigger('isSavingDidChangeForDocument', documentID, isSaving);
+	ContentSavingStore.trigger('isSavingDidChangeForDocumentSection', documentID, sectionID, isSaving);
+	//ContentSavingStore.trigger('isSavingDidChangeForDocument', documentID, isSaving);
 };
 	
 var saveContentForDocumentSection = function(documentID, sectionID) {
@@ -41,8 +41,8 @@ var saveContentForDocumentSection = function(documentID, sectionID) {
 		return;
 	}
 	
-	var actionURL = SettingsStore.getActionURL();
-	var actionsFunctions = SettingsStore.getActionsFunctions();
+	var actionURL = ConfigurationStore.getActionURL();
+	var actionsFunctions = ConfigurationStore.getActionsFunctions();
 	if (!actionURL && !actionsFunctions) {
 		return;
 	}
@@ -63,7 +63,7 @@ var saveContentForDocumentSection = function(documentID, sectionID) {
 		
 		})
 		.catch(function(message) {
-			ContentStoreSaving.trigger('saveContentDidFailForDocumentSectionWithMessage', documentID, sectionID, message);
+			ContentSavingStore.trigger('saveContentDidFailForDocumentSectionWithMessage', documentID, sectionID, message);
 		})
 		.complete(function() {
 			setSavingContentForDocumentSection(documentID, sectionID, false);
@@ -80,7 +80,7 @@ var saveContentForDocumentSection = function(documentID, sectionID) {
 		}
 	}
 };
-ContentStoreSaving.saveContentForDocumentSection = saveContentForDocumentSection;
+ContentSavingStore.saveContentForDocumentSection = saveContentForDocumentSection;
 
 
 AppDispatcher.register( function(payload) {
@@ -93,4 +93,4 @@ AppDispatcher.register( function(payload) {
 	}
 });
 
-module.exports = ContentStoreSaving;
+module.exports = ContentSavingStore;

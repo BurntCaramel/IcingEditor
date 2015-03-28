@@ -5,6 +5,7 @@
 var React = require('react');
 let {ButtonMixin, BaseClassNamesMixin} = require('../ui/ui-mixins');
 var normalizeURL = require('normalize-url');
+let KeyCodes = require('../ui/KeyCodes');
 
 
 var EditorFields = {};
@@ -31,7 +32,7 @@ EditorFields.fieldTypeIsTextual = function(fieldType) {
 	else {
 		return false;
 	}
-}
+};
 
 var FieldLabel = React.createClass({
 	mixins: [BaseClassNamesMixin],
@@ -39,7 +40,10 @@ var FieldLabel = React.createClass({
 	getDefaultProps() {
 		return {
 			baseClassNames: ['fieldLabel'],
-			additionalClassNameExtensions: []
+			additionalClassNameExtensions: [],
+			children: [],
+			required: false,
+			recommended: false
 		}
 	},
 	
@@ -48,6 +52,7 @@ var FieldLabel = React.createClass({
 		let {
 			children,
 			title,
+			description,
 			required,
 			recommended
 		} = props;
@@ -59,15 +64,220 @@ var FieldLabel = React.createClass({
 			title += ' (recommended)'
 		}
 		
-		children = [
+		let leadingChildren = [
 			React.createElement('span', {
 				key: 'title',
 				className: this.getChildClassNameStringWithSuffix('_title')
 			}, title)
-		].concat(children);
+		];
+		
+		if (description) {
+			React.createElement('span', {
+				key: 'description',
+				className: this.getChildClassNameStringWithSuffix('_description')
+			}, description)
+		}
+		
+		children = leadingChildren.concat(children);
 		
 		return React.createElement('label', {
 			className: this.getClassNameStringWithExtensions()
+		}, children);
+	}
+});
+
+let TextualField = React.createClass({
+	getDefaultProps() {
+		return {
+			type: 'text',
+			value: null,
+			required: false,
+			recommended: false,
+			placeholder: null,
+			continuous: false,
+			onValueChanged: null,
+			tabIndex: 0
+		};
+	},
+	
+	getInitialState() {
+		return {
+			pendingValue: null
+		};
+	},
+	
+	getInputTypeForFieldType(type) {
+		if (type === 'number' || type === 'number-integer') {
+			return 'text';
+		}
+		else {
+			return type;
+		}
+	},
+	
+	onKeyDown(event) {
+		let keyCode = event.which;
+		if (keyCode === KeyCodes.ReturnOrEnter) {
+			this.onCommitChange(event);
+		}
+	},
+	
+	onBlur(event) {
+		this.onCommitChange(event);
+	},
+	
+	onMakePendingChange(event) {
+		var newValue = event.target.value;
+		this.setState({
+			pendingValue: newValue
+		});
+	},
+	
+	onCommitChange(event) {
+		let {
+			onValueChanged
+		} = this.props;
+		
+		var newValue = event.target.value;
+		onValueChanged(newValue);
+		
+		this.setState({
+			pendingValue: null
+		});
+	},
+	
+	revertValue() {
+		this.setState({
+			pendingValue: null
+		});
+	},
+	
+	render() {
+		let {
+			type,
+			ID,
+			required,
+			recommended,
+			title,
+			description,
+			placeholder,
+			continuous,
+			value,
+			tabIndex,
+			onValueChanged
+		} = this.props;
+		let {
+			pendingValue
+		} = this.state;
+		
+		if (typeof pendingValue === 'string') {
+			value = pendingValue;
+		}
+		
+		let children = [];
+		
+		if (type === 'text-long') {
+			children.push(
+				React.createElement('textarea', {
+					key: 'textarea',
+					value,
+					placeholder,
+					onKeyDown: this.onKeyDown,
+					onBlur: this.onBlur,
+					onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
+					className: 'input-textual input-' + type,
+					tabIndex
+				})
+			);
+		}
+		else {
+			let inputType = this.getInputTypeForFieldType(type);
+			
+			children.push(
+				React.createElement('input', {
+					key: 'input',
+					type: inputType,
+					value,
+					placeholder,
+					onKeyDown: this.onKeyDown,
+					onBlur: this.onBlur,
+					onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
+					className: 'input-textual input-' + type,
+					tabIndex
+				})
+			);
+		}
+		
+		return React.createElement(FieldLabel, {
+			key: ID,
+			title,
+			description,
+			required,
+			recommended,
+			additionalClassNameExtensions: ['-fieldType-textual', `-fieldType-${type}`]
+		}, children);
+	}
+});
+
+let TextualFieldMultiple = React.createClass({
+	getDefaultProps() {
+		return {
+			type: 'text',
+			values: [],
+			required: false,
+			recommended: false,
+			placeholder: null,
+			continuous: false,
+			onValueChangedAtIndex: null,
+			tabIndex: 0
+		};
+	},
+	
+	render() {
+		let {
+			type,
+			ID,
+			title,
+			required,
+			recommended,
+			placeholder,
+			continuous,
+			values,
+			tabIndex,
+			onValueChangedAtIndex
+		} = this.props;
+		
+		// Add additional value ready to be filled in.
+		if (values.length === 0 || (values[values.length - 1] || '').length !== 0) {
+			values = values.concat('');
+		}
+		
+		let fieldElements = values.map(function(value, valueIndex) {
+			return React.createElement(TextualField, {
+				key: `field-${valueIndex}`,
+				type,
+				ID,
+				required,
+				recommended,
+				placeholder,
+				continuous,
+				value,
+				tabIndex,
+				onValueChanged: newValue => {
+					onValueChangedAtIndex(newValue, valueIndex)
+				}
+			});
+		});
+		
+		let children = [
+			React.createElement(FieldLabel, {
+				key: 'label',
+				title
+			})
+		].concat(fieldElements);
+		
+		return React.createElement('div', {
+			className: 'fieldsMultiple'
 		}, children);
 	}
 });
@@ -162,7 +372,7 @@ let ChoiceField = React.createClass({
 		];
 		
 		// Show fields for the selected choice.
-		if (selectedChoiceInfo) {
+		if (selectedChoiceInfo && selectedChoiceInfo.fields) {
 			children = children.concat(
 				React.createElement(EditorFields.FieldsHolder, {
 					key: 'fields',
@@ -239,48 +449,43 @@ EditorFields.FieldsHolder = React.createClass({
 			onReplaceInfoAtKeyPath
 		} = this.props;
 		
-		var type = fieldJSON.type;
+		var type = fieldJSON.type || 'text';
 		var ID = fieldJSON.id;
 		var title = fieldJSON.title;
+		var description = fieldJSON.description;
+		let multiple = fieldJSON.multiple || false;
 		let required = fieldJSON.required || false;
 		let recommended = fieldJSON.recommended || false;
-	
-		if (!type) {
-			type = 'text';
-		}
+		let placeholder = fieldJSON.placeholder || null;
 	
 		if (EditorFields.fieldTypeIsTextual(type)) {
 			var fieldType = type;
-		
-			return React.createElement(FieldLabel, {
+			
+			let props = {
 				key: ID,
+				type,
+				ID,
 				title,
+				description,
 				required,
 				recommended,
-				additionalClassNameExtensions: ['-fieldType-textual', `-fieldType-${type}`]
-			}, [
-				React.createElement('input', {
-					key: ID,
-					type: fieldType,
-					value,
-					placeholder: fieldJSON.placeholder,
-					onChange(event) {
-						var newValue = event.target.value;
-					
-						if (fieldType === 'url') {
-							//let normalizedURL = normalizeURL(newValue);
-							//console.log('URL', normalizedURL);
-						}
-					
-						onReplaceInfoAtKeyPath(
-							newValue,
-							[ID]
-						);
-					},
-					className: 'input-textual input-' + type,
-					tabIndex: 0
-				})
-			]);
+				placeholder
+			};
+			
+			if (multiple) {
+				props.values = value;
+				props.onValueChangedAtIndex = function(newValue, valueIndex) {
+					onReplaceInfoAtKeyPath(newValue, [ID, valueIndex]);
+				}
+				return React.createElement(TextualFieldMultiple, props);
+			}
+			else {
+				props.value = value;
+				props.onValueChanged = function(newValue) {
+					onReplaceInfoAtKeyPath(newValue, [ID]);
+				}
+				return React.createElement(TextualField, props);
+			}
 		}
 		else if (type === 'choice') {
 			return React.createElement(ChoiceField, {

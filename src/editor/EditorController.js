@@ -5,32 +5,19 @@
 var React = require('react');
 var Immutable = require('immutable');
 //let PureRenderMixin = require('react/addons').addons.PureRenderMixin;
-var ContentStore = require('../stores/store-content.js');
-var SettingsStore = require('../stores/store-settings.js');
-var ContentStoreSaving = require('../stores/store-content-saving.js');
-var ContentStoreLoading = require('../stores/store-content-loading.js');
-var ContentActions = require('../actions/actions-content.js');
-var EditorElementsCreator = require('./editor-elements');
-var PreviewElementsCreator = require('../preview/preview-elements');
-var Toolbars = require('./editor-toolbars');
-var PreviewStore = require('../stores/store-preview');
+var ContentStore = require('../stores/ContentStore');
+var SpecsStore = require('../stores/SpecsStore');
+var ConfigurationStore = require('../stores/ConfigurationStore');
+var ContentSavingStore = require('../stores/ContentSavingStore');
+var ContentLoadingStore = require('../stores/ContentLoadingStore');
+var ContentActions = require('../actions/ContentActions');
+var EditorElementsCreator = require('./EditorElements');
+var PreviewElementsCreator = require('../preview/PreviewElements');
+let ContentSettingsElement = require('./ContentSettings');
+var Toolbars = require('./EditorToolbars');
+var PreviewStore = require('../stores/PreviewStore');
 var ReorderingStore = require('../stores/ReorderingStore');
 
-
-
-let getInitialState = function() {
-	let documentID = SettingsStore.getCurrentDocumentID();
-	let sectionID = SettingsStore.getCurrentDocumentSectionID();
-	
-	let state = {
-		documentState: new Immutable.Map({
-			documentID,
-			sectionID,
-			content: ContentStore.getContentForDocumentSection(documentID, sectionID),
-			specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID)
-		})
-	};
-}
 
 /*
 * State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
@@ -51,8 +38,8 @@ let latestStateWithPreviousState = function(
 		};
 	}
 	
-	let documentID = SettingsStore.getCurrentDocumentID();
-	let sectionID = SettingsStore.getCurrentDocumentSectionID();
+	let documentID = ConfigurationStore.getCurrentDocumentID();
+	let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 	
 	let {
 		documentState,
@@ -67,9 +54,10 @@ let latestStateWithPreviousState = function(
 		documentState = documentState.merge({
 			documentID,
 			sectionID,
+			specsURLs: ContentStore.getSpecsURLsForDocumentWithID(documentID),
 			content: ContentStore.getContentForDocumentSection(documentID, sectionID),
 			specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID),
-			blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
+			blockTypeGroups: ConfigurationStore.getAvailableBlockTypesGroups(),
 			editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID),
 			editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID),
 			editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID),
@@ -81,6 +69,7 @@ let latestStateWithPreviousState = function(
 	
 	if (updateViewingState) {
 		viewingState = viewingState.merge({
+			isShowingSettings: ContentStore.getIsShowingSettings(),
 			isPreviewing: PreviewStore.getIsPreviewing(),
 			isReordering: ReorderingStore.getIsReordering()
 		});
@@ -98,7 +87,7 @@ let latestStateWithPreviousState = function(
 }
 
 
-var Editor = React.createClass({
+var EditorMain = React.createClass({
 	getInitialState() {
 		return latestStateWithPreviousState(null, {
 			updateAll: true
@@ -108,12 +97,17 @@ var Editor = React.createClass({
 	listenToStores(on) {
 		let method = on ? 'on' : 'off';
 		
+		ContentStore[method]('specsChangedForDocument', this.updateDocumentState);
 		ContentStore[method]('contentChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('editedBlockChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('editedItemChangedForDocumentSection', this.updateDocumentState);
+		ContentStore[method]('isShowingSettingsDidChange', this.updateViewingState);
+		
+		SpecsStore[method]('didLoadContentForSpecWithURL', this.updateDocumentState);
+		
 		ReorderingStore[method]('focusedBlockDidChange', this.updateDocumentState);
 		
-		SettingsStore[method]('currentDocumentDidChange', this.currentDocumentDidChange);
+		ConfigurationStore[method]('currentDocumentDidChange', this.currentDocumentDidChange);
 		
 		PreviewStore[method]('didEnterPreview', this.updateViewingState);
 		PreviewStore[method]('didExitPreview', this.updateViewingState);
@@ -126,23 +120,25 @@ var Editor = React.createClass({
 		this.listenToStores(true);
 		
 		document.body.addEventListener('click', this.bodyBackgroundWasClicked);
+		document.body.addEventListener('touchend', this.bodyBackgroundWasClicked);
 	},
 	
 	componentWillUnmount() {
 		this.listenToStores(false);
 		
 		document.body.removeEventListener('click', this.bodyBackgroundWasClicked);
+		document.body.removeEventListener('touchend', this.bodyBackgroundWasClicked);
 	},
 	
 	bodyBackgroundWasClicked(event) {
 		if (event.target === document.body) {
-			console.log('backgroundWasClicked');
+			//console.log('backgroundWasClicked');
 			this.finishEditing();
 		}
 	},
 	
 	editorBackgroundWasClicked(event) {
-		console.log('editorBackgroundWasClicked');
+		//console.log('editorBackgroundWasClicked');
 		this.finishEditing();
 	},
 	
@@ -207,6 +203,7 @@ var Editor = React.createClass({
 		let {
 			documentID,
 			sectionID,
+			specsURLs,
 			content,
 			specs,
 			blockTypeGroups,
@@ -229,12 +226,32 @@ var Editor = React.createClass({
 		}
 		
 		let {
+			isShowingSettings,
 			isPreviewing,
 			isReordering
 		} = viewingState.toObject();
 		
 		var innerElement;
-		if (isPreviewing) {
+		if (isShowingSettings) {
+			innerElement = React.createElement(ContentSettingsElement, {
+				key: 'contentSettings',
+				documentID,
+				specsURLs
+			});
+		}
+		else if (!specs) {
+			innerElement = React.createElement('div', {
+				key: 'specsLoading',
+				className: 'document_loadingSpecs'
+			}, 'Loading Specs');
+		}
+		else if (!content) {
+			innerElement = React.createElement('div', {
+				key: 'contentLoading',
+				className: 'document_loadingContent'
+			}, 'Loading Content');
+		}
+		else if (isPreviewing) {
 			innerElement = React.createElement(PreviewElementsCreator.ViewHTMLElement, {
 				key: 'preview',
 				documentID,
@@ -263,11 +280,14 @@ var Editor = React.createClass({
 		
 		let children = [];
 		
-		if (SettingsStore.wantsMainToolbar()) {
+		if (ConfigurationStore.wantsMainToolbar()) {
 			children.push(
 				React.createElement(Toolbars.MainToolbar, {
 					key: 'mainToolbar',
-					actions
+					actions,
+					isShowingSettings,
+					isPreviewing,
+					isReordering
 				})
 			);
 		}
@@ -276,29 +296,34 @@ var Editor = React.createClass({
 		
 		return React.createElement('div', {
 			key: 'editor',
-			onClick: this.editorBackgroundWasClicked
+			onClick: this.editorBackgroundWasClicked,
+			onTouchEnd: this.editorBackgroundWasClicked
 		}, children);
 	}
 });
 
 
+let defaultDOMElement = function() {
+	return document.getElementById('burntIcingEditor');
+};
+
 let EditorController = {
-	go() {
-		let documentID = SettingsStore.getCurrentDocumentID();
-		ContentStoreLoading.loadContentForDocument(documentID);
+	go(DOMElement = defaultDOMElement()) {
+		let documentID = ConfigurationStore.getCurrentDocumentID();
+		ContentActions.loadContentForDocumentWithID(documentID);
 		
 		React.render(
-			React.createElement(Editor, {
+			React.createElement(EditorMain, {
 				key: 'editor'
 			}),
-			document.getElementById('burntIcingEditor')
+			DOMElement
 		);
 		
 		window.burntIcing.editor = this;
 		
 		window.burntIcing.copyContentJSONForCurrentDocumentSection = function() {
-			let documentID = SettingsStore.getCurrentDocumentID();
-			let sectionID = SettingsStore.getCurrentDocumentSectionID();
+			let documentID = ConfigurationStore.getCurrentDocumentID();
+			let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 			
 			let contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
 			
@@ -306,8 +331,8 @@ let EditorController = {
 		};
 		
 		window.burntIcing.copyPreviewHTMLForCurrentDocumentSection = function() {
-			let documentID = SettingsStore.getCurrentDocumentID();
-			let sectionID = SettingsStore.getCurrentDocumentSectionID();
+			let documentID = ConfigurationStore.getCurrentDocumentID();
+			let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 			// Get content and specs
 			let content = ContentStore.getContentForDocumentSection(documentID, sectionID);
 			let specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
@@ -318,21 +343,21 @@ let EditorController = {
 		};
 	},
 	
-	onDocumentLoad(event) {
+	onDocumentLoad(DOMElement, event) {
 		document.removeEventListener('DOMContentLoaded', this.onDocumentLoadBound);
 		this.onDocumentLoadBound = null;
 		
-		this.go();
+		this.go(DOMElement);
 	},
 	
-	goOnDocumentLoad() {
+	goOnDocumentLoad(DOMElement = defaultDOMElement()) {
 		if (document.readyState === 'loading') {
-			this.onDocumentLoadBound = this.onDocumentLoad.bind(this);
+			this.onDocumentLoadBound = this.onDocumentLoad.bind(this, DOMElement);
 			document.addEventListener('DOMContentLoaded', this.onDocumentLoadBound);
 		}
 		else {
 			setTimeout((function() {
-				this.go();
+				this.go(DOMElement);
 			}).bind(this), 0);
 		}
 	}

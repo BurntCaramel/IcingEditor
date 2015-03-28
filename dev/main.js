@@ -5,7 +5,7 @@
 
 "use strict";
 
-var editor = require("./editor/editor.js");
+var editor = require("./editor/EditorController");
 
 if (!window.burntIcing) {
 	console.error("Icing requires window.burntIcing property to be set up in JavaScript");
@@ -28,7 +28,7 @@ if (!window.burntIcing) {
 	};
 }
 
-},{"./editor/editor.js":184}],2:[function(require,module,exports){
+},{"./editor/EditorController":182}],2:[function(require,module,exports){
 /**
  * Copyright (c) 2014, Facebook, Inc.
  * All rights reserved.
@@ -2504,11 +2504,19 @@ function isNullOrUndefined(arg) {
         typeof valueB.valueOf === 'function') {
       valueA = valueA.valueOf();
       valueB = valueB.valueOf();
+      if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
+        return true;
+      }
+      if (!valueA || !valueB) {
+        return false;
+      }
     }
-    return typeof valueA.equals === 'function' &&
-      typeof valueB.equals === 'function' ?
-        valueA.equals(valueB) :
-        valueA === valueB || (valueA !== valueA && valueB !== valueB);
+    if (typeof valueA.equals === 'function' &&
+        typeof valueB.equals === 'function' &&
+        valueA.equals(valueB)) {
+      return true;
+    }
+    return false;
   }
 
   function fromJS(json, converter) {
@@ -2544,7 +2552,7 @@ function isNullOrUndefined(arg) {
   var src_Math__imul =
     typeof Math.imul === 'function' && Math.imul(0xffffffff, 2) === -2 ?
     Math.imul :
-    function src_Math__imul(a, b) {
+    function imul(a, b) {
       a = a | 0; // int
       b = b | 0; // int
       var c = a & 0xffff;
@@ -2625,22 +2633,29 @@ function isNullOrUndefined(arg) {
   }
 
   function hashJSObj(obj) {
-    var hash = weakMap && weakMap.get(obj);
-    if (hash) return hash;
+    var hash;
+    if (usingWeakMap) {
+      hash = weakMap.get(obj);
+      if (hash !== undefined) {
+        return hash;
+      }
+    }
 
     hash = obj[UID_HASH_KEY];
-    if (hash) return hash;
+    if (hash !== undefined) {
+      return hash;
+    }
 
     if (!canDefineProperty) {
       hash = obj.propertyIsEnumerable && obj.propertyIsEnumerable[UID_HASH_KEY];
-      if (hash) return hash;
+      if (hash !== undefined) {
+        return hash;
+      }
 
       hash = getIENodeHash(obj);
-      if (hash) return hash;
-    }
-
-    if (Object.isExtensible && !Object.isExtensible(obj)) {
-      throw new Error('Non-extensible objects are not allowed as keys.');
+      if (hash !== undefined) {
+        return hash;
+      }
     }
 
     hash = ++objHashUID;
@@ -2648,8 +2663,10 @@ function isNullOrUndefined(arg) {
       objHashUID = 0;
     }
 
-    if (weakMap) {
+    if (usingWeakMap) {
       weakMap.set(obj, hash);
+    } else if (isExtensible !== undefined && isExtensible(obj) === false) {
+      throw new Error('Non-extensible objects are not allowed as keys.');
     } else if (canDefineProperty) {
       Object.defineProperty(obj, UID_HASH_KEY, {
         'enumerable': false,
@@ -2657,7 +2674,7 @@ function isNullOrUndefined(arg) {
         'writable': false,
         'value': hash
       });
-    } else if (obj.propertyIsEnumerable &&
+    } else if (obj.propertyIsEnumerable !== undefined &&
                obj.propertyIsEnumerable === obj.constructor.prototype.propertyIsEnumerable) {
       // Since we can't define a non-enumerable property on the object
       // we'll hijack one of the less-used non-enumerable properties to
@@ -2667,7 +2684,7 @@ function isNullOrUndefined(arg) {
         return this.constructor.prototype.propertyIsEnumerable.apply(this, arguments);
       };
       obj.propertyIsEnumerable[UID_HASH_KEY] = hash;
-    } else if (obj.nodeType) {
+    } else if (obj.nodeType !== undefined) {
       // At this point we couldn't get the IE `uniqueID` to use as a hash
       // and we couldn't use a non-enumerable property to exploit the
       // dontEnum bug so we simply add the `UID_HASH_KEY` on the node
@@ -2679,6 +2696,9 @@ function isNullOrUndefined(arg) {
 
     return hash;
   }
+
+  // Get references to ES5 object methods.
+  var isExtensible = Object.isExtensible;
 
   // True if Object.defineProperty works as expected. IE8 fails this test.
   var canDefineProperty = (function() {
@@ -2704,7 +2724,11 @@ function isNullOrUndefined(arg) {
   }
 
   // If possible, use a WeakMap.
-  var weakMap = typeof WeakMap === 'function' && new WeakMap();
+  var usingWeakMap = typeof WeakMap === 'function';
+  var weakMap;
+  if (usingWeakMap) {
+    weakMap = new WeakMap();
+  }
 
   var objHashUID = 0;
 
@@ -2859,7 +2883,12 @@ function isNullOrUndefined(arg) {
         // in the parent iteration.
         if (entry) {
           validateEntry(entry);
-          return fn(entry[1], entry[0], this$0);
+          var indexedIterable = isIterable(entry);
+          return fn(
+            indexedIterable ? entry.get(1) : entry[1],
+            indexedIterable ? entry.get(0) : entry[0],
+            this$0
+          );
         }
       }, reverse);
     };
@@ -2877,8 +2906,13 @@ function isNullOrUndefined(arg) {
           // in the parent iteration.
           if (entry) {
             validateEntry(entry);
-            return type === ITERATE_ENTRIES ? step :
-              iteratorValue(type, entry[0], entry[1], step);
+            var indexedIterable = isIterable(entry);
+            return iteratorValue(
+              type,
+              indexedIterable ? entry.get(0) : entry[0],
+              indexedIterable ? entry.get(1) : entry[1],
+              step
+            );
           }
         }
       });
@@ -3130,7 +3164,7 @@ function isNullOrUndefined(arg) {
       var skipped = 0;
       var iterations = 0;
       return new src_Iterator__Iterator(function()  {
-        while (skipped++ !== resolvedBegin) {
+        while (skipped++ < resolvedBegin) {
           iterator.next();
         }
         if (++iterations > sliceSize) {
@@ -4225,10 +4259,10 @@ function isNullOrUndefined(arg) {
   }
 
   function deepMerger(merger) {
-    return function(existing, value) 
+    return function(existing, value, key) 
       {return existing && existing.mergeDeepWith && isIterable(value) ?
         existing.mergeDeepWith(merger, value) :
-        merger ? merger(existing, value) : value};
+        merger ? merger(existing, value, key) : value};
   }
 
   function mergeIntoCollectionWith(collection, merger, iters) {
@@ -4236,14 +4270,14 @@ function isNullOrUndefined(arg) {
     if (iters.length === 0) {
       return collection;
     }
-    if (collection.size === 0 && iters.length === 1) {
+    if (collection.size === 0 && !collection.__ownerID && iters.length === 1) {
       return collection.constructor(iters[0]);
     }
     return collection.withMutations(function(collection ) {
       var mergeIntoMap = merger ?
         function(value, key)  {
           collection.update(key, NOT_SET, function(existing )
-            {return existing === NOT_SET ? value : merger(existing, value)}
+            {return existing === NOT_SET ? value : merger(existing, value, key)}
           );
         } :
         function(value, key)  {
@@ -5339,7 +5373,7 @@ function isNullOrUndefined(arg) {
       if (iters.length === 0) {
         return this;
       }
-      if (this.size === 0 && iters.length === 1) {
+      if (this.size === 0 && !this.__ownerID && iters.length === 1) {
         return this.constructor(iters[0]);
       }
       return this.withMutations(function(set ) {
@@ -5522,37 +5556,29 @@ function isNullOrUndefined(arg) {
   createClass(Record, KeyedCollection);
 
     function Record(defaultValues, name) {
+      var hasInitialized;
+
       var RecordType = function Record(values) {
+        if (values instanceof RecordType) {
+          return values;
+        }
         if (!(this instanceof RecordType)) {
           return new RecordType(values);
+        }
+        if (!hasInitialized) {
+          hasInitialized = true;
+          var keys = Object.keys(defaultValues);
+          setProps(RecordTypePrototype, keys);
+          RecordTypePrototype.size = keys.length;
+          RecordTypePrototype._name = name;
+          RecordTypePrototype._keys = keys;
+          RecordTypePrototype._defaultValues = defaultValues;
         }
         this._map = src_Map__Map(values);
       };
 
-      var keys = Object.keys(defaultValues);
-
       var RecordTypePrototype = RecordType.prototype = Object.create(RecordPrototype);
       RecordTypePrototype.constructor = RecordType;
-      name && (RecordTypePrototype._name = name);
-      RecordTypePrototype._defaultValues = defaultValues;
-      RecordTypePrototype._keys = keys;
-      RecordTypePrototype.size = keys.length;
-
-      try {
-        keys.forEach(function(key ) {
-          Object.defineProperty(RecordType.prototype, key, {
-            get: function() {
-              return this.get(key);
-            },
-            set: function(value) {
-              invariant(this.__ownerID, 'Cannot set on an immutable record.');
-              this.set(key, value);
-            }
-          });
-        });
-      } catch (error) {
-        // Object.defineProperty failed. Probably IE8.
-      }
 
       return RecordType;
     }
@@ -5582,8 +5608,8 @@ function isNullOrUndefined(arg) {
         this._map && this._map.clear();
         return this;
       }
-      var SuperRecord = Object.getPrototypeOf(this).constructor;
-      return SuperRecord._empty || (SuperRecord._empty = makeRecord(this, emptyMap()));
+      var RecordType = this.constructor;
+      return RecordType._empty || (RecordType._empty = makeRecord(this, emptyMap()));
     };
 
     Record.prototype.set = function(k, v) {
@@ -5660,7 +5686,27 @@ function isNullOrUndefined(arg) {
   }
 
   function recordName(record) {
-    return record._name || record.constructor.name;
+    return record._name || record.constructor.name || 'Record';
+  }
+
+  function setProps(prototype, names) {
+    try {
+      names.forEach(setProp.bind(undefined, prototype));
+    } catch (error) {
+      // Object.defineProperty failed. Probably IE8.
+    }
+  }
+
+  function setProp(prototype, name) {
+    Object.defineProperty(prototype, name, {
+      get: function() {
+        return this.get(name);
+      },
+      set: function(value) {
+        invariant(this.__ownerID, 'Cannot set on an immutable record.');
+        this.set(name, value);
+      }
+    });
   }
 
   function deepEqual(a, b) {
@@ -5697,7 +5743,9 @@ function isNullOrUndefined(arg) {
 
     if (a.size === undefined) {
       if (b.size === undefined) {
-        a.cacheResult();
+        if (typeof a.cacheResult === 'function') {
+          a.cacheResult();
+        }
       } else {
         flipped = true;
         var _ = a;
@@ -6412,7 +6460,7 @@ function isNullOrUndefined(arg) {
   KeyedIterablePrototype[IS_KEYED_SENTINEL] = true;
   KeyedIterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.entries;
   KeyedIterablePrototype.__toJS = IterablePrototype.toObject;
-  KeyedIterablePrototype.__toStringMapper = function(v, k)  {return k + ': ' + quoteString(v)};
+  KeyedIterablePrototype.__toStringMapper = function(v, k)  {return JSON.stringify(k) + ': ' + quoteString(v)};
 
 
 
@@ -6932,7 +6980,7 @@ module.exports = function (obj, compareFn) {
 },{}],18:[function(require,module,exports){
 module.exports=require(14)
 },{"/Users/pgwsmith/Work/Web Git/IcingEditor/node_modules/normalize-url/node_modules/object-assign/index.js":14}],19:[function(require,module,exports){
-/*! qwest 1.5.9 (https://github.com/pyrsmk/qwest) */
+/*! qwest 1.5.10 (https://github.com/pyrsmk/qwest) */
 
 ;(function(context,name,definition){
 	if(typeof module!='undefined' && module.exports){
@@ -7108,15 +7156,15 @@ module.exports=require(14)
 							responseType=defaultXdrResponseType;
 						}
 						else{
-							switch(xhr.getResponseHeader(contentType)){
-								case mimeTypes.json:
-									responseType='json';
-									break;
-								case mimeTypes.xml:
-									responseType='xml';
-									break;
-								default:
-									responseType='text';
+							var ct=xhr.getResponseHeader(contentType);
+							if(ct.indexOf(mimeTypes.json)>-1){
+								responseType='json';
+							}
+							else if(ct.indexOf(mimeTypes.xml)>-1){
+								responseType='xml';
+							}
+							else{
+								responseType='text';
 							}
 						}
 					}
@@ -27090,9 +27138,455 @@ module.exports = require('./lib/React');
 
 "use strict";
 
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+
+var ContentActionsEventIDs = require("./ContentActionsEventIDs");
+var specsEventIDs = ContentActionsEventIDs.specs;
+var documentEventIDs = ContentActionsEventIDs.document;
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+function dispatchPayload(payload) {
+	AppDispatcher.dispatch(payload);
+};
+
+function loadSpecsWithURLs(specsURLs) {
+	dispatchPayload({
+		eventID: specsEventIDs.loadSpecsWithURLs,
+		specsURLs: specsURLs
+	});
+}
+
+function loadContentForDocumentWithID(documentID) {
+	dispatchPayload({
+		eventID: documentEventIDs.loadContent,
+		documentID: documentID
+	});
+}
+
+function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
+	specsURLs = Immutable.fromJS(specsURLs);
+
+	dispatchPayload({
+		eventID: documentEventIDs.setSpecsURLs,
+		documentID: documentID,
+		specsURLs: specsURLs
+	});
+}
+
+function getActionsForDocumentSection(documentID, sectionID) {
+	function dispatchForThisDocumentSection(payload) {
+		payload.documentID = documentID;
+		payload.sectionID = sectionID;
+
+		dispatchPayload(payload);
+	};
+
+	return {
+		setContentJSON: function setContentJSON(contentJSON) {
+			dispatchForThisDocumentSection({
+				eventID: documentSectionEventIDs.setContentJSON,
+				contentJSON: contentJSON
+			});
+		},
+
+		saveChanges: function saveChanges() {
+			dispatchForThisDocumentSection({
+				eventID: documentSectionEventIDs.saveChanges
+			});
+		},
+
+		showSettings: function showSettings() {
+			dispatchPayload({
+				eventID: documentSectionEventIDs.showSettings
+			});
+		},
+
+		hideSettings: function hideSettings() {
+			dispatchPayload({
+				eventID: documentSectionEventIDs.hideSettings
+			});
+		},
+
+		enterHTMLPreview: function enterHTMLPreview() {
+			dispatchForThisDocumentSection({
+				eventID: documentSectionEventIDs.enterHTMLPreview
+			});
+		},
+
+		exitHTMLPreview: function exitHTMLPreview() {
+			dispatchForThisDocumentSection({
+				eventID: documentSectionEventIDs.exitHTMLPreview
+			});
+		},
+
+		editBlockWithKeyPath: function editBlockWithKeyPath(blockKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.edit.blockWithKeyPath,
+				blockKeyPath: blockKeyPath,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		editTextItemWithKeyPath: function editTextItemWithKeyPath(textItemKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.edit.textItemWithKeyPath,
+				documentID: documentID,
+				sectionID: sectionID,
+				textItemKeyPath: textItemKeyPath
+			});
+		},
+
+		editTextItemBasedBlockWithKeyPathAddingIfNeeded: function editTextItemBasedBlockWithKeyPathAddingIfNeeded(blockKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded,
+				documentID: documentID,
+				sectionID: sectionID,
+				blockKeyPath: blockKeyPath
+			});
+		},
+
+		finishEditing: function finishEditing() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.finishEditing,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		// REORDERING
+
+		beginReordering: function beginReordering() {
+			this.finishEditing();
+
+			dispatchForThisDocumentSection({
+				eventID: documentSectionEventIDs.beginReordering
+			});
+		},
+
+		finishReordering: function finishReordering() {
+			dispatchForThisDocumentSection({
+				eventID: documentSectionEventIDs.finishReordering
+			});
+		},
+
+		focusOnBlockAtKeyPathForReordering: function focusOnBlockAtKeyPathForReordering(blockKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.focusOnForReordering,
+				documentID: documentID,
+				sectionID: sectionID,
+				blockKeyPath: blockKeyPath
+			});
+		},
+
+		keepFocusedBlockForReorderingInCurrentSpot: function keepFocusedBlockForReorderingInCurrentSpot() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.focusedBlockForReordering.keepAtCurrentSpot,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		moveFocusedBlockForReorderingToBeforeBlockAtIndex: function moveFocusedBlockForReorderingToBeforeBlockAtIndex(blockIndex) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex,
+				documentID: documentID,
+				sectionID: sectionID,
+				beforeBlockAtIndex: blockIndex
+			});
+		},
+
+		// INSERTING
+
+		insertSubsectionOfTypeAtBlockIndex: function insertSubsectionOfTypeAtBlockIndex(subsectionType, blockIndex) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex,
+				documentID: documentID,
+				sectionID: sectionID,
+				subsectionType: subsectionType,
+				blockIndex: blockIndex
+			});
+		},
+
+		changeTypeOfSubsectionAtKeyPath: function changeTypeOfSubsectionAtKeyPath(subsectionKeyPath, subsectionType) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.subsectionAtKeyPath.changeType,
+				documentID: documentID,
+				sectionID: sectionID,
+				subsectionKeyPath: subsectionKeyPath,
+				subsectionType: subsectionType
+			});
+		},
+
+		removeSubsectionAtKeyPath: function removeSubsectionAtKeyPath(subsectionKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.subsectionAtKeyPath.remove,
+				documentID: documentID,
+				sectionID: sectionID,
+				subsectionKeyPath: subsectionKeyPath
+			});
+		},
+
+		changeTypeOfBlockAtKeyPath: function changeTypeOfBlockAtKeyPath(blockTypeGroup, blockType, blockKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
+				documentID: documentID,
+				sectionID: sectionID,
+				blockKeyPath: blockKeyPath,
+				blockTypeGroup: blockTypeGroup,
+				blockType: blockType
+			});
+		},
+
+		removeBlockAtKeyPath: function removeBlockAtKeyPath(blockKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.remove,
+				documentID: documentID,
+				sectionID: sectionID,
+				blockKeyPath: blockKeyPath
+			});
+		},
+
+		insertBlockOfTypeAtIndex: function insertBlockOfTypeAtIndex(typeGroup, type, blockIndex) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex,
+				typeGroup: typeGroup,
+				type: type,
+				blockIndex: blockIndex,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		insertRelatedBlockAfterBlockAtKeyPath: function insertRelatedBlockAfterBlockAtKeyPath(blockKeyPath) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
+				blockKeyPath: blockKeyPath,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		removeEditedBlock: function removeEditedBlock() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedBlock.remove,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		insertRelatedBlockAfterEditedBlock: function insertRelatedBlockAfterEditedBlock() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
+				useEditedBlockKeyPath: true,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		insertRelatedTextItemBlocksAfterEditedBlockWithPastedText: function insertRelatedTextItemBlocksAfterEditedBlockWithPastedText(pastedText) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText,
+				useEditedBlockKeyPath: true,
+				pastedText: pastedText,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		// Updating Blocks
+
+		updateValueForBlockAtKeyPath: function updateValueForBlockAtKeyPath(blockKeyPath, defaultValue, newValueFunction) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.blockAtKeyPath.changeValue,
+				documentID: documentID,
+				sectionID: sectionID,
+				blockKeyPath: blockKeyPath,
+				defaultValue: defaultValue,
+				newValueFunction: newValueFunction
+			});
+		},
+
+		changeTraitUsingFunctionForEditedBlock: function changeTraitUsingFunctionForEditedBlock(traitID, defaultValue, newValueFunction) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedBlock.changeTraitValue,
+				documentID: documentID,
+				sectionID: sectionID,
+				traitID: traitID,
+				defaultValue: defaultValue,
+				newValueFunction: newValueFunction
+			});
+		},
+
+		toggleBooleanTraitForEditedBlock: function toggleBooleanTraitForEditedBlock(traitID) {
+			this.changeTraitUsingFunctionForEditedBlock(traitID, false, function (valueBefore) {
+				return !valueBefore;
+			});
+		},
+
+		changeMapTraitUsingFunctionForEditedBlock: function changeMapTraitUsingFunctionForEditedBlock(traitID, changeFunction) {
+			this.changeTraitUsingFunctionForEditedBlock(traitID, Immutable.Map(), changeFunction);
+		},
+
+		removeTraitWithIDForEditedBlock: function removeTraitWithIDForEditedBlock(traitID) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedBlock.removeTrait,
+				documentID: documentID,
+				sectionID: sectionID,
+				traitID: traitID
+			});
+		},
+
+		removeEditedTextItem: function removeEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.remove,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		setTextForEditedTextItem: function setTextForEditedTextItem(text) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.setText,
+				documentID: documentID,
+				sectionID: sectionID,
+				textItemText: text
+			});
+		},
+
+		changeTraitUsingFunctionForEditedTextItem: function changeTraitUsingFunctionForEditedTextItem(traitID, defaultValue, newValueFunction) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.changeTraitValue,
+				documentID: documentID,
+				sectionID: sectionID,
+				traitID: traitID,
+				defaultValue: defaultValue,
+				newValueFunction: newValueFunction
+			});
+		},
+
+		toggleBooleanTraitForEditedTextItem: function toggleBooleanTraitForEditedTextItem(traitID) {
+			this.changeTraitUsingFunctionForEditedTextItem(traitID, false, function (valueBefore) {
+				return !valueBefore;
+			});
+		},
+
+		changeMapTraitUsingFunctionForEditedTextItem: function changeMapTraitUsingFunctionForEditedTextItem(traitID, changeFunction) {
+			this.changeTraitUsingFunctionForEditedTextItem(traitID, Immutable.Map(), changeFunction);
+		},
+
+		removeTraitWithIDForEditedTextItem: function removeTraitWithIDForEditedTextItem(traitID) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.removeTrait,
+				traitID: traitID,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		editPreviousItemBeforeEditedTextItem: function editPreviousItemBeforeEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.editPreviousItem,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		editNextItemAfterEditedTextItem: function editNextItemAfterEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.editNextItem,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		addNewTextItemAfterEditedTextItem: function addNewTextItemAfterEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.addNewTextItemAfter,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		addLineBreakAfterEditedTextItem: function addLineBreakAfterEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.addLineBreakAfter,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		splitBlockBeforeEditedTextItem: function splitBlockBeforeEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.splitBlockBefore,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		joinEditedTextItemWithPreviousItem: function joinEditedTextItemWithPreviousItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.joinWithPreviousItem,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		splitTextInRangeOfEditedTextItem: function splitTextInRangeOfEditedTextItem(textRange) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.splitTextInRange,
+				textRange: textRange,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		registerSelectedTextRangeFunctionForEditedItem: function registerSelectedTextRangeFunctionForEditedItem(selectedTextRangeFunction) {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.registerSelectedTextRangeFunction,
+				selectedTextRangeFunction: selectedTextRangeFunction,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
+		unregisterSelectedTextRangeFunctionForEditedItem: function unregisterSelectedTextRangeFunctionForEditedItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.unregisterSelectedTextRangeFunction,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		}
+	};
+};
+
+var ActionsContent = {
+	loadSpecsWithURLs: loadSpecsWithURLs,
+	loadContentForDocumentWithID: loadContentForDocumentWithID,
+	setSpecsURLsForDocumentWithID: setSpecsURLsForDocumentWithID,
+	getActionsForDocumentSection: getActionsForDocumentSection
+};
+
+module.exports = ActionsContent;
+
+},{"../app-dispatcher":177,"./ContentActionsEventIDs":176,"immutable":11}],176:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
 var ActionsContentEventIDs = {
+	specs: {
+		loadSpecsWithURLs: "specs.loadSpecsWithURLs"
+	},
+	document: {
+		loadContent: "document.loadContent",
+		setSpecsURLs: "document.setSpecsURLs"
+	},
 	documentSection: {
-		setContent: "documentSection.setContent",
+		setContentJSON: "documentSection.setContentJSON",
 		saveChanges: "documentSection.saveChanges",
 		edit: {
 			blockWithKeyPath: "documentSection.edit.blockWithKeyPath",
@@ -27144,6 +27638,8 @@ var ActionsContentEventIDs = {
 			keepAtCurrentSpot: "documentSection.focusedBlockForReordering.keepAtCurrentSpot",
 			moveToBeforeBlockAtIndex: "documentSection.focusedBlockForReordering.moveToBeforeBlockAtIndex"
 		},
+		showSettings: "documentSection.showSettings",
+		hideSettings: "documentSection.hideSettings",
 		enterHTMLPreview: "documentSection.enterHTMLPreview",
 		exitHTMLPreview: "documentSection.exitHTMLPreview",
 		beginReordering: "documentSection.beginReordering",
@@ -27153,406 +27649,7 @@ var ActionsContentEventIDs = {
 
 module.exports = ActionsContentEventIDs;
 
-},{}],176:[function(require,module,exports){
-/**
-	Copyright 2015 Patrick George Wyndham Smith
-*/
-
-"use strict";
-
-var AppDispatcher = require("../app-dispatcher");
-var ContentStore = require("../stores/store-content");
-var Immutable = require("immutable");
-
-var eventIDs = require("./actions-content-eventIDs");
-var documentSectionEventIDs = eventIDs.documentSection;
-
-var ActionsContent = {
-	getActionsForDocumentSection: function getActionsForDocumentSection(documentID, sectionID) {
-		var documentSectionStore = ContentStore.getDocumentSection(documentID, sectionID);
-
-		function dispatchForDocumentSection(payload) {
-			payload.documentID = documentID;
-			payload.sectionID = sectionID;
-
-			AppDispatcher.dispatch(payload);
-		};
-
-		return {
-			setContent: function setContent(content) {
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.setContent,
-					content: content
-				});
-			},
-
-			saveChanges: function saveChanges() {
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.saveChanges
-				});
-			},
-
-			enterHTMLPreview: function enterHTMLPreview() {
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.enterHTMLPreview
-				});
-			},
-
-			exitHTMLPreview: function exitHTMLPreview() {
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.exitHTMLPreview
-				});
-			},
-
-			editBlockWithKeyPath: function editBlockWithKeyPath(blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.edit.blockWithKeyPath,
-					blockKeyPath: blockKeyPath,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			editTextItemWithKeyPath: function editTextItemWithKeyPath(textItemKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.edit.textItemWithKeyPath,
-					documentID: documentID,
-					sectionID: sectionID,
-					textItemKeyPath: textItemKeyPath
-				});
-			},
-
-			editTextItemBasedBlockWithKeyPathAddingIfNeeded: function editTextItemBasedBlockWithKeyPathAddingIfNeeded(blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath
-				});
-			},
-
-			finishEditing: function finishEditing() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.finishEditing,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			// REORDERING
-
-			beginReordering: function beginReordering() {
-				this.finishEditing();
-
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.beginReordering
-				});
-			},
-
-			finishReordering: function finishReordering() {
-				dispatchForDocumentSection({
-					eventID: documentSectionEventIDs.finishReordering
-				});
-			},
-
-			focusOnBlockAtKeyPathForReordering: function focusOnBlockAtKeyPathForReordering(blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.focusOnForReordering,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath
-				});
-			},
-
-			keepFocusedBlockForReorderingInCurrentSpot: function keepFocusedBlockForReorderingInCurrentSpot() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.focusedBlockForReordering.keepAtCurrentSpot,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			moveFocusedBlockForReorderingToBeforeBlockAtIndex: function moveFocusedBlockForReorderingToBeforeBlockAtIndex(blockIndex) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex,
-					documentID: documentID,
-					sectionID: sectionID,
-					beforeBlockAtIndex: blockIndex
-				});
-			},
-
-			// INSERTING
-
-			insertSubsectionOfTypeAtBlockIndex: function insertSubsectionOfTypeAtBlockIndex(subsectionType, blockIndex) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex,
-					documentID: documentID,
-					sectionID: sectionID,
-					subsectionType: subsectionType,
-					blockIndex: blockIndex
-				});
-			},
-
-			changeTypeOfSubsectionAtKeyPath: function changeTypeOfSubsectionAtKeyPath(subsectionKeyPath, subsectionType) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.subsectionAtKeyPath.changeType,
-					documentID: documentID,
-					sectionID: sectionID,
-					subsectionKeyPath: subsectionKeyPath,
-					subsectionType: subsectionType
-				});
-			},
-
-			removeSubsectionAtKeyPath: function removeSubsectionAtKeyPath(subsectionKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.subsectionAtKeyPath.remove,
-					documentID: documentID,
-					sectionID: sectionID,
-					subsectionKeyPath: subsectionKeyPath
-				});
-			},
-
-			changeTypeOfBlockAtKeyPath: function changeTypeOfBlockAtKeyPath(blockTypeGroup, blockType, blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath,
-					blockTypeGroup: blockTypeGroup,
-					blockType: blockType
-				});
-			},
-
-			removeBlockAtKeyPath: function removeBlockAtKeyPath(blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.remove,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath
-				});
-			},
-
-			insertBlockOfTypeAtIndex: function insertBlockOfTypeAtIndex(typeGroup, type, blockIndex) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex,
-					typeGroup: typeGroup,
-					type: type,
-					blockIndex: blockIndex,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			insertRelatedBlockAfterBlockAtKeyPath: function insertRelatedBlockAfterBlockAtKeyPath(blockKeyPath) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
-					blockKeyPath: blockKeyPath,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			removeEditedBlock: function removeEditedBlock() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedBlock.remove,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			insertRelatedBlockAfterEditedBlock: function insertRelatedBlockAfterEditedBlock() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
-					useEditedBlockKeyPath: true,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			insertRelatedTextItemBlocksAfterEditedBlockWithPastedText: function insertRelatedTextItemBlocksAfterEditedBlockWithPastedText(pastedText) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText,
-					useEditedBlockKeyPath: true,
-					pastedText: pastedText,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			// Updating Blocks
-
-			updateValueForBlockAtKeyPath: function updateValueForBlockAtKeyPath(blockKeyPath, defaultValue, newValueFunction) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.blockAtKeyPath.changeValue,
-					documentID: documentID,
-					sectionID: sectionID,
-					blockKeyPath: blockKeyPath,
-					defaultValue: defaultValue,
-					newValueFunction: newValueFunction
-				});
-			},
-
-			changeTraitUsingFunctionForEditedBlock: function changeTraitUsingFunctionForEditedBlock(traitID, defaultValue, newValueFunction) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedBlock.changeTraitValue,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID,
-					defaultValue: defaultValue,
-					newValueFunction: newValueFunction
-				});
-			},
-
-			toggleBooleanTraitForEditedBlock: function toggleBooleanTraitForEditedBlock(traitID) {
-				this.changeTraitUsingFunctionForEditedBlock(traitID, false, function (valueBefore) {
-					return !valueBefore;
-				});
-			},
-
-			changeMapTraitUsingFunctionForEditedBlock: function changeMapTraitUsingFunctionForEditedBlock(traitID, changeFunction) {
-				this.changeTraitUsingFunctionForEditedBlock(traitID, Immutable.Map(), changeFunction);
-			},
-
-			removeTraitWithIDForEditedBlock: function removeTraitWithIDForEditedBlock(traitID) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedBlock.removeTrait,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID
-				});
-			},
-
-			removeEditedTextItem: function removeEditedTextItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.remove,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			setTextForEditedTextItem: function setTextForEditedTextItem(text) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.setText,
-					documentID: documentID,
-					sectionID: sectionID,
-					textItemText: text
-				});
-			},
-
-			changeTraitUsingFunctionForEditedTextItem: function changeTraitUsingFunctionForEditedTextItem(traitID, defaultValue, newValueFunction) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.changeTraitValue,
-					documentID: documentID,
-					sectionID: sectionID,
-					traitID: traitID,
-					defaultValue: defaultValue,
-					newValueFunction: newValueFunction
-				});
-			},
-
-			toggleBooleanTraitForEditedTextItem: function toggleBooleanTraitForEditedTextItem(traitID) {
-				this.changeTraitUsingFunctionForEditedTextItem(traitID, false, function (valueBefore) {
-					return !valueBefore;
-				});
-			},
-
-			changeMapTraitUsingFunctionForEditedTextItem: function changeMapTraitUsingFunctionForEditedTextItem(traitID, changeFunction) {
-				this.changeTraitUsingFunctionForEditedTextItem(traitID, Immutable.Map(), changeFunction);
-			},
-
-			removeTraitWithIDForEditedTextItem: function removeTraitWithIDForEditedTextItem(traitID) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.removeTrait,
-					traitID: traitID,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			editPreviousItemBeforeEditedTextItem: function editPreviousItemBeforeEditedTextItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.editPreviousItem,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			editNextItemAfterEditedTextItem: function editNextItemAfterEditedTextItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.editNextItem,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			addNewTextItemAfterEditedTextItem: function addNewTextItemAfterEditedTextItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.addNewTextItemAfter,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			addLineBreakAfterEditedTextItem: function addLineBreakAfterEditedTextItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.addLineBreakAfter,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			splitBlockBeforeEditedTextItem: function splitBlockBeforeEditedTextItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.splitBlockBefore,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			joinEditedTextItemWithPreviousItem: function joinEditedTextItemWithPreviousItem() {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.joinWithPreviousItem,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			splitTextInRangeOfEditedTextItem: function splitTextInRangeOfEditedTextItem(textRange) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.splitTextInRange,
-					textRange: textRange,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			registerSelectedTextRangeFunctionForEditedItem: function registerSelectedTextRangeFunctionForEditedItem(selectedTextRangeFunction) {
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.registerSelectedTextRangeFunction,
-					selectedTextRangeFunction: selectedTextRangeFunction,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			},
-
-			unregisterSelectedTextRangeFunctionForEditedItem: function unregisterSelectedTextRangeFunctionForEditedItem() {
-				/*
-    if (AppDispatcher.isDispatching) {
-    	AppDispatcher.waitFor([ContentStore.dispatchToken]);
-    }*/
-				AppDispatcher.dispatch({
-					eventID: documentSectionEventIDs.editedItem.unregisterSelectedTextRangeFunction,
-					documentID: documentID,
-					sectionID: sectionID
-				});
-			}
-		};
-	}
-};
-
-module.exports = ActionsContent;
-
-},{"../app-dispatcher":177,"../stores/store-content":189,"./actions-content-eventIDs":175,"immutable":11}],177:[function(require,module,exports){
+},{}],177:[function(require,module,exports){
 "use strict";
 
 var Dispatcher = require("flux").Dispatcher;
@@ -27562,43 +27659,6 @@ var AppDispatcher = new Dispatcher();
 module.exports = AppDispatcher;
 
 },{"flux":2}],178:[function(require,module,exports){
-/**
-	Copyright 2015 Patrick George Wyndham Smith
-*/
-
-"use strict";
-
-var TypesAssistant = {};
-
-TypesAssistant.findParticularSubsectionOptionsInList = function (subsectionIDToFind, subsectionOptionsList) {
-	return subsectionOptionsList.find(function (subsectionOptions) {
-		return subsectionOptions.get("id") === subsectionIDToFind;
-	});
-};
-
-TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function (chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
-	// Find options by searching for the particular ID
-	var chosenBlockTypeOptions = null;
-	var chosenTypesList = blockGroupIDsToTypesMap.get(chosenBlockTypeGroup);
-	chosenTypesList.some(function (blockTypeOptions) {
-		if (blockTypeOptions.get("id") === chosenBlockType) {
-			chosenBlockTypeOptions = blockTypeOptions;
-			return true;
-		}
-	});
-
-	return chosenBlockTypeOptions;
-};
-
-TypesAssistant.findParticularTraitOptionsInList = function (traitIDToFind, traitOptionsList) {
-	return traitOptionsList.find(function (traitOptions) {
-		return traitOptions.get("id") === traitIDToFind;
-	});
-};
-
-module.exports = TypesAssistant;
-
-},{}],179:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -27756,7 +27816,48 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 
 module.exports = HTMLRepresentationAssistant;
 
-},{"immutable":11,"react":174}],180:[function(require,module,exports){
+},{"immutable":11,"react":174}],179:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
+var TypesAssistant = {};
+
+TypesAssistant.findParticularSubsectionOptionsInList = function (subsectionIDToFind, subsectionOptionsList) {
+	return subsectionOptionsList.find(function (subsectionOptions) {
+		return subsectionOptions.get("id") === subsectionIDToFind;
+	});
+};
+
+TypesAssistant.findParticularBlockTypeOptionsWithGroupAndTypeInMap = function (chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap) {
+	// Find options by searching for the particular ID
+	var chosenBlockTypeOptions = null;
+	var chosenTypesList = blockGroupIDsToTypesMap.get(chosenBlockTypeGroup);
+	if (!chosenTypesList) {
+		return null;
+	}
+
+	chosenTypesList.some(function (blockTypeOptions) {
+		if (blockTypeOptions.get("id") === chosenBlockType) {
+			chosenBlockTypeOptions = blockTypeOptions;
+			return true;
+		}
+	});
+
+	return chosenBlockTypeOptions;
+};
+
+TypesAssistant.findParticularTraitOptionsInList = function (traitIDToFind, traitOptionsList) {
+	return traitOptionsList.find(function (traitOptions) {
+		return traitOptions.get("id") === traitIDToFind;
+	});
+};
+
+module.exports = TypesAssistant;
+
+},{}],180:[function(require,module,exports){
 module.exports={
 	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
 	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.0"},
@@ -27808,7 +27909,7 @@ module.exports={
 			"outerHTMLTagName": "blockquote"
 		}
 	],
-	"blockTypesByGroups": {
+	"blockTypesByGroup": {
 		"text": [
 			{"id": "body", "title": "Paragraph", "outerHTMLTagName": "p"},
 			{"id": "heading", "title": "Heading 1", "outerHTMLTagName": "h1"},
@@ -28025,7 +28126,7 @@ module.exports={
 			}
 		]
 	},
-	"traits": [
+	"traitTypes": [
 		{
 			"id": "bold",
 			"title": "Bold",
@@ -28172,20 +28273,7 @@ module.exports={
 			"allowedForBlockTypesByGroupType": true,
 			"innerHTMLRepresentation": null
 		}
-	],
-	"itemsByBlock": {
-		"*": {
-			"text": [
-				
-			]
-		},
-		"media": {
-			"image externalImage": [
-				{"id": "resolution-1x", "title": "1x Resolution"},
-				{"id": "resolution-2x", "title": "2x Resolution"}
-			]
-		}
-	}
+	]
 }
 },{}],181:[function(require,module,exports){
 /**
@@ -28195,10 +28283,497 @@ module.exports={
 "use strict";
 
 var React = require("react");
-var Toolbars = require("./editor-toolbars");
 var Immutable = require("immutable");
-var ContentStore = require("../stores/store-content.js");
-var SettingsStore = require("../stores/store-settings.js");
+var ContentStore = require("../stores/ContentStore.js");
+var ContentActions = require("../actions/ContentActions");
+var EditorFields = require("./EditorFields");
+
+var _require = require("../ui/ui-mixins");
+
+var BaseClassNamesMixin = _require.BaseClassNamesMixin;
+
+var ContentSettingsElement = React.createClass({
+	displayName: "ContentSettingsElement",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			baseClassNames: ["document_contentSettings"],
+			documentID: null,
+			specsURLs: null
+		};
+	},
+
+	getSettingsFields: function getSettingsFields() {
+		return [{
+			id: "specs",
+			title: "Specs",
+			type: "choice",
+			choices: [{
+				id: "default",
+				title: "Use Default Specs"
+			}, {
+				id: "URLs",
+				title: "Enter List of Specs URLs",
+				fields: [{
+					id: "multiple",
+					type: "url",
+					multiple: true,
+					title: "Specs URLs",
+					description: "The Specs you would like to use for this document.",
+					placeholder: "Enter the URL to a Specs JSON file"
+				}]
+			}]
+		}];
+	},
+
+	getSettingsValues: function getSettingsValues() {
+		var _props = this.props;
+		var documentID = _props.documentID;
+		var specsURLs = _props.specsURLs;
+
+		return {
+			specs: specsURLs == null ? {
+				choice_selectedID: "default",
+				"default": null
+			} : {
+				choice_selectedID: "URLs",
+				URLs: {
+					multiple: specsURLs.toJS()
+				}
+			}
+		};
+	},
+
+	onReplaceInfoAtKeyPath: function onReplaceInfoAtKeyPath(info, keyPath) {
+		var _props = this.props;
+		var documentID = _props.documentID;
+		var specsURLs = _props.specsURLs;
+
+		//console.log(keyPath, info);
+		if (keyPath[0] === "specs") {
+			// Choice changed
+			if (keyPath[1] === undefined) {
+				var specsChoice = info.choice_selectedID;
+				if (specsChoice === "default") {
+					ContentActions.setSpecsURLsForDocumentWithID(documentID, null);
+				} else if (specsChoice === "URLs") {
+					//console.log('set []');
+					ContentActions.setSpecsURLsForDocumentWithID(documentID, Immutable.List());
+				}
+			} else if (keyPath[1] === "URLs") {
+				if (keyPath[2] === "multiple") {
+					var index = keyPath[3];
+					specsURLs = specsURLs.set(index, info);
+					//console.log('specsURLs set', specsURLs.toJS());
+					ContentActions.setSpecsURLsForDocumentWithID(documentID, specsURLs);
+				}
+			}
+		}
+	},
+
+	render: function render() {
+		var children = [];
+
+		var headingText = "Settings for Document";
+		var values = this.getSettingsValues();
+
+		children.push(React.createElement("h2", {
+			key: "heading",
+			className: this.getChildClassNameStringWithSuffix("_heading")
+		}, headingText), React.createElement(EditorFields.FieldsHolder, {
+			key: "fields",
+			className: this.getChildClassNameStringWithSuffix("_fields"),
+			fields: this.getSettingsFields(),
+			values: this.getSettingsValues(),
+			onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
+		}));
+
+		return React.createElement("div", {
+			className: "contentSettings"
+		}, children);
+	}
+});
+
+module.exports = ContentSettingsElement;
+
+},{"../actions/ContentActions":175,"../stores/ContentStore.js":190,"../ui/ui-mixins":196,"./EditorFields":184,"immutable":11,"react":174}],182:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
+var React = require("react");
+var Immutable = require("immutable");
+//let PureRenderMixin = require('react/addons').addons.PureRenderMixin;
+var ContentStore = require("../stores/ContentStore");
+var SpecsStore = require("../stores/SpecsStore");
+var ConfigurationStore = require("../stores/ConfigurationStore");
+var ContentSavingStore = require("../stores/ContentSavingStore");
+var ContentLoadingStore = require("../stores/ContentLoadingStore");
+var ContentActions = require("../actions/ContentActions");
+var EditorElementsCreator = require("./EditorElements");
+var PreviewElementsCreator = require("../preview/PreviewElements");
+var ContentSettingsElement = require("./ContentSettings");
+var Toolbars = require("./EditorToolbars");
+var PreviewStore = require("../stores/PreviewStore");
+var ReorderingStore = require("../stores/ReorderingStore");
+
+/*
+* State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
+*/
+var latestStateWithPreviousState = function latestStateWithPreviousState(_x, _ref) {
+	var previousState = arguments[0] === undefined ? null : arguments[0];
+	var _ref$updateAll = _ref.updateAll;
+	var updateAll = _ref$updateAll === undefined ? false : _ref$updateAll;
+	var _ref$updateDocumentState = _ref.updateDocumentState;
+	var updateDocumentState = _ref$updateDocumentState === undefined ? updateAll : _ref$updateDocumentState;
+	var _ref$updateViewingState = _ref.updateViewingState;
+	var updateViewingState = _ref$updateViewingState === undefined ? updateAll : _ref$updateViewingState;
+	var _ref$updateActions = _ref.updateActions;
+	var updateActions = _ref$updateActions === undefined ? updateAll : _ref$updateActions;
+	return (function () {
+		if (!previousState) {
+			previousState = {
+				documentState: Immutable.Map(),
+				viewingState: Immutable.Map(),
+				actions: null
+			};
+		}
+
+		var documentID = ConfigurationStore.getCurrentDocumentID();
+		var sectionID = ConfigurationStore.getCurrentDocumentSectionID();
+
+		var documentState = previousState.documentState;
+		var viewingState = previousState.viewingState;
+		var actions = previousState.actions;
+
+		if (updateDocumentState) {
+			var editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
+
+			var previousDocumentState = documentState;
+			documentState = documentState.merge({
+				documentID: documentID,
+				sectionID: sectionID,
+				specsURLs: ContentStore.getSpecsURLsForDocumentWithID(documentID),
+				content: ContentStore.getContentForDocumentSection(documentID, sectionID),
+				specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID),
+				blockTypeGroups: ConfigurationStore.getAvailableBlockTypesGroups(),
+				editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID),
+				editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID),
+				editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID),
+				editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID),
+				focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, sectionID),
+				focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID)
+			});
+		}
+
+		if (updateViewingState) {
+			viewingState = viewingState.merge({
+				isShowingSettings: ContentStore.getIsShowingSettings(),
+				isPreviewing: PreviewStore.getIsPreviewing(),
+				isReordering: ReorderingStore.getIsReordering()
+			});
+		}
+
+		if (updateActions) {
+			actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
+		}
+
+		return {
+			documentState: documentState,
+			viewingState: viewingState,
+			actions: actions
+		};
+	})();
+};
+
+var EditorMain = React.createClass({
+	displayName: "EditorMain",
+
+	getInitialState: function getInitialState() {
+		return latestStateWithPreviousState(null, {
+			updateAll: true
+		});
+	},
+
+	listenToStores: function listenToStores(on) {
+		var method = on ? "on" : "off";
+
+		ContentStore[method]("specsChangedForDocument", this.updateDocumentState);
+		ContentStore[method]("contentChangedForDocumentSection", this.updateDocumentState);
+		ContentStore[method]("editedBlockChangedForDocumentSection", this.updateDocumentState);
+		ContentStore[method]("editedItemChangedForDocumentSection", this.updateDocumentState);
+		ContentStore[method]("isShowingSettingsDidChange", this.updateViewingState);
+
+		SpecsStore[method]("didLoadContentForSpecWithURL", this.updateDocumentState);
+
+		ReorderingStore[method]("focusedBlockDidChange", this.updateDocumentState);
+
+		ConfigurationStore[method]("currentDocumentDidChange", this.currentDocumentDidChange);
+
+		PreviewStore[method]("didEnterPreview", this.updateViewingState);
+		PreviewStore[method]("didExitPreview", this.updateViewingState);
+
+		ReorderingStore[method]("didBeginReordering", this.updateViewingState);
+		ReorderingStore[method]("didFinishReordering", this.updateViewingState);
+	},
+
+	componentDidMount: function componentDidMount() {
+		this.listenToStores(true);
+
+		document.body.addEventListener("click", this.bodyBackgroundWasClicked);
+		document.body.addEventListener("touchend", this.bodyBackgroundWasClicked);
+	},
+
+	componentWillUnmount: function componentWillUnmount() {
+		this.listenToStores(false);
+
+		document.body.removeEventListener("click", this.bodyBackgroundWasClicked);
+		document.body.removeEventListener("touchend", this.bodyBackgroundWasClicked);
+	},
+
+	bodyBackgroundWasClicked: function bodyBackgroundWasClicked(event) {
+		if (event.target === document.body) {
+			//console.log('backgroundWasClicked');
+			this.finishEditing();
+		}
+	},
+
+	editorBackgroundWasClicked: function editorBackgroundWasClicked(event) {
+		//console.log('editorBackgroundWasClicked');
+		this.finishEditing();
+	},
+
+	finishEditing: function finishEditing() {
+		var actions = this.state.actions;
+
+		if (actions) {
+			actions.finishEditing();
+		}
+	},
+
+	updateState: function updateState() {
+		var options = arguments[0] === undefined ? {} : arguments[0];
+
+		this.setState(function (previousState, props) {
+			return latestStateWithPreviousState(previousState, options);
+		});
+	},
+
+	updateDocumentState: function updateDocumentState() {
+		this.updateState({
+			updateDocumentState: true
+		});
+	},
+
+	updateViewingState: function updateViewingState() {
+		this.updateState({
+			updateViewingState: true
+		});
+	},
+
+	currentDocumentDidChange: function currentDocumentDidChange() {
+		this.updateState({
+			updateDocumentState: true,
+			updateActions: true
+		});
+	},
+
+	shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+		var currentState = this.state;
+
+		if (currentState.documentState != nextState.documentState) {
+			return true;
+		}
+		if (currentState.viewingState != nextState.viewingState) {
+			return true;
+		}
+		if (currentState.actions != nextState.actions) {
+			return true;
+		}
+
+		return false;
+	},
+
+	render: function render() {
+		var _state = this.state;
+		var documentState = _state.documentState;
+		var viewingState = _state.viewingState;
+		var actions = _state.actions;
+
+		var _documentState$toObject = documentState.toObject();
+
+		var documentID = _documentState$toObject.documentID;
+		var sectionID = _documentState$toObject.sectionID;
+		var specsURLs = _documentState$toObject.specsURLs;
+		var content = _documentState$toObject.content;
+		var specs = _documentState$toObject.specs;
+		var blockTypeGroups = _documentState$toObject.blockTypeGroups;
+		var editedBlockIdentifier = _documentState$toObject.editedBlockIdentifier;
+		var editedBlockKeyPath = _documentState$toObject.editedBlockKeyPath;
+		var editedTextItemIdentifier = _documentState$toObject.editedTextItemIdentifier;
+		var editedTextItemKeyPath = _documentState$toObject.editedTextItemKeyPath;
+		var focusedBlockIdentifierForReordering = _documentState$toObject.focusedBlockIdentifierForReordering;
+		var focusedBlockKeyPathForReordering = _documentState$toObject.focusedBlockKeyPathForReordering;
+
+		if (editedBlockKeyPath) {
+			editedBlockKeyPath = editedBlockKeyPath.toArray();
+		}
+		if (editedTextItemKeyPath) {
+			editedTextItemKeyPath = editedTextItemKeyPath.toArray();
+		}
+		if (focusedBlockKeyPathForReordering) {
+			focusedBlockKeyPathForReordering = focusedBlockKeyPathForReordering.toArray();
+		}
+
+		var _viewingState$toObject = viewingState.toObject();
+
+		var isShowingSettings = _viewingState$toObject.isShowingSettings;
+		var isPreviewing = _viewingState$toObject.isPreviewing;
+		var isReordering = _viewingState$toObject.isReordering;
+
+		var innerElement;
+		if (isShowingSettings) {
+			innerElement = React.createElement(ContentSettingsElement, {
+				key: "contentSettings",
+				documentID: documentID,
+				specsURLs: specsURLs
+			});
+		} else if (!specs) {
+			innerElement = React.createElement("div", {
+				key: "specsLoading",
+				className: "document_loadingSpecs"
+			}, "Loading Specs");
+		} else if (!content) {
+			innerElement = React.createElement("div", {
+				key: "contentLoading",
+				className: "document_loadingContent"
+			}, "Loading Content");
+		} else if (isPreviewing) {
+			innerElement = React.createElement(PreviewElementsCreator.ViewHTMLElement, {
+				key: "preview",
+				documentID: documentID,
+				sectionID: sectionID,
+				content: content,
+				specs: specs,
+				actions: actions
+			});
+		} else {
+			innerElement = React.createElement(EditorElementsCreator.MainElement, {
+				key: "content",
+				contentImmutable: content,
+				specsImmutable: specs,
+				actions: actions,
+				blockTypeGroups: blockTypeGroups,
+				editedBlockIdentifier: editedBlockIdentifier,
+				editedBlockKeyPath: editedBlockKeyPath,
+				editedTextItemIdentifier: editedTextItemIdentifier,
+				editedTextItemKeyPath: editedTextItemKeyPath,
+				isReordering: isReordering,
+				focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
+				focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
+			});
+		}
+
+		var children = [];
+
+		if (ConfigurationStore.wantsMainToolbar()) {
+			children.push(React.createElement(Toolbars.MainToolbar, {
+				key: "mainToolbar",
+				actions: actions,
+				isShowingSettings: isShowingSettings,
+				isPreviewing: isPreviewing,
+				isReordering: isReordering
+			}));
+		}
+
+		children.push(innerElement);
+
+		return React.createElement("div", {
+			key: "editor",
+			onClick: this.editorBackgroundWasClicked,
+			onTouchEnd: this.editorBackgroundWasClicked
+		}, children);
+	}
+});
+
+var defaultDOMElement = function defaultDOMElement() {
+	return document.getElementById("burntIcingEditor");
+};
+
+var EditorController = {
+	go: function go() {
+		var DOMElement = arguments[0] === undefined ? defaultDOMElement() : arguments[0];
+
+		var documentID = ConfigurationStore.getCurrentDocumentID();
+		ContentActions.loadContentForDocumentWithID(documentID);
+
+		React.render(React.createElement(EditorMain, {
+			key: "editor"
+		}), DOMElement);
+
+		window.burntIcing.editor = this;
+
+		window.burntIcing.copyContentJSONForCurrentDocumentSection = function () {
+			var documentID = ConfigurationStore.getCurrentDocumentID();
+			var sectionID = ConfigurationStore.getCurrentDocumentSectionID();
+
+			var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
+
+			return contentJSON;
+		};
+
+		window.burntIcing.copyPreviewHTMLForCurrentDocumentSection = function () {
+			var documentID = ConfigurationStore.getCurrentDocumentID();
+			var sectionID = ConfigurationStore.getCurrentDocumentSectionID();
+			// Get content and specs
+			var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
+			var specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
+			// Create preview HTML.
+			var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
+
+			return previewHTML;
+		};
+	},
+
+	onDocumentLoad: function onDocumentLoad(DOMElement, event) {
+		document.removeEventListener("DOMContentLoaded", this.onDocumentLoadBound);
+		this.onDocumentLoadBound = null;
+
+		this.go(DOMElement);
+	},
+
+	goOnDocumentLoad: function goOnDocumentLoad() {
+		var DOMElement = arguments[0] === undefined ? defaultDOMElement() : arguments[0];
+
+		if (document.readyState === "loading") {
+			this.onDocumentLoadBound = this.onDocumentLoad.bind(this, DOMElement);
+			document.addEventListener("DOMContentLoaded", this.onDocumentLoadBound);
+		} else {
+			setTimeout((function () {
+				this.go(DOMElement);
+			}).bind(this), 0);
+		}
+	}
+};
+
+module.exports = EditorController;
+
+},{"../actions/ContentActions":175,"../preview/PreviewElements":186,"../stores/ConfigurationStore":187,"../stores/ContentLoadingStore":188,"../stores/ContentSavingStore":189,"../stores/ContentStore":190,"../stores/PreviewStore":191,"../stores/ReorderingStore":192,"../stores/SpecsStore":193,"./ContentSettings":181,"./EditorElements":183,"./EditorToolbars":185,"immutable":11,"react":174}],183:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
+var React = require("react");
+var Toolbars = require("./EditorToolbars");
+var Immutable = require("immutable");
+var ContentStore = require("../stores/ContentStore");
+var ConfigurationStore = require("../stores/ConfigurationStore");
 var ReorderingStore = require("../stores/ReorderingStore");
 
 var _require = require("../assistants/TypesAssistant");
@@ -28210,11 +28785,9 @@ var _require2 = require("../ui/ui-mixins");
 
 var BaseClassNamesMixin = _require2.BaseClassNamesMixin;
 
-var _require3 = require("../ui/ui-constants");
+var KeyCodes = require("../ui/KeyCodes");
 
-var KeyCodes = _require3.KeyCodes;
-
-var HTMLRepresentationAssistant = require("../assistants/html-representation-assistant");
+var HTMLRepresentationAssistant = require("../assistants/HTMLRepresentationAssistant");
 
 var SubsectionElement = React.createClass({
 	displayName: "SubsectionElement",
@@ -28679,8 +29252,8 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 	var focusedBlockKeyPathForReordering = _ref.focusedBlockKeyPathForReordering;
 
 	var subsectionsSpecs = specsImmutable.get("subsectionTypes", Immutable.List());
-	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroups", Immutable.Map());
-	var traitSpecs = specsImmutable.get("traits", Immutable.List());
+	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroup", Immutable.Map());
+	var traitSpecs = specsImmutable.get("traitTypes", Immutable.List());
 
 	var currentSubsectionType = specsImmutable.get("defaultSubsectionType", "normal");
 	var currentSubsectionChildIndex = 0;
@@ -28783,13 +29356,15 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 		actions.insertBlockOfTypeAtIndex(typeGroupOptions.get("id"), typeExtensionOptions.get("id"), blockCount);
 	};
 
-	elements.push(React.createElement(Toolbars.AddBlockElement, {
-		key: "addBlock-end",
-		addAtEnd: true,
-		blockTypeGroups: blockTypeGroups,
-		blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
-		onCreateBlockOfType: createBlockOfTypeAtEnd
-	}));
+	if (!isReordering) {
+		elements.push(React.createElement(Toolbars.AddBlockElement, {
+			key: "addBlock-end",
+			addAtEnd: true,
+			blockTypeGroups: blockTypeGroups,
+			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+			onCreateBlockOfType: createBlockOfTypeAtEnd
+		}));
+	}
 
 	return elements;
 };
@@ -28826,9 +29401,9 @@ EditorElementCreator.MainElement = React.createClass({
 	onKeyPress: function onKeyPress(event) {
 		var actions = this.props.actions;
 
-		if (event.which === KeyCodes.RETURN_OR_ENTER) {
-			actions.insertRelatedBlockAfterEditedBlock();
-		}
+		/*if (event.which === KeyCodes.ReturnOrEnter) {
+  	actions.insertRelatedBlockAfterEditedBlock();
+  }*/
 	},
 
 	updateTextItemEditorPosition: function updateTextItemEditorPosition() {
@@ -28862,27 +29437,19 @@ EditorElementCreator.MainElement = React.createClass({
 
 		var classNames = ["blocks"];
 
-		var elements = [];
-
-		if (contentImmutable && contentImmutable.has("blocks")) {
-			var blocksImmutable = contentImmutable.get("blocks");
-			elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
-				specsImmutable: specsImmutable,
-				blockTypeGroups: blockTypeGroups,
-				editedBlockIdentifier: editedBlockIdentifier,
-				editedBlockKeyPath: editedBlockKeyPath,
-				editedTextItemIdentifier: editedTextItemIdentifier,
-				editedTextItemKeyPath: editedTextItemKeyPath,
-				isReordering: isReordering,
-				focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
-				focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering,
-				actions: actions
-			});
-		} else {
-			elements = React.createElement("div", {
-				key: "loadingIndicator"
-			}, "Loading…");
-		}
+		var blocksImmutable = contentImmutable.get("blocks");
+		var elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
+			specsImmutable: specsImmutable,
+			blockTypeGroups: blockTypeGroups,
+			editedBlockIdentifier: editedBlockIdentifier,
+			editedBlockKeyPath: editedBlockKeyPath,
+			editedTextItemIdentifier: editedTextItemIdentifier,
+			editedTextItemKeyPath: editedTextItemKeyPath,
+			isReordering: isReordering,
+			focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
+			focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering,
+			actions: actions
+		});
 
 		var isEditingBlock = editedBlockIdentifier != null;
 		if (isEditingBlock) {
@@ -28900,7 +29467,7 @@ EditorElementCreator.MainElement = React.createClass({
 
 module.exports = EditorElementCreator;
 
-},{"../assistants/TypesAssistant":178,"../assistants/html-representation-assistant":179,"../stores/ReorderingStore":186,"../stores/store-content.js":189,"../stores/store-settings.js":191,"../ui/ui-constants":192,"../ui/ui-mixins":193,"./editor-toolbars":183,"immutable":11,"react":174}],182:[function(require,module,exports){
+},{"../assistants/HTMLRepresentationAssistant":178,"../assistants/TypesAssistant":179,"../stores/ConfigurationStore":187,"../stores/ContentStore":190,"../stores/ReorderingStore":192,"../ui/KeyCodes":195,"../ui/ui-mixins":196,"./EditorToolbars":185,"immutable":11,"react":174}],184:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -28915,6 +29482,7 @@ var ButtonMixin = _require.ButtonMixin;
 var BaseClassNamesMixin = _require.BaseClassNamesMixin;
 
 var normalizeURL = require("normalize-url");
+var KeyCodes = require("../ui/KeyCodes");
 
 var EditorFields = {};
 
@@ -28949,7 +29517,10 @@ var FieldLabel = React.createClass({
 	getDefaultProps: function getDefaultProps() {
 		return {
 			baseClassNames: ["fieldLabel"],
-			additionalClassNameExtensions: []
+			additionalClassNameExtensions: [],
+			children: [],
+			required: false,
+			recommended: false
 		};
 	},
 
@@ -28957,6 +29528,7 @@ var FieldLabel = React.createClass({
 		var props = this.props;
 		var children = props.children;
 		var title = props.title;
+		var description = props.description;
 		var required = props.required;
 		var recommended = props.recommended;
 
@@ -28966,13 +29538,208 @@ var FieldLabel = React.createClass({
 			title += " (recommended)";
 		}
 
-		children = [React.createElement("span", {
+		var leadingChildren = [React.createElement("span", {
 			key: "title",
 			className: this.getChildClassNameStringWithSuffix("_title")
-		}, title)].concat(children);
+		}, title)];
+
+		if (description) {
+			React.createElement("span", {
+				key: "description",
+				className: this.getChildClassNameStringWithSuffix("_description")
+			}, description);
+		}
+
+		children = leadingChildren.concat(children);
 
 		return React.createElement("label", {
 			className: this.getClassNameStringWithExtensions()
+		}, children);
+	}
+});
+
+var TextualField = React.createClass({
+	displayName: "TextualField",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			type: "text",
+			value: null,
+			required: false,
+			recommended: false,
+			placeholder: null,
+			continuous: false,
+			onValueChanged: null,
+			tabIndex: 0
+		};
+	},
+
+	getInitialState: function getInitialState() {
+		return {
+			pendingValue: null
+		};
+	},
+
+	getInputTypeForFieldType: function getInputTypeForFieldType(type) {
+		if (type === "number" || type === "number-integer") {
+			return "text";
+		} else {
+			return type;
+		}
+	},
+
+	onKeyDown: function onKeyDown(event) {
+		var keyCode = event.which;
+		if (keyCode === KeyCodes.ReturnOrEnter) {
+			this.onCommitChange(event);
+		}
+	},
+
+	onBlur: function onBlur(event) {
+		this.onCommitChange(event);
+	},
+
+	onMakePendingChange: function onMakePendingChange(event) {
+		var newValue = event.target.value;
+		this.setState({
+			pendingValue: newValue
+		});
+	},
+
+	onCommitChange: function onCommitChange(event) {
+		var onValueChanged = this.props.onValueChanged;
+
+		var newValue = event.target.value;
+		onValueChanged(newValue);
+
+		this.setState({
+			pendingValue: null
+		});
+	},
+
+	revertValue: function revertValue() {
+		this.setState({
+			pendingValue: null
+		});
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var type = _props.type;
+		var ID = _props.ID;
+		var required = _props.required;
+		var recommended = _props.recommended;
+		var title = _props.title;
+		var description = _props.description;
+		var placeholder = _props.placeholder;
+		var continuous = _props.continuous;
+		var value = _props.value;
+		var tabIndex = _props.tabIndex;
+		var onValueChanged = _props.onValueChanged;
+		var pendingValue = this.state.pendingValue;
+
+		if (typeof pendingValue === "string") {
+			value = pendingValue;
+		}
+
+		var children = [];
+
+		if (type === "text-long") {
+			children.push(React.createElement("textarea", {
+				key: "textarea",
+				value: value,
+				placeholder: placeholder,
+				onKeyDown: this.onKeyDown,
+				onBlur: this.onBlur,
+				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
+				className: "input-textual input-" + type,
+				tabIndex: tabIndex
+			}));
+		} else {
+			var inputType = this.getInputTypeForFieldType(type);
+
+			children.push(React.createElement("input", {
+				key: "input",
+				type: inputType,
+				value: value,
+				placeholder: placeholder,
+				onKeyDown: this.onKeyDown,
+				onBlur: this.onBlur,
+				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
+				className: "input-textual input-" + type,
+				tabIndex: tabIndex
+			}));
+		}
+
+		return React.createElement(FieldLabel, {
+			key: ID,
+			title: title,
+			description: description,
+			required: required,
+			recommended: recommended,
+			additionalClassNameExtensions: ["-fieldType-textual", "-fieldType-" + type]
+		}, children);
+	}
+});
+
+var TextualFieldMultiple = React.createClass({
+	displayName: "TextualFieldMultiple",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			type: "text",
+			values: [],
+			required: false,
+			recommended: false,
+			placeholder: null,
+			continuous: false,
+			onValueChangedAtIndex: null,
+			tabIndex: 0
+		};
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var type = _props.type;
+		var ID = _props.ID;
+		var title = _props.title;
+		var required = _props.required;
+		var recommended = _props.recommended;
+		var placeholder = _props.placeholder;
+		var continuous = _props.continuous;
+		var values = _props.values;
+		var tabIndex = _props.tabIndex;
+		var onValueChangedAtIndex = _props.onValueChangedAtIndex;
+
+		// Add additional value ready to be filled in.
+		if (values.length === 0 || (values[values.length - 1] || "").length !== 0) {
+			values = values.concat("");
+		}
+
+		var fieldElements = values.map(function (value, valueIndex) {
+			return React.createElement(TextualField, {
+				key: "field-" + valueIndex,
+				type: type,
+				ID: ID,
+				required: required,
+				recommended: recommended,
+				placeholder: placeholder,
+				continuous: continuous,
+				value: value,
+				tabIndex: tabIndex,
+				onValueChanged: function (newValue) {
+					onValueChangedAtIndex(newValue, valueIndex);
+				}
+			});
+		});
+
+		var children = [React.createElement(FieldLabel, {
+			key: "label",
+			title: title
+		})].concat(fieldElements);
+
+		return React.createElement("div", {
+			className: "fieldsMultiple"
 		}, children);
 	}
 });
@@ -29063,7 +29830,7 @@ var ChoiceField = React.createClass({
 		}, optionElements)])];
 
 		// Show fields for the selected choice.
-		if (selectedChoiceInfo) {
+		if (selectedChoiceInfo && selectedChoiceInfo.fields) {
 			children = children.concat(React.createElement(EditorFields.FieldsHolder, {
 				key: "fields",
 				fields: selectedChoiceInfo.fields,
@@ -29137,40 +29904,42 @@ EditorFields.FieldsHolder = React.createClass({
 	createElementForField: function createElementForField(fieldJSON, value) {
 		var onReplaceInfoAtKeyPath = this.props.onReplaceInfoAtKeyPath;
 
-		var type = fieldJSON.type;
+		var type = fieldJSON.type || "text";
 		var ID = fieldJSON.id;
 		var title = fieldJSON.title;
+		var description = fieldJSON.description;
+		var multiple = fieldJSON.multiple || false;
 		var required = fieldJSON.required || false;
 		var recommended = fieldJSON.recommended || false;
-
-		if (!type) {
-			type = "text";
-		}
+		var placeholder = fieldJSON.placeholder || null;
 
 		if (EditorFields.fieldTypeIsTextual(type)) {
 			var fieldType = type;
 
-			return React.createElement(FieldLabel, {
+			var props = {
 				key: ID,
+				type: type,
+				ID: ID,
 				title: title,
+				description: description,
 				required: required,
 				recommended: recommended,
-				additionalClassNameExtensions: ["-fieldType-textual", "-fieldType-" + type]
-			}, [React.createElement("input", {
-				key: ID,
-				type: fieldType,
-				value: value,
-				placeholder: fieldJSON.placeholder,
-				onChange: function onChange(event) {
-					var newValue = event.target.value;
+				placeholder: placeholder
+			};
 
-					if (fieldType === "url") {}
-
+			if (multiple) {
+				props.values = value;
+				props.onValueChangedAtIndex = function (newValue, valueIndex) {
+					onReplaceInfoAtKeyPath(newValue, [ID, valueIndex]);
+				};
+				return React.createElement(TextualFieldMultiple, props);
+			} else {
+				props.value = value;
+				props.onValueChanged = function (newValue) {
 					onReplaceInfoAtKeyPath(newValue, [ID]);
-				},
-				className: "input-textual input-" + type,
-				tabIndex: 0
-			})]);
+				};
+				return React.createElement(TextualField, props);
+			}
 		} else if (type === "choice") {
 			return React.createElement(ChoiceField, {
 				key: ID,
@@ -29242,10 +30011,7 @@ EditorFields.FieldsHolder = React.createClass({
 
 module.exports = EditorFields;
 
-//let normalizedURL = normalizeURL(newValue);
-//console.log('URL', normalizedURL);
-
-},{"../ui/ui-mixins":193,"normalize-url":13,"react":174}],183:[function(require,module,exports){
+},{"../ui/KeyCodes":195,"../ui/ui-mixins":196,"normalize-url":13,"react":174}],185:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -29254,14 +30020,14 @@ module.exports = EditorFields;
 
 var React = require("react");
 var AppDispatcher = require("../app-dispatcher");
-var SettingsStore = require("../stores/store-settings");
-var PreviewStore = require("../stores/store-preview");
+var ConfigurationStore = require("../stores/ConfigurationStore");
+var PreviewStore = require("../stores/PreviewStore");
 var ReorderingStore = require("../stores/ReorderingStore");
 var Immutable = require("immutable");
-var eventIDs = require("../actions/actions-content-eventIDs");
+var eventIDs = require("../actions/ContentActionsEventIDs");
 var documentSectionEventIDs = eventIDs.documentSection;
 
-var EditorFields = require("./editor-fields");
+var EditorFields = require("./EditorFields");
 
 var _require = require("../assistants/TypesAssistant");
 
@@ -29272,6 +30038,8 @@ var _require2 = require("../ui/ui-mixins");
 
 var ButtonMixin = _require2.ButtonMixin;
 var BaseClassNamesMixin = _require2.BaseClassNamesMixin;
+
+var KeyCodes = require("../ui/KeyCodes");
 
 var MicroEvent = require("microevent");
 
@@ -29363,10 +30131,18 @@ var TextItemTextArea = React.createClass({
 	onKeyDown: function onKeyDown(e) {
 		e.stopPropagation();
 
-		var actions = this.props.actions;
+		var _props = this.props;
+		var actions = _props.actions;
+		var onModifierKeyChange = _props.onModifierKeyChange;
+
+		var keyCode = e.which;
+
+		if (KeyCodes.isModifier(keyCode)) {
+			onModifierKeyChange(keyCode, true);
+		}
 
 		//console.log('key down', e.which);
-		if (e.which == 32) {
+		if (keyCode == KeyCodes.Space) {
 			// Space key
 			if (this.state.spaceWasJustPressed) {
 				actions.addNewTextItemAfterEditedTextItem();
@@ -29379,7 +30155,7 @@ var TextItemTextArea = React.createClass({
 			this.setState({ spaceWasJustPressed: false });
 		}
 
-		if (e.which == 8) {
+		if (keyCode == KeyCodes.DeleteOrBackspace) {
 			// Delete/Backspace key
 			/*if (this.hasNoText()) {
    	actions.removeEditedTextItem();
@@ -29390,7 +30166,7 @@ var TextItemTextArea = React.createClass({
 				actions.joinEditedTextItemWithPreviousItem();
 				e.preventDefault();
 			}
-		} else if (e.which == 9) {
+		} else if (keyCode == KeyCodes.Tab) {
 			// Tab key
 			if (e.shiftKey) {
 				actions.editPreviousItemBeforeEditedTextItem();
@@ -29399,6 +30175,44 @@ var TextItemTextArea = React.createClass({
 			}
 
 			e.preventDefault();
+		} else if (keyCode == KeyCodes.ReturnOrEnter) {
+			// Return/enter key.
+			if (e.shiftKey) {
+				actions.addLineBreakAfterEditedTextItem();
+			}
+			// Command key
+			else if (e.metaKey) {
+				actions.finishEditing();
+			} else {
+				var splitBlock = !e.altKey; // Option key
+				if (this.hasNoText() && false) {
+					if (splitBlock) {
+						actions.splitBlockBeforeEditedTextItem();
+					}
+				} else {
+					var textSelectionRange = this.getTextSelectionRange();
+					actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
+
+					// If text was selected, just break it into its own item but not into its own block.
+					if (splitBlock /*&& textSelectionRange.start === textSelectionRange.end*/) {
+						actions.splitBlockBeforeEditedTextItem();
+					}
+				}
+			}
+
+			e.preventDefault();
+		}
+	},
+
+	onKeyUp: function onKeyUp(e) {
+		e.stopPropagation();
+
+		var onModifierKeyChange = this.props.onModifierKeyChange;
+
+		var keyCode = e.which;
+
+		if (KeyCodes.isModifier(keyCode)) {
+			onModifierKeyChange(keyCode, false);
 		}
 	},
 
@@ -29407,36 +30221,7 @@ var TextItemTextArea = React.createClass({
 
 		var actions = this.props.actions;
 
-		//console.log('key press', e);
-
-		if (e.which == 13) {
-			// Return/enter key.
-			if (e.shiftKey) {
-				actions.addLineBreakAfterEditedTextItem();
-			}
-			// Command key
-			else if (e.metaKey) {
-				actions.finishEditing();
-			}
-			// Option key
-			else if (e.altKey) {
-				actions.addNewTextItemAfterEditedTextItem();
-			} else {
-				if (this.hasNoText()) {
-					actions.splitBlockBeforeEditedTextItem();
-				} else {
-					var textSelectionRange = this.getTextSelectionRange();
-					actions.splitTextInRangeOfEditedTextItem(textSelectionRange);
-
-					// If text was selected, just break it into its own item but not into its own block.
-					if (textSelectionRange.start === textSelectionRange.end) {
-						actions.splitBlockBeforeEditedTextItem();
-					}
-				}
-			}
-
-			e.preventDefault();
-		}
+		//console.log('key press', e.which);
 	},
 
 	render: function render() {
@@ -29454,6 +30239,7 @@ var TextItemTextArea = React.createClass({
 			//key: 'textarea',
 			onChange: this.onChange,
 			onKeyDown: this.onKeyDown,
+			onKeyUp: this.onKeyUp,
 			onKeyPress: this.onKeyPress,
 			onPaste: this.onPaste,
 			tabIndex: tabIndex
@@ -29824,37 +30610,73 @@ var TextItemEditor = React.createClass({
 		};
 	},
 
+	getInitialState: function getInitialState() {
+		return {
+			shiftKeyIsPressed: false,
+			optionKeyIsPressed: false,
+			commandKeyIsPressed: false
+		};
+	},
+
 	onClick: function onClick(event) {
 		// Prevent block from getting click event.
 		event.stopPropagation();
 	},
 
+	onModifierKeyChange: function onModifierKeyChange(modifierKeyCode, isOn) {
+		var stateChange = {};
+
+		if (modifierKeyCode === KeyCodes.ShiftModifier) {
+			stateChange.shiftKeyIsPressed = isOn;
+		} else if (modifierKeyCode === KeyCodes.OptionModifier) {
+			stateChange.optionKeyIsPressed = isOn;
+		} else if (modifierKeyCode === KeyCodes.CommandModifier) {
+			stateChange.commandKeyIsPressed = isOn;
+		}
+
+		this.setState(stateChange);
+	},
+
 	render: function render() {
-		var props = this.props;
-		var block = props.block;
-		var text = props.text;
-		var traits = props.traits;
-		var actions = props.actions;
-		var blockTypeGroup = props.blockTypeGroup;
-		var blockType = props.blockType;
-		var blockTypeOptions = props.blockTypeOptions;
-		var traitSpecs = props.traitSpecs;
+		var _props = this.props;
+		var block = _props.block;
+		var text = _props.text;
+		var traits = _props.traits;
+		var actions = _props.actions;
+		var blockTypeGroup = _props.blockTypeGroup;
+		var blockType = _props.blockType;
+		var blockTypeOptions = _props.blockTypeOptions;
+		var traitSpecs = _props.traitSpecs;
+		var _state = this.state;
+		var shiftKeyIsPressed = _state.shiftKeyIsPressed;
+		var optionKeyIsPressed = _state.optionKeyIsPressed;
+		var commandKeyIsPressed = _state.commandKeyIsPressed;
 
 		//var textEditorInstructions = 'Press enter to create a new paragraph. Press space twice to create a new sentence.';
-		var textEditorInstructions = "enter: new paragraph · spacebar twice: new text item";
+		var textEditorInstructions;
+		if (optionKeyIsPressed) {
+			textEditorInstructions = "option-return/alt-enter: split text";
+		} else if (commandKeyIsPressed) {
+			textEditorInstructions = "command-return/control-enter: finish editing";
+		} else {
+			textEditorInstructions = "return/enter: new paragraph · spacebar twice: new text item";
+		}
 
-		var children = [React.createElement(TextItemTextArea, {
-			key: "textAreaHolder",
-			text: text,
-			actions: actions,
-			traitSpecs: traitSpecs
-		}), React.createElement("div", {
+		var instructionsElement = React.createElement("div", {
 			key: "instructions",
 			className: "textItemEditor_instructions"
 		}, [React.createElement("div", {
 			key: "keyShortcuts",
 			className: "textItemEditor_instructions_keyShortcuts"
-		}, textEditorInstructions)]),
+		}, textEditorInstructions)]);
+
+		var children = [React.createElement(TextItemTextArea, {
+			key: "textAreaHolder",
+			text: text,
+			actions: actions,
+			onModifierKeyChange: this.onModifierKeyChange,
+			traitSpecs: traitSpecs
+		}),
 		/*
   React.createElement('h5', {
   	key: 'itemTraitsToolbar_heading',
@@ -29869,7 +30691,7 @@ var TextItemEditor = React.createClass({
 			blockType: blockType,
 			actions: actions,
 			className: "textItemEditor_traitsToolbar"
-		})];
+		}), instructionsElement];
 
 		if (false) {
 			children.push(React.createElement("h5", {
@@ -30366,7 +31188,7 @@ var ChangeSubsectionElement = React.createClass({
 		var selectedSubsectionType = _props.selectedSubsectionType;
 		var followingBlockIndex = _props.followingBlockIndex;
 
-		//var subsectionInfos = SettingsStore.getAvailableSubsectionTypesForDocumentSection();
+		//var subsectionInfos = ConfigurationStore.getAvailableSubsectionTypesForDocumentSection();
 
 		var classNameExtensions = [];
 		var children = [];
@@ -30513,14 +31335,28 @@ var MainToolbar = React.createClass({
 		actions.saveChanges();
 	},
 
+	getIsShowingSettings: function getIsShowingSettings() {
+		return this.props.isShowingSettings;
+	},
+
+	onToggleShowSettings: function onToggleShowSettings() {
+		var actions = this.props.actions;
+
+		if (this.getIsShowingSettings()) {
+			actions.hideSettings();
+		} else {
+			actions.showSettings();
+		}
+	},
+
 	getIsPreviewing: function getIsPreviewing() {
-		return PreviewStore.getIsPreviewing();
+		return this.props.isPreviewing;
 	},
 
 	onTogglePreview: function onTogglePreview() {
 		var actions = this.props.actions;
 
-		if (PreviewStore.getIsPreviewing()) {
+		if (this.getIsPreviewing()) {
 			actions.exitHTMLPreview();
 		} else {
 			actions.enterHTMLPreview();
@@ -30528,13 +31364,13 @@ var MainToolbar = React.createClass({
 	},
 
 	getIsReordering: function getIsReordering() {
-		return ReorderingStore.getIsReordering();
+		return this.props.isReordering;
 	},
 
 	onToggleReordering: function onToggleReordering() {
 		var actions = this.props.actions;
 
-		if (ReorderingStore.getIsReordering()) {
+		if (this.getIsReordering()) {
 			actions.finishReordering();
 		} else {
 			actions.beginReordering();
@@ -30542,7 +31378,7 @@ var MainToolbar = React.createClass({
 	},
 
 	createSelectForAvailableDocuments: function createSelectForAvailableDocuments() {
-		var availableDocuments = SettingsStore.getAvailableDocuments();
+		var availableDocuments = ConfigurationStore.getAvailableDocuments();
 		var documentCount = availableDocuments.length;
 
 		var options = null;
@@ -30575,7 +31411,7 @@ var MainToolbar = React.createClass({
 
 		var children = [];
 
-		if (SettingsStore.getWantsSaveFunctionality()) {
+		if (ConfigurationStore.getWantsSaveFunctionality()) {
 			children.push(React.createElement(ToolbarButton, {
 				key: "save",
 				title: "Save",
@@ -30592,7 +31428,7 @@ var MainToolbar = React.createClass({
 			}));
 		}
 
-		if (SettingsStore.getWantsViewHTMLFunctionality()) {
+		if (ConfigurationStore.getWantsViewHTMLFunctionality()) {
 			children.push(React.createElement(ToolbarButton, {
 				key: "html",
 				title: "See HTML",
@@ -30601,7 +31437,16 @@ var MainToolbar = React.createClass({
 			}));
 		}
 
-		if (SettingsStore.getShowsDocumentTitle()) {
+		if (ConfigurationStore.getWantsContentSettingsFunctionality()) {
+			children.push(React.createElement(ToolbarButton, {
+				key: "settings",
+				title: "Settings",
+				onClick: this.onToggleShowSettings,
+				selected: this.getIsShowingSettings()
+			}));
+		}
+
+		if (ConfigurationStore.getShowsDocumentTitle()) {
 			children.push(this.createSelectForAvailableDocuments());
 		}
 
@@ -30625,344 +31470,7 @@ var ElementToolbars = {
 };
 module.exports = ElementToolbars;
 
-},{"../actions/actions-content-eventIDs":175,"../app-dispatcher":177,"../assistants/TypesAssistant":178,"../stores/ReorderingStore":186,"../stores/store-preview":190,"../stores/store-settings":191,"../ui/ui-mixins":193,"./editor-fields":182,"immutable":11,"microevent":12,"react":174}],184:[function(require,module,exports){
-/**
-	Copyright 2015 Patrick George Wyndham Smith
-*/
-
-"use strict";
-
-var React = require("react");
-var Immutable = require("immutable");
-//let PureRenderMixin = require('react/addons').addons.PureRenderMixin;
-var ContentStore = require("../stores/store-content.js");
-var SettingsStore = require("../stores/store-settings.js");
-var ContentStoreSaving = require("../stores/store-content-saving.js");
-var ContentStoreLoading = require("../stores/store-content-loading.js");
-var ContentActions = require("../actions/actions-content.js");
-var EditorElementsCreator = require("./editor-elements");
-var PreviewElementsCreator = require("../preview/preview-elements");
-var Toolbars = require("./editor-toolbars");
-var PreviewStore = require("../stores/store-preview");
-var ReorderingStore = require("../stores/ReorderingStore");
-
-var getInitialState = function getInitialState() {
-	var documentID = SettingsStore.getCurrentDocumentID();
-	var sectionID = SettingsStore.getCurrentDocumentSectionID();
-
-	var state = {
-		documentState: new Immutable.Map({
-			documentID: documentID,
-			sectionID: sectionID,
-			content: ContentStore.getContentForDocumentSection(documentID, sectionID),
-			specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID)
-		})
-	};
-};
-
-/*
-* State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
-*/
-var latestStateWithPreviousState = function latestStateWithPreviousState(_x, _ref) {
-	var previousState = arguments[0] === undefined ? null : arguments[0];
-	var _ref$updateAll = _ref.updateAll;
-	var updateAll = _ref$updateAll === undefined ? false : _ref$updateAll;
-	var _ref$updateDocumentState = _ref.updateDocumentState;
-	var updateDocumentState = _ref$updateDocumentState === undefined ? updateAll : _ref$updateDocumentState;
-	var _ref$updateViewingState = _ref.updateViewingState;
-	var updateViewingState = _ref$updateViewingState === undefined ? updateAll : _ref$updateViewingState;
-	var _ref$updateActions = _ref.updateActions;
-	var updateActions = _ref$updateActions === undefined ? updateAll : _ref$updateActions;
-	return (function () {
-		if (!previousState) {
-			previousState = {
-				documentState: Immutable.Map(),
-				viewingState: Immutable.Map(),
-				actions: null
-			};
-		}
-
-		var documentID = SettingsStore.getCurrentDocumentID();
-		var sectionID = SettingsStore.getCurrentDocumentSectionID();
-
-		var documentState = previousState.documentState;
-		var viewingState = previousState.viewingState;
-		var actions = previousState.actions;
-
-		if (updateDocumentState) {
-			var editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
-
-			var previousDocumentState = documentState;
-			documentState = documentState.merge({
-				documentID: documentID,
-				sectionID: sectionID,
-				content: ContentStore.getContentForDocumentSection(documentID, sectionID),
-				specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID),
-				blockTypeGroups: SettingsStore.getAvailableBlockTypesGroups(),
-				editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID),
-				editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID),
-				editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID),
-				editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID),
-				focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, sectionID),
-				focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID)
-			});
-		}
-
-		if (updateViewingState) {
-			viewingState = viewingState.merge({
-				isPreviewing: PreviewStore.getIsPreviewing(),
-				isReordering: ReorderingStore.getIsReordering()
-			});
-		}
-
-		if (updateActions) {
-			actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
-		}
-
-		return {
-			documentState: documentState,
-			viewingState: viewingState,
-			actions: actions
-		};
-	})();
-};
-
-var Editor = React.createClass({
-	displayName: "Editor",
-
-	getInitialState: function getInitialState() {
-		return latestStateWithPreviousState(null, {
-			updateAll: true
-		});
-	},
-
-	listenToStores: function listenToStores(on) {
-		var method = on ? "on" : "off";
-
-		ContentStore[method]("contentChangedForDocumentSection", this.updateDocumentState);
-		ContentStore[method]("editedBlockChangedForDocumentSection", this.updateDocumentState);
-		ContentStore[method]("editedItemChangedForDocumentSection", this.updateDocumentState);
-		ReorderingStore[method]("focusedBlockDidChange", this.updateDocumentState);
-
-		SettingsStore[method]("currentDocumentDidChange", this.currentDocumentDidChange);
-
-		PreviewStore[method]("didEnterPreview", this.updateViewingState);
-		PreviewStore[method]("didExitPreview", this.updateViewingState);
-
-		ReorderingStore[method]("didBeginReordering", this.updateViewingState);
-		ReorderingStore[method]("didFinishReordering", this.updateViewingState);
-	},
-
-	componentDidMount: function componentDidMount() {
-		this.listenToStores(true);
-
-		document.body.addEventListener("click", this.bodyBackgroundWasClicked);
-	},
-
-	componentWillUnmount: function componentWillUnmount() {
-		this.listenToStores(false);
-
-		document.body.removeEventListener("click", this.bodyBackgroundWasClicked);
-	},
-
-	bodyBackgroundWasClicked: function bodyBackgroundWasClicked(event) {
-		if (event.target === document.body) {
-			console.log("backgroundWasClicked");
-			this.finishEditing();
-		}
-	},
-
-	editorBackgroundWasClicked: function editorBackgroundWasClicked(event) {
-		console.log("editorBackgroundWasClicked");
-		this.finishEditing();
-	},
-
-	finishEditing: function finishEditing() {
-		var actions = this.state.actions;
-
-		if (actions) {
-			actions.finishEditing();
-		}
-	},
-
-	updateState: function updateState() {
-		var options = arguments[0] === undefined ? {} : arguments[0];
-
-		this.setState(function (previousState, props) {
-			return latestStateWithPreviousState(previousState, options);
-		});
-	},
-
-	updateDocumentState: function updateDocumentState() {
-		this.updateState({
-			updateDocumentState: true
-		});
-	},
-
-	updateViewingState: function updateViewingState() {
-		this.updateState({
-			updateViewingState: true
-		});
-	},
-
-	currentDocumentDidChange: function currentDocumentDidChange() {
-		this.updateState({
-			updateDocumentState: true,
-			updateActions: true
-		});
-	},
-
-	shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-		var currentState = this.state;
-
-		if (currentState.documentState != nextState.documentState) {
-			return true;
-		}
-		if (currentState.viewingState != nextState.viewingState) {
-			return true;
-		}
-		if (currentState.actions != nextState.actions) {
-			return true;
-		}
-
-		return false;
-	},
-
-	render: function render() {
-		var _state = this.state;
-		var documentState = _state.documentState;
-		var viewingState = _state.viewingState;
-		var actions = _state.actions;
-
-		var _documentState$toObject = documentState.toObject();
-
-		var documentID = _documentState$toObject.documentID;
-		var sectionID = _documentState$toObject.sectionID;
-		var content = _documentState$toObject.content;
-		var specs = _documentState$toObject.specs;
-		var blockTypeGroups = _documentState$toObject.blockTypeGroups;
-		var editedBlockIdentifier = _documentState$toObject.editedBlockIdentifier;
-		var editedBlockKeyPath = _documentState$toObject.editedBlockKeyPath;
-		var editedTextItemIdentifier = _documentState$toObject.editedTextItemIdentifier;
-		var editedTextItemKeyPath = _documentState$toObject.editedTextItemKeyPath;
-		var focusedBlockIdentifierForReordering = _documentState$toObject.focusedBlockIdentifierForReordering;
-		var focusedBlockKeyPathForReordering = _documentState$toObject.focusedBlockKeyPathForReordering;
-
-		if (editedBlockKeyPath) {
-			editedBlockKeyPath = editedBlockKeyPath.toArray();
-		}
-		if (editedTextItemKeyPath) {
-			editedTextItemKeyPath = editedTextItemKeyPath.toArray();
-		}
-		if (focusedBlockKeyPathForReordering) {
-			focusedBlockKeyPathForReordering = focusedBlockKeyPathForReordering.toArray();
-		}
-
-		var _viewingState$toObject = viewingState.toObject();
-
-		var isPreviewing = _viewingState$toObject.isPreviewing;
-		var isReordering = _viewingState$toObject.isReordering;
-
-		var innerElement;
-		if (isPreviewing) {
-			innerElement = React.createElement(PreviewElementsCreator.ViewHTMLElement, {
-				key: "preview",
-				documentID: documentID,
-				sectionID: sectionID,
-				content: content,
-				specs: specs,
-				actions: actions
-			});
-		} else {
-			innerElement = React.createElement(EditorElementsCreator.MainElement, {
-				key: "content",
-				contentImmutable: content,
-				specsImmutable: specs,
-				actions: actions,
-				blockTypeGroups: blockTypeGroups,
-				editedBlockIdentifier: editedBlockIdentifier,
-				editedBlockKeyPath: editedBlockKeyPath,
-				editedTextItemIdentifier: editedTextItemIdentifier,
-				editedTextItemKeyPath: editedTextItemKeyPath,
-				isReordering: isReordering,
-				focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
-				focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
-			});
-		}
-
-		var children = [];
-
-		if (SettingsStore.wantsMainToolbar()) {
-			children.push(React.createElement(Toolbars.MainToolbar, {
-				key: "mainToolbar",
-				actions: actions
-			}));
-		}
-
-		children.push(innerElement);
-
-		return React.createElement("div", {
-			key: "editor",
-			onClick: this.editorBackgroundWasClicked
-		}, children);
-	}
-});
-
-var EditorController = {
-	go: function go() {
-		var documentID = SettingsStore.getCurrentDocumentID();
-		ContentStoreLoading.loadContentForDocument(documentID);
-
-		React.render(React.createElement(Editor, {
-			key: "editor"
-		}), document.getElementById("burntIcingEditor"));
-
-		window.burntIcing.editor = this;
-
-		window.burntIcing.copyContentJSONForCurrentDocumentSection = function () {
-			var documentID = SettingsStore.getCurrentDocumentID();
-			var sectionID = SettingsStore.getCurrentDocumentSectionID();
-
-			var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
-
-			return contentJSON;
-		};
-
-		window.burntIcing.copyPreviewHTMLForCurrentDocumentSection = function () {
-			var documentID = SettingsStore.getCurrentDocumentID();
-			var sectionID = SettingsStore.getCurrentDocumentSectionID();
-			// Get content and specs
-			var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-			var specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
-			// Create preview HTML.
-			var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
-
-			return previewHTML;
-		};
-	},
-
-	onDocumentLoad: function onDocumentLoad(event) {
-		document.removeEventListener("DOMContentLoaded", this.onDocumentLoadBound);
-		this.onDocumentLoadBound = null;
-
-		this.go();
-	},
-
-	goOnDocumentLoad: function goOnDocumentLoad() {
-		if (document.readyState === "loading") {
-			this.onDocumentLoadBound = this.onDocumentLoad.bind(this);
-			document.addEventListener("DOMContentLoaded", this.onDocumentLoadBound);
-		} else {
-			setTimeout((function () {
-				this.go();
-			}).bind(this), 0);
-		}
-	}
-};
-
-module.exports = EditorController;
-
-},{"../actions/actions-content.js":176,"../preview/preview-elements":185,"../stores/ReorderingStore":186,"../stores/store-content-loading.js":187,"../stores/store-content-saving.js":188,"../stores/store-content.js":189,"../stores/store-preview":190,"../stores/store-settings.js":191,"./editor-elements":181,"./editor-toolbars":183,"immutable":11,"react":174}],185:[function(require,module,exports){
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"../assistants/TypesAssistant":179,"../stores/ConfigurationStore":187,"../stores/PreviewStore":191,"../stores/ReorderingStore":192,"../ui/KeyCodes":195,"../ui/ui-mixins":196,"./EditorFields":184,"immutable":11,"microevent":12,"react":174}],186:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -30971,8 +31479,6 @@ module.exports = EditorController;
 
 var React = require("react");
 var objectAssign = require("object-assign");
-var UIMixins = require("../ui/ui-mixins");
-//var Toolbars = require('./editor-toolbars');
 var Immutable = require("immutable");
 
 var _require = require("../assistants/TypesAssistant");
@@ -30981,7 +31487,7 @@ var findParticularSubsectionOptionsInList = _require.findParticularSubsectionOpt
 var findParticularBlockTypeOptionsWithGroupAndTypeInMap = _require.findParticularBlockTypeOptionsWithGroupAndTypeInMap;
 var findParticularTraitOptionsInList = _require.findParticularTraitOptionsInList;
 
-var HTMLRepresentationAssistant = require("../assistants/html-representation-assistant");
+var HTMLRepresentationAssistant = require("../assistants/HTMLRepresentationAssistant");
 
 var PreviewElementsCreator = {};
 
@@ -31174,8 +31680,8 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function (subsectionTyp
 
 PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, specsImmutable) {
 	var subsectionsSpecs = specsImmutable.get("subsectionTypes", Immutable.List());
-	var traitsSpecs = specsImmutable.get("traits", Immutable.List());
-	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroups", Immutable.Map());
+	var traitsSpecs = specsImmutable.get("traitTypes", Immutable.List());
+	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroup", Immutable.Map());
 
 	var mainElements = [];
 	var currentSubsectionType = specsImmutable.get("defaultSubsectionType", "normal");
@@ -31273,19 +31779,11 @@ PreviewElementsCreator.MainElement = React.createClass({
 
 		var classNames = ["blocks"];
 
-		var elements = [];
+		var content = contentImmutable.toJS();
+		var blocks = content.blocks;
+		var blocksImmutable = contentImmutable.get("blocks");
 
-		if (contentImmutable) {
-			var content = contentImmutable.toJS();
-			var blocks = content.blocks;
-			var blocksImmutable = contentImmutable.get("blocks");
-
-			elements = PreviewElementsCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
-		} else {
-			elements = React.createElement("div", {
-				key: "loading"
-			}, "Loading…");
-		}
+		var elements = PreviewElementsCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
 
 		return React.createElement("div", {
 			key: "blocks",
@@ -31295,6 +31793,11 @@ PreviewElementsCreator.MainElement = React.createClass({
 });
 
 PreviewElementsCreator.previewHTMLWithContent = function (contentImmutable, specsImmutable) {
+	var _ref = arguments[2] === undefined ? {} : arguments[2];
+
+	var _ref$pretty = _ref.pretty;
+	var pretty = _ref$pretty === undefined ? true : _ref$pretty;
+
 	var previewElement = React.createElement(PreviewElementsCreator.MainElement, {
 		key: "main",
 		contentImmutable: contentImmutable,
@@ -31303,40 +31806,46 @@ PreviewElementsCreator.previewHTMLWithContent = function (contentImmutable, spec
 
 	var previewHTML = React.renderToStaticMarkup(previewElement);
 
+	// Strip wrapping div.
 	previewHTML = previewHTML.replace(/^<div class="blocks">|<\/div>$/gm, "");
 
-	var inlineTagNames = {
-		span: true,
-		strong: true,
-		em: true,
-		a: true
-	};
+	if (pretty) {
+		var inlineTagNames = {
+			span: true,
+			strong: true,
+			em: true,
+			a: true,
+			img: true,
+			small: true
+		};
 
-	var holdingTagNames = {
-		ul: true,
-		ol: true,
-		blockquote: true
-	};
+		var holdingTagNames = {
+			ul: true,
+			ol: true,
+			blockquote: true
+		};
 
-	previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function (match, closingSlash, tagName, offset, string) {
-		// Inline elements are kept as-is
-		if (inlineTagNames[tagName]) {
-			return match;
-		}
-		// Block elements are given line breaks for nicer presentation.
-		else {
-			if (closingSlash.length > 0) {
-				return "<" + closingSlash + tagName + ">" + "\n";
-				//return "\n" + '<' + closingSlash + tagName + '>' + "\n";
-			} else {
-				if (holdingTagNames[tagName]) {
-					return "<" + tagName + ">" + "\n";
+		// Add new lines for presentation
+		previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function (match, optionalClosingSlash, tagName, offset, string) {
+			// Inline elements are kept as-is
+			if (inlineTagNames[tagName]) {
+				return match;
+			}
+			// Block elements are given line breaks for nicer presentation.
+			else {
+				if (optionalClosingSlash.length > 0) {
+					return "<" + optionalClosingSlash + tagName + ">" + "\n";
+					//return "\n" + '<' + optionalClosingSlash + tagName + '>' + "\n";
 				} else {
-					return "<" + tagName + ">";
+					if (holdingTagNames[tagName]) {
+						return "<" + tagName + ">" + "\n";
+					} else {
+						return "<" + tagName + ">";
+					}
 				}
 			}
-		}
-	});
+		});
+	}
 
 	return previewHTML;
 };
@@ -31395,16 +31904,1646 @@ PreviewElementsCreator.ViewHTMLElement = React.createClass({
 
 module.exports = PreviewElementsCreator;
 
-},{"../assistants/TypesAssistant":178,"../assistants/html-representation-assistant":179,"../ui/ui-mixins":193,"immutable":11,"object-assign":18,"react":174}],186:[function(require,module,exports){
+},{"../assistants/HTMLRepresentationAssistant":178,"../assistants/TypesAssistant":179,"immutable":11,"object-assign":18,"react":174}],187:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var MicroEvent = require("microevent");
+var Immutable = require("immutable");
+var qwest = require("qwest");
+
+var ConfigurationStore = {
+	on: MicroEvent.prototype.bind,
+	trigger: MicroEvent.prototype.trigger,
+	off: MicroEvent.prototype.unbind
+};
+
+var getSettingsJSON = function getSettingsJSON() {
+	if (window && window.burntIcing) {
+		return window.burntIcing.settingsJSON;
+	} else {
+		return null;
+	}
+};
+
+var getKeyFromObject = function getKeyFromObject(object, key, fallback) {
+	if (typeof fallback === "undefined") {
+		fallback = null;
+	}
+
+	if (!object || typeof object[key] === "undefined") {
+		return fallback;
+	}
+
+	return object[key];
+};
+
+var getKeyFromSettingsJSON = function getKeyFromSettingsJSON(key, fallback) {
+	if (typeof fallback === "undefined") {
+		fallback = null;
+	}
+
+	var settingsJSON = getSettingsJSON();
+	if (!settingsJSON || typeof settingsJSON[key] === "undefined") {
+		return fallback;
+	}
+
+	return settingsJSON[key];
+};
+
+ConfigurationStore.getActionURL = function (path) {
+	var actionURL = getKeyFromSettingsJSON("actionURL");
+	if (actionURL && path) {
+		actionURL += path;
+	}
+	return actionURL;
+};
+
+ConfigurationStore.getActionsFunctions = function () {
+	return getKeyFromSettingsJSON("actionFunctions");
+};
+
+ConfigurationStore.wantsMainToolbar = function () {
+	return getKeyFromSettingsJSON("wantsMainToolbar", true);
+};
+
+ConfigurationStore.getWantsSaveFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsSaveFunctionality", true);
+};
+
+ConfigurationStore.getWantsViewHTMLFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsViewHTMLFunctionality", false);
+};
+
+ConfigurationStore.getWantsContentSettingsFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsContentSettingsFunctionality", true);
+};
+
+ConfigurationStore.getWantsPlaceholderFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsPlaceholderFunctionality", false);
+};
+
+ConfigurationStore.getShowsDocumentTitle = function () {
+	return false;
+};
+
+ConfigurationStore.getAvailableBlockTypesForDocumentSectionAlternate = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" },
+	//{'id': 'figure', 'title': 'Figure'},
+	//{'id': 'media', 'title': 'Media'},
+	//{'id': 'quote', 'title': 'Quote'},
+	{ id: "placeholder", title: "Particular" }, { id: "subsection", title: "Subsection" }
+	//{'id': 'external', 'title': 'External Element'},
+	//{'id': 'placeholder', 'title': 'Placeholder'}
+	];
+};
+
+ConfigurationStore.getAvailableBlockTypesForDocumentSection = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{ id: "body", title: "Paragraph" }, { id: "heading", title: "Heading 1" }, { id: "subhead1", title: "Heading 2" }, { id: "subhead2", title: "Heading 3" }, { id: "subhead3", title: "Heading 4" }, { id: "placeholder", title: "Particular" }];
+};
+
+ConfigurationStore.getAvailableSubsectionTypesForDocumentSection = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{ id: "normal", title: "Normal" }, { id: "unorderedList", title: "Unordered List" }, { id: "orderedList", title: "Ordered List" }];
+};
+
+ConfigurationStore.getAvailableBlockTypesGroups = function () {
+	return Immutable.fromJS([{
+		id: "text",
+		title: "Text"
+	}, {
+		id: "media",
+		title: "Media"
+	}, {
+		id: "particular",
+		title: "Particular"
+	}]);
+};
+
+ConfigurationStore.getAvailableBlockTypesGroupedForDocumentSection = function (documentID, sectionID) {
+	//TODO: documentID, sectionID
+	return [{
+		id: "text",
+		types: [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" }]
+	}, {
+		id: "media",
+		types: [{ id: "externalImage", title: "External Image" }, { id: "youTubeVideo", title: "YouTube Video" }, { id: "vimeoVideo", title: "Vimeo Video" }
+		//{"id": "iframe", "title": "HTML iframe"}
+		]
+	}, {
+		id: "particular",
+		types: [{ id: "streetAddress", title: "Street Address" }]
+	}, {
+		id: "section",
+		types: [{ id: "list", title: "List" }, { id: "quote", title: "Quote" }]
+	}];
+};
+
+ConfigurationStore.getInitialDocumentState = function () {
+	return getKeyFromSettingsJSON("initialDocumentState", {});
+};
+
+ConfigurationStore.getInitialAvailableDocuments = function () {
+	return getKeyFromObject(ConfigurationStore.getInitialDocumentState(), "availableDocuments", []);
+};
+
+ConfigurationStore.getInitialDocumentID = function () {
+	return getKeyFromObject(ConfigurationStore.getInitialDocumentState(), "documentID");
+};
+
+ConfigurationStore.getInitialDocumentSectionID = function () {
+	return getKeyFromObject(ConfigurationStore.getInitialDocumentState(), "documentSectionID");
+};
+
+ConfigurationStore.getInitialContentJSONForDocument = function (documentID) {
+	var initialContentJSON = getKeyFromObject(ConfigurationStore.getInitialDocumentState(), "contentJSONByDocumentID");
+	//console.log('initialContentJSON', initialContentJSON);
+
+	if (!initialContentJSON) {
+		return null;
+	}
+
+	if (initialContentJSON[documentID]) {
+		return initialContentJSON[documentID];
+	}
+
+	return null;
+};
+
+var availableDocuments = null;
+ConfigurationStore.getAvailableDocuments = function () {
+	if (!availableDocuments) {
+		availableDocuments = ConfigurationStore.getInitialAvailableDocuments();
+	}
+
+	return availableDocuments;
+};
+
+ConfigurationStore.getAvailableSectionIDsForDocumentID = function (documentID) {
+	return [];
+};
+
+var currentDocumentID = null;
+var currentDocumentSectionID = null;
+
+ConfigurationStore.getCurrentDocumentID = function () {
+	if (!currentDocumentID) {
+		currentDocumentID = ConfigurationStore.getInitialDocumentID();
+	}
+
+	return currentDocumentID;
+};
+ConfigurationStore.setCurrentDocumentID = function (newDocumentID) {
+	currentDocumentID = newDocumentID;
+
+	this.trigger("currentDocumentDidChange");
+};
+
+ConfigurationStore.getCurrentDocumentSectionID = function () {
+	if (!currentDocumentSectionID) {
+		currentDocumentSectionID = ConfigurationStore.getInitialDocumentSectionID();
+	}
+	return currentDocumentSectionID;
+};
+
+module.exports = ConfigurationStore;
+
+},{"../app-dispatcher":177,"immutable":11,"microevent":12,"qwest":19}],188:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var objectAssign = require("object-assign");
+var MicroEvent = require("microevent");
+var ContentStore = require("./ContentStore");
+var ConfigurationStore = require("./ConfigurationStore");
+var qwest = require("qwest");
+var ContentActions = require("../actions/ContentActions");
+
+var ContentActionsEventIDs = require("../actions/ContentActionsEventIDs");
+var documentEventIDs = ContentActionsEventIDs.document;
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+var documentSectionActivity = Immutable.Map({});
+
+var ContentLoadingStore = {
+	on: MicroEvent.prototype.bind,
+	trigger: MicroEvent.prototype.trigger,
+	off: MicroEvent.prototype.unbind
+};
+
+var isLoadingContentForDocument = function isLoadingContentForDocument(documentID, sectionID) {
+	var isLoading = documentSectionActivity.getIn([documentID, "isLoading"], false);
+	return isLoading;
+};
+
+function setLoadingContentForDocument(documentID, isLoading) {
+	var isLoadingCurrently = isLoadingContentForDocument(documentID);
+	if (isLoadingCurrently === isLoading) {
+		return;
+	}
+
+	documentSectionActivity = documentSectionActivity.setIn([documentID, "isLoading"], isLoading);
+
+	ContentLoadingStore.trigger("isLoadingDidChangeForDocument", documentID, isLoading);
+};
+
+function receiveLoadedContentForDocument(documentID, documentContent) {
+	var specsURLs = null;
+
+	var contentBySectionsJSON = documentContent.sections;
+	if (!contentBySectionsJSON) {
+		// Old documents without 'sections' key.
+		// TODO: remove
+		contentBySectionsJSON = documentContent;
+	} else {
+		specsURLs = documentContent.specsURLs;
+	}
+
+	for (var sectionID in contentBySectionsJSON) {
+		if (!contentBySectionsJSON.propertyIsEnumerable(sectionID)) {
+			continue;
+		}
+
+		var contentJSON = contentBySectionsJSON[sectionID];
+		var shouldEditFirstBlock = false;
+
+		if (!contentJSON) {
+			contentJSON = {
+				blocks: [ContentStore.newTextBlockWithDefaultType().toJSON()]
+			};
+			shouldEditFirstBlock = true;
+		}
+
+		var documentSectionActions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
+		documentSectionActions.setContentJSON(contentJSON);
+
+		if (shouldEditFirstBlock) {
+			documentSectionActions.editBlockWithKeyPath(["blocks", 0]);
+		}
+	};
+
+	ContentActions.setSpecsURLsForDocumentWithID(documentID, specsURLs);
+}
+
+var loadContentForDocument = function loadContentForDocument(documentID) {
+	var isLoading = isLoadingContentForDocument(documentID);
+	if (isLoading) {
+		return;
+	}
+
+	var actionURL = ConfigurationStore.getActionURL("document/");
+	if (actionURL == null) {
+		var initialContent = ConfigurationStore.getInitialContentJSONForDocument(documentID);
+		if (initialContent) {
+			// Make asynchronous, important for app dispatch
+			setTimeout(function () {
+				receiveLoadedContentForDocument(documentID, initialContent);
+				setLoadingContentForDocument(documentID, false);
+			}, 0);
+		}
+		return;
+	}
+
+	setLoadingContentForDocument(documentID, true);
+
+	qwest.get(actionURL + documentID + "/", null, {
+		dataType: "json",
+		responseType: "json"
+	}).then(function (documentContent) {
+		receiveLoadedContentForDocument(documentID, documentContent);
+	})["catch"](function (message) {
+		ContentLoadingStore.trigger("loadContentDidFailForDocumentWithMessage", documentID, message);
+	}).complete(function () {
+		setLoadingContentForDocument(documentID, false);
+	});
+};
+
+AppDispatcher.register(function (payload) {
+	switch (payload.eventID) {
+
+		case documentEventIDs.loadContent:
+			loadContentForDocument(payload.documentID);
+			break;
+
+	}
+});
+
+objectAssign(ContentLoadingStore, {
+	isLoadingContentForDocument: isLoadingContentForDocument
+});
+
+module.exports = ContentLoadingStore;
+
+},{"../actions/ContentActions":175,"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"./ConfigurationStore":187,"./ContentStore":190,"immutable":11,"microevent":12,"object-assign":18,"qwest":19}],189:[function(require,module,exports){
 "use strict";
 
 var AppDispatcher = require("../app-dispatcher");
 var Immutable = require("immutable");
 var MicroEvent = require("microevent");
-var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
+var ContentStore = require("./ContentStore");
+var ConfigurationStore = require("./ConfigurationStore");
+var qwest = require("qwest");
+var ContentActionsEventIDs = require("../actions/ContentActionsEventIDs");
 var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
-var ContentStore = require("./store-content");
+var documentSectionActivity = Immutable.Map({});
+
+var ContentSavingStore = {
+	on: MicroEvent.prototype.bind,
+	trigger: MicroEvent.prototype.trigger,
+	off: MicroEvent.prototype.unbind
+};
+
+var isSavingContentForDocumentSection = function isSavingContentForDocumentSection(documentID, sectionID) {
+	var isSaving = documentSectionActivity.getIn([documentID, sectionID, "isSaving"], false);
+	return isSaving;
+};
+ContentSavingStore.isSavingContentForDocumentSection = isSavingContentForDocumentSection;
+
+var setSavingContentForDocumentSection = function setSavingContentForDocumentSection(documentID, sectionID, isSaving) {
+	var isSavingCurrent = isSavingContentForDocumentSection(documentID, sectionID);
+	if (isSavingCurrent === isSaving) {
+		return;
+	}
+
+	documentSectionActivity = documentSectionActivity.setIn([documentID, sectionID, "isSaving"], isSaving);
+
+	ContentSavingStore.trigger("isSavingDidChangeForDocumentSection", documentID, sectionID, isSaving);
+	//ContentSavingStore.trigger('isSavingDidChangeForDocument', documentID, isSaving);
+};
+
+var saveContentForDocumentSection = function saveContentForDocumentSection(documentID, sectionID) {
+	var isSaving = isSavingContentForDocumentSection(documentID, sectionID);
+	if (isSaving) {
+		return;
+	}
+
+	var actionURL = ConfigurationStore.getActionURL();
+	var actionsFunctions = ConfigurationStore.getActionsFunctions();
+	if (!actionURL && !actionsFunctions) {
+		return;
+	}
+
+	setSavingContentForDocumentSection(documentID, sectionID, true);
+
+	var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
+
+	if (actionURL) {
+		qwest.post(actionURL + documentID + "/", {
+			sectionID: sectionID,
+			contentJSON: contentJSON
+		}, {
+			dataType: "json",
+			responseType: "json"
+		}).then(function (response) {})["catch"](function (message) {
+			ContentSavingStore.trigger("saveContentDidFailForDocumentSectionWithMessage", documentID, sectionID, message);
+		}).complete(function () {
+			setSavingContentForDocumentSection(documentID, sectionID, false);
+		});
+	} else {
+		if (actionsFunctions.saveContentJSONForDocumentSection) {
+			actionsFunctions.saveContentJSONForDocumentSection(documentID, sectionID, contentJSON);
+		} else {
+			console.error("Icing actions functions must include 'saveContentJSONForDocumentSection'.");
+		}
+	}
+};
+ContentSavingStore.saveContentForDocumentSection = saveContentForDocumentSection;
+
+AppDispatcher.register(function (payload) {
+	switch (payload.eventID) {
+
+		case documentSectionEventIDs.saveChanges:
+			saveContentForDocumentSection(payload.documentID, payload.sectionID);
+			break;
+
+	}
+});
+
+module.exports = ContentSavingStore;
+
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"./ConfigurationStore":187,"./ContentStore":190,"immutable":11,"microevent":12,"qwest":19}],190:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var objectAssign = require("object-assign");
+var ConfigurationStore = require("./ConfigurationStore");
+var SpecsStore = require("./SpecsStore");
+
+//let ContentActions = require('../actions/ContentActions');
+
+var ContentActionsEventIDs = require("../actions/ContentActionsEventIDs");
+var documentEventIDs = ContentActionsEventIDs.document;
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+//TODO: renamed Subsection to Portion?
+
+//let defaultSpecsURL = 'http://www.burnticing.org/specs/default/1.0/default-1.0.json';
+var defaultSpecsURL = "http://burnticing.github.io/specs/default/1.0/default-1.0.json";
+
+var getIndexForObjectKeyPath = function getIndexForObjectKeyPath(keyPath) {
+	return keyPath[keyPath.length - 1];
+};
+
+var getParentKeyPath = function getParentKeyPath(keyPath) {
+	return keyPath.slice(0, -1);
+};
+
+var getObjectKeyPathWithIndexChange = function getObjectKeyPathWithIndexChange(keyPath, changeCallback) {
+	var index = getIndexForObjectKeyPath(keyPath);
+	return getParentKeyPath(keyPath).concat(changeCallback(index));
+};
+
+var getBlocksKeyPath = function getBlocksKeyPath() {
+	return ["blocks"];
+};
+
+var getBlockKeyPathForItemKeyPath = function getBlockKeyPathForItemKeyPath(itemKeyPath) {
+	return itemKeyPath.slice(0, -2);
+};
+
+var ContentStore = {};
+
+ContentStore.on = MicroEvent.prototype.bind;
+ContentStore.trigger = MicroEvent.prototype.trigger;
+ContentStore.off = MicroEvent.prototype.unbind;
+
+var documentCombinedSpecs = Immutable.Map();
+var documentSectionContents = Immutable.Map();
+var documentSectionEditedTextItemIdentifiers = Immutable.Map();
+
+function newIdentifier() {
+	return "i-" + Math.random().toString().replace("0.", "");
+}
+
+function getContentKeyPathForDocumentSection(documentID, sectionID, additionalKeyPath) {
+	var keyPath = [documentID, "sections", sectionID];
+	if (additionalKeyPath) {
+		keyPath = keyPath.concat(additionalKeyPath);
+	}
+	return keyPath;
+}
+
+function getContentForDocumentSection(documentID, sectionID) {
+	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID));
+}
+
+function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
+	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID, keyPath));
+}
+
+function setContentFromImmutableForDocumentSection(documentID, sectionID, content) {
+	documentSectionContents = documentSectionContents.setIn(getContentKeyPathForDocumentSection(documentID, sectionID), content);
+
+	ContentStore.trigger("contentChangedForDocumentSection", documentID, sectionID);
+}
+
+function prepareContentFromJSON(contentJSON) {
+	return Immutable.fromJS(contentJSON, function (key, value) {
+		var isIndexed = Immutable.Iterable.isIndexed(value);
+		var newValue = isIndexed ? value.toList() : value.toMap();
+
+		if (key === "blocks" || key === "textItems") {
+			newValue = newValue.map(function (item) {
+				if (!item.has("identifier")) {
+					item = item.set("identifier", newIdentifier());
+				}
+				return item;
+			});
+		}
+
+		return newValue;
+	});
+}
+
+function setContentFromJSONForDocumentSection(documentID, sectionID, contentJSON) {
+	var content = null;
+	if (contentJSON) {
+		content = prepareContentFromJSON(contentJSON);
+	}
+	setContentFromImmutableForDocumentSection(documentID, sectionID, content);
+}
+
+function updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater) {
+	var _ref = arguments[4] === undefined ? {} : arguments[4];
+
+	var _ref$trigger = _ref.trigger;
+	var trigger = _ref$trigger === undefined ? true : _ref$trigger;
+
+	var fullKeyPath = getContentKeyPathForDocumentSection(documentID, sectionID, keyPath);
+	documentSectionContents = documentSectionContents.updateIn(fullKeyPath, updater);
+
+	if (trigger) {
+		ContentStore.trigger("contentChangedForDocumentSection", documentID, sectionID);
+	}
+}
+
+function getSpecsURLsForDocumentWithID(documentID) {
+	var specsURLs = documentSectionContents.getIn([documentID, "specsURLs"]);
+	if (specsURLs) {
+		return specsURLs.toArray();
+	} else {
+		return null;
+	}
+}
+
+function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
+	// Removed cached specs, which might have been combined from the URLs.
+	documentCombinedSpecs = documentCombinedSpecs.remove(documentID);
+
+	if (specsURLs) {
+		specsURLs = Immutable.fromJS(specsURLs);
+		specsURLs = specsURLs.filter(function (specsURL) {
+			return typeof specsURL === "string" && specsURL.trim() !== "";
+		});
+		documentSectionContents = documentSectionContents.setIn([documentID, "specsURLs"], specsURLs);
+	} else {
+		documentSectionContents = documentSectionContents.removeIn([documentID, "specsURLs"]);
+	}
+
+	ContentStore.trigger("specsChangedForDocument", documentID);
+}
+
+function getSpecsForDocumentSection(documentID, sectionID) {
+	var specs = documentCombinedSpecs.get(documentID);
+	if (!specs) {
+		var specsURLs = getSpecsURLsForDocumentWithID(documentID);
+
+		if (!specsURLs) {
+			if (true) {
+				var defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
+				if (!defaultSpecs) {
+					var defaultSpecsJSON = require("../dummy/dummy-content-specs.json");
+					defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
+					SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
+				}
+			}
+			specsURLs = [defaultSpecsURL];
+		} else if (specsURLs.length === 0) {
+			return null;
+		}
+
+		if (!SpecsStore.hasLoadedAllSpecsWithURLs(specsURLs)) {
+			specsURLs.forEach(function (specsURL) {
+				SpecsStore.loadSpecWithURL(specsURL);
+			});
+			return null;
+		}
+
+		specs = SpecsStore.getCombinedSpecsWithURLs(specsURLs);
+		documentCombinedSpecs = documentCombinedSpecs.set(documentID, specs);
+	}
+	return specs;
+}
+
+// SETTINGS
+
+var isShowingSettings = false;
+
+function getIsShowingSettings() {
+	return isShowingSettings;
+}
+
+function setShowSettingsOn(on) {
+	if (isShowingSettings === on) {
+		return;
+	}
+
+	isShowingSettings = on;
+	ContentStore.trigger("isShowingSettingsDidChange", isShowingSettings);
+}
+
+objectAssign(ContentStore, {
+	documentSectionContents: documentSectionContents,
+	documentSectionEditedTextItemIdentifiers: documentSectionEditedTextItemIdentifiers,
+
+	/*
+ newContentForTextItems: function() {
+ 	return Immutable.Map({
+ 		"type": "textItems",
+ 		"blocks": Immutable.List([
+ 			this.newBlockOfType('text', 'body')
+ 		])
+ 	});
+ },
+ */
+
+	newTextItem: function newTextItem(options) {
+		var textItem = Immutable.Map({
+			type: "text",
+			identifier: newIdentifier(),
+			traits: Immutable.Map(),
+			text: ""
+		});
+		if (options) {
+			textItem = textItem.merge(options);
+		}
+
+		return textItem;
+	},
+
+	newLineBreakTextItem: function newLineBreakTextItem() {
+		var textItem = Immutable.Map({
+			type: "lineBreak",
+			identifier: newIdentifier()
+		});
+
+		return textItem;
+	},
+
+	blockGroupTypeHasTextItems: function blockGroupTypeHasTextItems(blockGroupType) {
+		return blockGroupType === "text";
+	},
+
+	newBlockOfType: function newBlockOfType(typeGroup, type) {
+		var blockJSON = {
+			typeGroup: typeGroup,
+			type: type,
+			identifier: newIdentifier()
+		};
+
+		if (this.blockGroupTypeHasTextItems(typeGroup)) {
+			blockJSON.textItems = Immutable.List();
+		}
+
+		return Immutable.Map(blockJSON);
+	},
+
+	newBlockWithSameTypeAs: function newBlockWithSameTypeAs(block) {
+		return this.newBlockOfType(block.get("typeGroup"), block.get("type"));
+	},
+
+	newTextBlockWithDefaultType: function newTextBlockWithDefaultType() {
+		return this.newBlockOfType("text", "body");
+	},
+
+	newBlockSubsectionOfType: function newBlockSubsectionOfType(subsectionType) {
+		return Immutable.Map({
+			typeGroup: "subsection",
+			type: subsectionType,
+			identifier: newIdentifier()
+		});
+	},
+
+	blockKeyPathForItemKeyPath: getBlockKeyPathForItemKeyPath,
+
+	getIsShowingSettings: getIsShowingSettings,
+
+	getSpecsURLsForDocumentWithID: getSpecsURLsForDocumentWithID,
+	getSpecsForDocumentSection: getSpecsForDocumentSection,
+
+	getContentForDocumentSection: getContentForDocumentSection,
+
+	getContentAsJSONForDocumentSection: function getContentAsJSONForDocumentSection(documentID, sectionID) {
+		var content = this.getContentForDocumentSection(documentID, sectionID);
+		if (content) {
+			return content.toJS();
+		} else {
+			return null;
+		}
+	},
+
+	getContentObjectAtKeyPathForDocumentSection: getContentObjectAtKeyPathForDocumentSection,
+
+	getIdentifierOfObjectAtKeyPathForDocumentSection: function getIdentifierOfObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
+		return this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath.concat("identifier"));
+	},
+
+	getNumberOfBlocksForDocumentSection: function getNumberOfBlocksForDocumentSection(documentID, sectionID, keyPath) {
+		var blocksKeyPath = getBlocksKeyPath();
+		var blocks = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath);
+		if (blocks) {
+			return blocks.size;
+		} else {
+			return null;
+		}
+	},
+
+	// UPDATING
+
+	updateBlockAtKeyPathInDocumentSection: function updateBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, updater, options) {
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
+	},
+
+	removeBlockAtKeyPathInDocumentSection: function removeBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath) {
+		var _ref = arguments[3] === undefined ? {} : arguments[3];
+
+		var _ref$finishEditing = _ref.finishEditing;
+		var finishEditing = _ref$finishEditing === undefined ? false : _ref$finishEditing;
+		var _ref$editPrevious = _ref.editPrevious;
+		var editPrevious = _ref$editPrevious === undefined ? false : _ref$editPrevious;
+
+		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		var isEditingThisBlock = editedBlockKeyPath == blockKeyPath;
+		if (isEditingThisBlock || finishEditing) {
+			this.finishEditingInDocumentSection(documentID, sectionID);
+		}
+
+		var blockIndex = blockKeyPath.slice(-1)[0];
+		var blocksKeyPath = blockKeyPath.slice(0, -1);
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
+			return blocks.remove(blockIndex);
+		});
+
+		if (editPrevious) {
+			var precedingBlockIndex = blockIndex - 1;
+			var precedingBlockKeyPath = blocksKeyPath.concat(precedingBlockIndex);
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath);
+		}
+
+		//this.trigger('contentChangedForDocumentSection', documentID, sectionID);
+	},
+
+	updateTextItemAtKeyPathInDocumentSection: function updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, updater, options) {
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
+	},
+
+	textItemIsEmptyAtKeyPathInDocumentSection: function textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, keyPath) {
+		var text = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath.concat("text"));
+		var isEmpty = !text || text.length === 0;
+		return isEmpty;
+	},
+
+	removeTextItemAtKeyPathInDocumentSection: function removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath) {
+		var itemIndex = keyPath.slice(-1)[0];
+		var textItemsKeyPath = keyPath.slice(0, -1);
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
+			return textItems.remove(itemIndex);
+		});
+	},
+
+	insertItemAtKeyPathInDocumentSection: function insertItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options) {
+		var insertIndex = keyPath.slice(-1)[0];
+		var textItemsKeyPath = keyPath.slice(0, -1); // Without the index
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
+			// Insert the item.
+			return textItems.splice(insertIndex, 0, item);
+		});
+
+		if (options && options.edit) {
+			var newItemKeyPath = textItemsKeyPath.concat(insertIndex);
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
+		}
+	},
+
+	insertItemAfterItemAtKeyPathInDocumentSection: function insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options) {
+		var textItemIndex = keyPath.slice(-1)[0];
+		var textItemsKeyPath = keyPath.slice(0, -1);
+
+		var newItemIndex = textItemIndex + 1;
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
+			// Insert the item.
+			return textItems.splice(newItemIndex, 0, item);
+		});
+
+		if (options && options.edit) {
+			var newItemKeyPath = textItemsKeyPath.concat(newItemIndex);
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
+		}
+	},
+
+	addNewItemAfterItemAtKeyPathInDocumentSection: function addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, options) {
+		var newTextItem = this.newTextItem();
+		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, newTextItem, options);
+	},
+
+	addLineBreakAfterItemAtKeyPathInDocumentSection: function addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, options) {
+		var item = this.newLineBreakTextItem();
+		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options);
+	},
+
+	insertBlockAtKeyPathInDocumentSection: function insertBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, block) {
+		var _ref = arguments[4] === undefined ? {} : arguments[4];
+
+		var _ref$edit = _ref.edit;
+		var edit = _ref$edit === undefined ? false : _ref$edit;
+		var _ref$editFirstItem = _ref.editFirstItem;
+		var editFirstItem = _ref$editFirstItem === undefined ? null : _ref$editFirstItem;
+		var _ref$editLastItem = _ref.editLastItem;
+		var editLastItem = _ref$editLastItem === undefined ? null : _ref$editLastItem;
+
+		var insertIndex = keyPath.slice(-1)[0];
+		var blocksKeyPath = keyPath.slice(0, -1); // Without the index
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
+			// Insert the item.
+			return blocks.splice(insertIndex, 0, block);
+		});
+
+		if (edit) {
+			var newBlockKeyPath = blocksKeyPath.concat(insertIndex);
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, { editFirstItem: editFirstItem, editLastItem: editLastItem });
+		}
+	},
+
+	insertSubsectionOfTypeAtBlockIndexInDocumentSection: function insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID, subsectionType, blockIndex) {
+		var _ref = arguments[4] === undefined ? {} : arguments[4];
+
+		var _ref$editFollowingBlock = _ref.editFollowingBlock;
+		var editFollowingBlock = _ref$editFollowingBlock === undefined ? false : _ref$editFollowingBlock;
+
+		var blocksKeyPath = getBlocksKeyPath();
+		var blockKeyPath = blocksKeyPath.concat(blockIndex);
+		var subsectionBlock = this.newBlockSubsectionOfType(subsectionType);
+		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, subsectionBlock);
+
+		if (editFollowingBlock) {
+			var followingBlockIndex = blockIndex + 1;
+			var followingBlockKeyPath = blocksKeyPath.concat(followingBlockIndex);
+			console.log("followingBlockIndex", "getNumberOfBlocks", this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
+			if (followingBlockIndex < this.getNumberOfBlocksForDocumentSection(documentID, sectionID)) {
+				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath);
+			} else {
+				var newBlock = this.newTextBlockWithDefaultType();
+				this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath, newBlock, { edit: true });
+			}
+		}
+	},
+
+	changeTypeOfBlockAtKeyPathInDocumentSection: function changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlockTypeGroup, newBlockType) {
+		var hasDifferentTypeGroup = true;
+
+		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		if (editedBlockKeyPath && this.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+			var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+			if (this.blockGroupTypeHasTextItems(block.get("typeGroup"))) {
+				hasDifferentTypeGroup = false;
+			}
+		}
+
+		if (hasDifferentTypeGroup) {
+			// Finish editing, as changing to a different type may edit in a different way.
+			this.finishEditingInDocumentSection(documentID, sectionID);
+		}
+
+		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function (block) {
+			return block.withMutations(function (mutableBlock) {
+				mutableBlock.set("typeGroup", newBlockTypeGroup);
+				mutableBlock.set("type", newBlockType);
+
+				if (!ContentStore.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+					mutableBlock.remove("textItems");
+				}
+			});
+		});
+
+		if (editedBlockKeyPath && hasDifferentTypeGroup) {
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath);
+		}
+	},
+
+	changeTypeOfSubsectionAtKeyPathInDocumentSection: function changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, newSubsectionType) {
+		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, function (block) {
+			return block.set("type", newSubsectionType);
+		});
+	},
+
+	insertBlockAfterBlockAtKeyPathInDocumentSection: function insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, block, options) {
+		var newBlockKeyPath = getObjectKeyPathWithIndexChange(blockKeyPath, function (originalIndex) {
+			return originalIndex + 1;
+		});
+
+		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, block, options);
+	},
+
+	moveBlockAtKeyPathToBeforeBlockAtIndexInDocumentSection: function moveBlockAtKeyPathToBeforeBlockAtIndexInDocumentSection(documentID, sectionID, blockKeyPath, newIndex, options) {
+		var blocksKeyPath = getParentKeyPath(blockKeyPath);
+		var blockOriginalIndex = getIndexForObjectKeyPath(blockKeyPath);
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
+			var blockToMove = blocks.get(blockOriginalIndex);
+			blocks = blocks.remove(blockOriginalIndex);
+			if (blockOriginalIndex < newIndex) {
+				newIndex -= 1;
+			}
+			blocks = blocks.splice(newIndex, 0, blockToMove);
+
+			return blocks;
+		});
+	},
+
+	insertBlockOfTypeAtIndexInDocumentSection: function insertBlockOfTypeAtIndexInDocumentSection(documentID, sectionID, typeGroup, type, blockIndex, options) {
+		var newBlock = this.newBlockOfType(typeGroup, type);
+
+		var blocksKeyPath = getBlocksKeyPath();
+		var blockKeyPath = blocksKeyPath.concat(blockIndex);
+
+		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlock, options);
+	},
+
+	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, options) {
+		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+		var newBlock = this.newBlockWithSameTypeAs(currentBlock);
+
+		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlock, options);
+	},
+
+	insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection: function insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, pastedText, options) {
+		pastedText = pastedText.replace(/\r\n/g, "\n");
+		var textParagraphs = pastedText.split("\n");
+		var whiteSpaceRE = /^[\s\n]+$/;
+		textParagraphs = textParagraphs.filter(function (paragraphText) {
+			if (whiteSpaceRE.test(paragraphText)) {
+				return false;
+			}
+
+			return true;
+		});
+
+		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+
+		var newBlocks = textParagraphs.map(function (paragraphText) {
+			var textItem = this.newTextItem({ text: paragraphText });
+			var block = this.newBlockWithSameTypeAs(currentBlock);
+			block = block.set("textItems", Immutable.List([textItem]));
+			return block;
+		}, this);
+
+		var sourceIndex = blockKeyPath.slice(-1)[0];
+		var insertIndex = sourceIndex + 1;
+		var blocksKeyPath = blockKeyPath.slice(0, -1); // Without the index
+
+		updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
+			// Insert the blocks.
+			return blocks.splice.bind(blocks, insertIndex, 0).apply(blocks, newBlocks);
+		});
+
+		if (options && options.edit) {
+			var insertedBlockCount = newBlocks.length;
+			var lastBlockKeyPath = blocksKeyPath.concat(insertIndex + insertedBlockCount - 1);
+			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, lastBlockKeyPath);
+		}
+	},
+
+	splitBlockBeforeItemAtKeyPathInDocumentSection: function splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath) {
+		var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
+		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+
+		var textItemIndex = itemKeyPath.slice(-1)[0];
+
+		var followingItems = [];
+		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function (block) {
+			var textItems = block.get("textItems");
+			var precedingItems = textItems.slice(0, textItemIndex);
+			followingItems = textItems.slice(textItemIndex);
+
+			block = block.set("textItems", precedingItems);
+			return block;
+		});
+
+		var followingBlock = this.newBlockWithSameTypeAs(currentBlock);
+		followingBlock = followingBlock.set("textItems", followingItems);
+
+		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, { edit: true, editFirstItem: true });
+	},
+
+	joinBlockAtKeyPathWithPreviousInDocumentSection: function joinBlockAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, currentBlockKeyPath) {
+		var currentBlockIndex = currentBlockKeyPath.slice(-1)[0];
+		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, currentBlockKeyPath);
+
+		var currentBlockGroupType = currentBlock.get("typeGroup");
+		if (currentBlockIndex === 0 || !this.blockGroupTypeHasTextItems(currentBlockGroupType)) {
+			return false;
+		}
+
+		var precedingBlockIndex = currentBlockIndex - 1;
+		var precedingBlockKeyPath = currentBlockKeyPath.slice(0, -1).concat(precedingBlockIndex);
+		var precedingBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingBlockKeyPath);
+
+		var precedingBlockGroupType = precedingBlock.get("typeGroup");
+		if (!this.blockGroupTypeHasTextItems(precedingBlockGroupType)) {
+			return false;
+		}
+
+		var followingTextItems = currentBlock.get("textItems");
+		var precedingTextItems = precedingBlock.get("textItems");
+
+		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath, function (block) {
+			return block.update("textItems", function (textItems) {
+				return textItems.concat(followingTextItems);
+			});
+		});
+
+		this.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, currentBlockKeyPath);
+
+		var itemKeyPath = precedingBlockKeyPath.concat("textItems", precedingTextItems.count());
+		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
+	},
+
+	joinItemAtKeyPathWithPreviousInDocumentSection: function joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, itemKeyPath) {
+		var itemIndex = itemKeyPath.slice(-1)[0];
+		if (itemIndex === 0) {
+			var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
+			this.joinBlockAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, blockKeyPath);
+		} else {
+			var precedingItemIndex = itemIndex - 1;
+			var precedingItemKeyPath = itemKeyPath.slice(0, -1).concat(precedingItemIndex);
+			var precedingItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingItemKeyPath);
+			var followingItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath);
+
+			var precedingText = precedingItem.get("text");
+			var followingText = followingItem.get("text");
+			var combinedText = precedingText + followingText;
+			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath, function (textItem) {
+				return textItem.set("text", combinedText);
+			});
+
+			this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath);
+		}
+	},
+
+	splitTextInRangeOfItemAtKeyPathInDocumentSection: function splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, textSplitRange, itemKeyPath, insertedItem) {
+		var splitStart = textSplitRange.start;
+		var splitEnd = textSplitRange.end;
+
+		var currentItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath);
+		var currentText = currentItem.get("text");
+		var currentItemIndex = getIndexForObjectKeyPath(itemKeyPath);
+		var textItemsKeyPath = getParentKeyPath(itemKeyPath);
+
+		// Just a caret
+		if (splitStart === splitEnd) {
+			var itemAText = currentText.slice(0, splitStart);
+			var itemBText = currentText.slice(splitStart);
+
+			if (itemAText === "") {
+				return;
+			}
+
+			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function (textItem) {
+				return textItem.set("text", itemAText);
+			});
+
+			// TODO: Used for line break?
+			if (insertedItem) {
+				this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, insertedItem);
+			}
+
+			var itemB = this.newTextItem({ text: itemBText });
+			//var itemBIndex = currentItemIndex + 1;
+			//var itemBKeyPath = textItemsKeyPath.concat(itemBIndex);
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, { edit: true });
+		}
+		// Actual selection range
+		else {
+			var itemAText = currentText.slice(0, splitStart);
+			var itemBText = currentText.slice(splitStart, splitEnd);
+			var itemCText = currentText.slice(splitEnd);
+
+			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function (textItem) {
+				return textItem.set("text", itemAText);
+			});
+
+			var itemB = this.newTextItem({ text: itemBText });
+			var itemC = this.newTextItem({ text: itemCText });
+
+			// Insert itemC then itemB, so that itemB is in front of itemC
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemC);
+			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, { edit: true });
+		}
+	},
+
+	getEditedBlockIdentifierForDocumentSection: function getEditedBlockIdentifierForDocumentSection(documentID, sectionID) {
+		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "identifier"], null);
+	},
+
+	getEditedBlockKeyPathForDocumentSection: function getEditedBlockKeyPathForDocumentSection(documentID, sectionID) {
+		var keyPath = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "keyPath"], null);
+		if (keyPath) {
+			keyPath = keyPath.toJS();
+		}
+		return keyPath;
+	},
+
+	getEditedTextItemIdentifierForDocumentSection: function getEditedTextItemIdentifierForDocumentSection(documentID, sectionID) {
+		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "identifier"], null);
+	},
+
+	getEditedTextItemKeyPathForDocumentSection: function getEditedTextItemKeyPathForDocumentSection(documentID, sectionID) {
+		var keyPath = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "keyPath"], null);
+		if (keyPath) {
+			keyPath = keyPath.toJS();
+		}
+		return keyPath;
+	},
+
+	editingWillEndInDocumentSection: function editingWillEndInDocumentSection(documentID, sectionID) {
+		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
+		if (!itemKeyPath) {
+			return;
+		}
+
+		var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
+		var blockGroupType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("typeGroup"));
+
+		if (this.blockGroupTypeHasTextItems(blockGroupType)) {
+			var isEmpty = this.textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
+			if (isEmpty) {
+				this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
+			}
+		}
+
+		this.trigger("editedItemWillEndEditingForDocumentSection", documentID, sectionID);
+	},
+
+	editBlockWithKeyPathInDocumentSection: function editBlockWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath) {
+		var _ref = arguments[3] === undefined ? {} : arguments[3];
+
+		var _ref$editTextItemsIfPresent = _ref.editTextItemsIfPresent;
+		var editTextItemsIfPresent = _ref$editTextItemsIfPresent === undefined ? true : _ref$editTextItemsIfPresent;
+		var _ref$editLastItem = _ref.editLastItem;
+		var editLastItem = _ref$editLastItem === undefined ? null : _ref$editLastItem;
+		var _ref$editFirstItem = _ref.editFirstItem;
+		var editFirstItem = _ref$editFirstItem === undefined ? null : _ref$editFirstItem;
+
+		editLastItem = !editFirstItem; // This is the default
+		editFirstItem = !editLastItem;
+
+		this.editingWillEndInDocumentSection(documentID, sectionID);
+
+		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+
+		if (editTextItemsIfPresent) {
+			if (this.blockGroupTypeHasTextItems(block.get("typeGroup"))) {
+				this.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath, {
+					lastItem: editLastItem,
+					firstItem: editFirstItem
+				});
+
+				return;
+			}
+		}
+
+		var blockIdentifier = block.get("identifier");
+		var state = Immutable.fromJS({
+			block: {
+				keyPath: blockKeyPath,
+				identifier: blockIdentifier
+			}
+		});
+
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
+
+		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
+	},
+
+	editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection: function editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath) {
+		var _ref = arguments[3] === undefined ? {} : arguments[3];
+
+		var _ref$lastItem = _ref.lastItem;
+		var lastItem = _ref$lastItem === undefined ? null : _ref$lastItem;
+		var _ref$firstItem = _ref.firstItem;
+		var firstItem = _ref$firstItem === undefined ? null : _ref$firstItem;
+
+		lastItem = !firstItem; // This is the default, will be true if firstItem is null.
+		firstItem = !lastItem;
+
+		this.editingWillEndInDocumentSection(documentID, sectionID);
+
+		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
+		var textItems = block.get("textItems");
+		var textItemCount = textItems.count();
+		if (textItemCount === 0) {
+			// Insert an empty item and edit it.
+			var newTextItem = this.newTextItem();
+			this.insertItemAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat("textItems", 0), newTextItem, { edit: true });
+		} else {
+			var itemIndex = lastItem ? textItemCount - 1 : firstItem ? 0 : 0;
+			// Edit last item.
+			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat("textItems", itemIndex));
+		}
+	},
+
+	editItemWithKeyPathInDocumentSection: function editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath) {
+		var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
+		var blockIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("identifier"));
+
+		var itemIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath.concat("identifier"));
+
+		var currentEditedItemIdentifier = this.getEditedTextItemIdentifierForDocumentSection();
+		if (itemIdentifier !== currentEditedItemIdentifier) {
+			this.editingWillEndInDocumentSection(documentID, sectionID);
+		}
+
+		var state = Immutable.fromJS({
+			block: {
+				keyPath: blockKeyPath,
+				identifier: blockIdentifier
+			},
+			item: {
+				keyPath: itemKeyPath,
+				identifier: itemIdentifier
+			}
+		});
+
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
+
+		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
+		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
+	},
+
+	finishEditingInDocumentSection: function finishEditingInDocumentSection(documentID, sectionID) {
+		this.editingWillEndInDocumentSection(documentID, sectionID);
+
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.removeIn([documentID, sectionID]);
+
+		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
+		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
+	},
+
+	registerSelectedTextRangeFunctionForEditedItemInDocumentSection: function registerSelectedTextRangeFunctionForEditedItemInDocumentSection(documentID, sectionID, selectedTextRangeFunction) {
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID, "item", "selectedTextRangeFunction"], selectedTextRangeFunction);
+	},
+
+	unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection: function unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection(documentID, sectionID) {
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.deleteIn([documentID, sectionID, "item", "selectedTextRangeFunction"]);
+	},
+
+	getSelectedTextRangeForEditedItemInDocumentSection: function getSelectedTextRangeForEditedItemInDocumentSection(documentID, sectionID, selectedTextRange) {
+		var selectedTextRangeFunction = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "selectedTextRangeFunction"], null);
+		if (selectedTextRangeFunction) {
+			var selectedTextRange = selectedTextRangeFunction();
+			console.log("selectedTextRange", selectedTextRange);
+			return selectedTextRange;
+		}
+
+		return null;
+	},
+
+	setSelectedTextRangeForEditedItemInDocumentSection: function setSelectedTextRangeForEditedItemInDocumentSection(documentID, sectionID, selectedTextRange) {
+		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID, "item", "selectedTextRange"], selectedTextRange);
+	},
+
+	editPreviousBlockInDocumentSection: function editPreviousBlockInDocumentSection(documentID, sectionID) {
+		var blockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		if (!blockKeyPath) {
+			return false;
+		}
+
+		var blockIndex = blockKeyPath.slice(-1)[0];
+		if (blockIndex === 0) {
+			return false;
+		}
+
+		var previousBlockKeyPath = blockKeyPath.slice(0, -1).concat(blockIndex - 1);
+		this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, previousBlockKeyPath, {
+			editLastItem: true
+		});
+	},
+
+	editNextBlockInDocumentSection: function editNextBlockInDocumentSection(documentID, sectionID) {
+		var blockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+		if (!blockKeyPath) {
+			return false;
+		}
+
+		var blocksKeyPath = blockKeyPath.slice(0, -1);
+		var blocks = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath);
+		var blockCount = blocks.count();
+
+		var blockIndex = blockKeyPath.slice(-1)[0];
+		if (blockIndex === blockCount - 1) {
+			return false;
+		}
+
+		var nextBlockKeyPath = blockKeyPath.slice(0, -1).concat(blockIndex + 1);
+		this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, nextBlockKeyPath, {
+			editFirstItem: true
+		});
+	},
+
+	editPreviousItemInDocumentSection: function editPreviousItemInDocumentSection(documentID, sectionID) {
+		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
+		if (!itemKeyPath) {
+			return false;
+		}
+
+		var itemIndex = itemKeyPath.slice(-1)[0];
+		// If first text item is being edited,
+		if (itemIndex === 0) {
+			// then edit the previous block.
+			return this.editPreviousBlockInDocumentSection(documentID, sectionID);
+		}
+
+		var previousItemKeyPath = itemKeyPath.slice(0, -1).concat(itemIndex - 1);
+		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, previousItemKeyPath);
+	},
+
+	editNextItemInDocumentSection: function editNextItemInDocumentSection(documentID, sectionID) {
+		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
+		if (!itemKeyPath) {
+			return false;
+		}
+
+		var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
+		var textItemsKeyPath = blockKeyPath.concat("textItems");
+		var textItems = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath);
+		var itemCount = textItems.count();
+
+		var itemIndex = itemKeyPath.slice(-1)[0];
+		// If last text item is being edited,
+		if (itemIndex === itemCount - 1) {
+			// then edit the next block.
+			return this.editNextBlockInDocumentSection(documentID, sectionID);
+		}
+
+		var nextItemKeyPath = itemKeyPath.slice(0, -1).concat(itemIndex + 1);
+		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, nextItemKeyPath);
+	}
+});
+
+ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
+	if (!payload.eventID) {
+		return;
+	}
+
+	var documentID = null;
+	var sectionID = null;
+	// TODO: use these two variables.
+	var blockKeyPath = null;
+	var textItemKeyPath = null;
+	var editedBlockKeyPath = null;
+	var editedTextItemKeyPath = null;
+	var blockKeyPathIsEdited = false;
+
+	if (payload.documentID) {
+		documentID = payload.documentID;
+		if (payload.sectionID) {
+			sectionID = payload.sectionID;
+			editedBlockKeyPath = ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
+			editedTextItemKeyPath = ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
+
+			// TODO: use these variables.
+			if (payload.useEditedBlockKeyPath) {
+				blockKeyPath = editedBlockKeyPath;
+			} else {
+				blockKeyPath = payload.blockKeyPath;
+			}
+			blockKeyPathIsEdited = blockKeyPath == editedBlockKeyPath;
+
+			if (payload.useEditedTextItemKeyPath) {
+				textItemKeyPath = editedTextItemKeyPath;
+			} else {
+				textItemKeyPath = payload.textItemKeyPath;
+			}
+		}
+	}
+
+	switch (payload.eventID) {
+
+		case documentEventIDs.setSpecsURLs:
+			setSpecsURLsForDocumentWithID(documentID, payload.specsURLs);
+			break;
+
+		case documentSectionEventIDs.showSettings:
+			setShowSettingsOn(true);
+			break;
+
+		case documentSectionEventIDs.hideSettings:
+			setShowSettingsOn(false);
+			break;
+
+		case documentSectionEventIDs.setContentJSON:
+			setContentFromJSONForDocumentSection(documentID, sectionID, payload.contentJSON);
+			break;
+
+		case documentSectionEventIDs.edit.textItemWithKeyPath:
+			ContentStore.editItemWithKeyPathInDocumentSection(documentID, sectionID, payload.textItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.edit.blockWithKeyPath:
+			ContentStore.editBlockWithKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+
+			break;
+
+		case documentSectionEventIDs.finishEditing:
+			ContentStore.finishEditingInDocumentSection(documentID, sectionID);
+
+			break;
+
+		case documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex:
+			ContentStore.insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID, payload.subsectionType, payload.blockIndex, { editFollowingBlock: true });
+
+			break;
+
+		case documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex:
+			ContentStore.insertBlockOfTypeAtIndexInDocumentSection(documentID, sectionID, payload.typeGroup, payload.type, payload.blockIndex, { edit: true });
+
+			break;
+
+		case documentSectionEventIDs.subsectionAtKeyPath.changeType:
+			ContentStore.changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID, payload.subsectionKeyPath, payload.subsectionType);
+
+			break;
+
+		case documentSectionEventIDs.subsectionAtKeyPath.remove:
+			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.subsectionKeyPath, { finishEditing: true });
+
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.changeType:
+			ContentStore.changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, payload.blockTypeGroup, payload.blockType);
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.remove:
+			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.changeValue:
+			var defaultValue = payload.defaultValue;
+			var newValueFunction = payload.newValueFunction;
+			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function (block) {
+				return block.updateIn(["value"], defaultValue, newValueFunction);
+			});
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter:
+			ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, { edit: blockKeyPathIsEdited });
+			break;
+
+		case documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText:
+			ContentStore.insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, payload.pastedText, { edit: true });
+			break;
+
+		// EDITED BLOCK
+
+		case documentSectionEventIDs.editedBlock.remove:
+			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, { editPrevious: true });
+			break;
+
+		case documentSectionEventIDs.editedBlock.changeTraitValue:
+			var traitID = payload.traitID;
+			var defaultValue = payload.defaultValue;
+			var newValueFunction = payload.newValueFunction;
+			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, function (block) {
+				return block.updateIn(["traits", traitID], defaultValue, newValueFunction);
+			});
+			break;
+
+		case documentSectionEventIDs.editedBlock.removeTrait:
+			var traitID = payload.traitID;
+			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, function (block) {
+				return block.removeIn(["traits", traitID]);
+			});
+			break;
+
+		// EDITED TEXT ITEM
+
+		case documentSectionEventIDs.editedItem.remove:
+			ContentStore.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { editPrevious: true });
+			break;
+
+		case documentSectionEventIDs.editedItem.setText:
+			var text = payload.textItemText;
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				return textItem.set("text", text);
+			});
+			break;
+
+		case documentSectionEventIDs.editedItem.changeTraitValue:
+			var traitID = payload.traitID;
+			var defaultValue = payload.defaultValue;
+			var newValueFunction = payload.newValueFunction;
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				return textItem.updateIn(["traits", traitID], defaultValue, newValueFunction);
+			});
+			break;
+
+		case documentSectionEventIDs.editedItem.removeTrait:
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				return textItem.removeIn(["traits", payload.traitID]);
+			});
+			break;
+
+		case documentSectionEventIDs.editedItem.editPreviousItem:
+			ContentStore.editPreviousItemInDocumentSection(documentID, sectionID);
+			break;
+
+		case documentSectionEventIDs.editedItem.editNextItem:
+			ContentStore.editNextItemInDocumentSection(documentID, sectionID);
+			break;
+
+		case documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded:
+			ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, payload.blockKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.addNewTextItemAfter:
+			ContentStore.addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { edit: true });
+			break;
+
+		case documentSectionEventIDs.editedItem.addNewLineBreakAfter:
+			ContentStore.addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { edit: true });
+			break;
+
+		case documentSectionEventIDs.editedItem.splitBlockBefore:
+			ContentStore.splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.joinWithPreviousItem:
+			ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.remove:
+			ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.editedItem.splitTextInRange:
+			ContentStore.splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, payload.textRange, editedTextItemKeyPath);
+			break;
+
+		case documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex:
+			var ReorderingStore = require("./ReorderingStore");
+			var focusedBlockKeyPath = ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID);
+			ContentStore.moveBlockAtKeyPathToBeforeBlockAtIndexInDocumentSection(documentID, sectionID, focusedBlockKeyPath, payload.beforeBlockAtIndex);
+			break;
+
+	}
+
+	return true;
+});
+
+module.exports = ContentStore;
+
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"../dummy/dummy-content-specs.json":180,"./ConfigurationStore":187,"./ReorderingStore":192,"./SpecsStore":193,"immutable":11,"microevent":12,"object-assign":18}],191:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var ContentActionsEventIDs = require("../actions/ContentActionsEventIDs");
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+//var documentSectionActivity = Immutable.Map({});
+
+var StorePreview = {
+	on: MicroEvent.prototype.bind,
+	trigger: MicroEvent.prototype.trigger,
+	off: MicroEvent.prototype.unbind
+};
+
+var isPreviewing = false;
+StorePreview.getIsPreviewing = function () {
+	return isPreviewing;
+};
+
+StorePreview.enterPreview = function () {
+	if (!isPreviewing) {
+		isPreviewing = true;
+		StorePreview.trigger("didEnterPreview");
+	}
+};
+
+StorePreview.exitPreview = function () {
+	if (isPreviewing) {
+		isPreviewing = false;
+		StorePreview.trigger("didExitPreview");
+	}
+};
+
+AppDispatcher.register(function (payload) {
+	switch (payload.eventID) {
+
+		case documentSectionEventIDs.enterHTMLPreview:
+			StorePreview.enterPreview();
+			break;
+
+		case documentSectionEventIDs.exitHTMLPreview:
+			StorePreview.exitPreview();
+			break;
+
+	}
+});
+
+module.exports = StorePreview;
+
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"immutable":11,"microevent":12}],192:[function(require,module,exports){
+"use strict";
+
+var AppDispatcher = require("../app-dispatcher");
+var Immutable = require("immutable");
+var MicroEvent = require("microevent");
+var ContentActionsEventIDs = require("../actions/ContentActionsEventIDs");
+var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
+
+var ContentStore = require("./ContentStore");
 
 //var documentSectionActivity = Immutable.Map({});
 
@@ -31512,1531 +33651,182 @@ ReorderingStore.dispatchToken = AppDispatcher.register(function (payload) {
 
 module.exports = ReorderingStore;
 
-},{"../actions/actions-content-eventIDs":175,"../app-dispatcher":177,"./store-content":189,"immutable":11,"microevent":12}],187:[function(require,module,exports){
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"./ContentStore":190,"immutable":11,"microevent":12}],193:[function(require,module,exports){
 "use strict";
 
 var AppDispatcher = require("../app-dispatcher");
 var Immutable = require("immutable");
+var objectAssign = require("object-assign");
 var MicroEvent = require("microevent");
-var ContentStore = require("./store-content");
-var SettingsStore = require("./store-settings");
+var ConfigurationStore = require("./ConfigurationStore");
 var qwest = require("qwest");
-var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
-var documentSectionActivity = Immutable.Map({});
+var ContentActionsEventIDs = require("../actions/ContentActionsEventIDs");
+var specsEventIDs = ContentActionsEventIDs.specs;
 
-var ContentStoreLoading = {
+var specActivityByURL = Immutable.Map({});
+var specContentByURL = Immutable.Map({});
+
+var SpecsStore = {
 	on: MicroEvent.prototype.bind,
 	trigger: MicroEvent.prototype.trigger,
 	off: MicroEvent.prototype.unbind
 };
 
-ContentStoreLoading.isLoadingContentForDocument = function (documentID, sectionID) {
-	var isLoading = documentSectionActivity.getIn([documentID, "isLoading"], false);
+function isLoadingSpecWithURL(specURL) {
+	var isLoading = specActivityByURL.getIn([specURL, "isLoading"], false);
 	return isLoading;
 };
 
-function setLoadingContentForDocument(documentID, isLoading) {
-	var isLoadingCurrent = isLoadingContentForDocument(documentID);
-	if (isLoadingCurrent === isLoading) {
+function setLoadingSpecWithURL(specURL, isLoading) {
+	var isLoadingCurrently = isLoadingSpecWithURL(specURL);
+	if (isLoadingCurrently === isLoading) {
 		return;
 	}
 
-	documentSectionActivity = documentSectionActivity.setIn([documentID, "isLoading"], isLoading);
+	specActivityByURL = specActivityByURL.setIn([specURL, "isLoading"], isLoading);
 
-	ContentStoreLoading.trigger("isLoadingDidChangeForDocument", documentID, isLoading);
+	SpecsStore.trigger("isLoadingDidChangeForSpecWithURL", specURL, isLoading);
 };
 
-function receiveLoadedContentForDocument(documentID, contentBySectionsJSON) {
-	for (var sectionID in contentBySectionsJSON) {
-		//for (let sectionID in contentBySectionsJSON) {
-		if (!contentBySectionsJSON.propertyIsEnumerable(sectionID)) {
-			continue;
-		}
-
-		var shouldEditFirstTextItem = false;
-		var contentJSON = contentBySectionsJSON[sectionID];
-
-		if (!contentJSON) {
-			contentJSON = {
-				blocks: [ContentStore.newBlockOfType("text", "body").toJSON()]
-			};
-			shouldEditFirstTextItem = true;
-		}
-
-		ContentStore.setContentFromJSONForDocumentSection(documentID, sectionID, contentJSON);
-
-		if (shouldEditFirstTextItem) {
-			ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, ["blocks", 0]);
-		}
-	};
+function getSpecWithURL(specURL) {
+	return specContentByURL.get(specURL);
 }
 
-ContentStoreLoading.loadContentForDocument = function (documentID) {
-	var isLoading = ContentStoreLoading.isLoadingContentForDocument(documentID);
+function setContentForSpecWithURL(specURL, specContent) {
+	specContentByURL = specContentByURL.set(specURL, specContent);
+
+	SpecsStore.trigger("didChangeContentForSpecWithURL", specURL);
+}
+
+function receiveLoadedContentForSpecWithURL(specURL, specContentJSON) {
+	var specContent = Immutable.fromJS(specContentJSON);
+	setContentForSpecWithURL(specURL, specContent);
+	SpecsStore.trigger("didLoadContentForSpecWithURL", specURL);
+}
+
+function loadSpecWithURL(specURL) {
+	console.log("loadSpecWithURL", specURL);
+	var isLoading = isLoadingSpecWithURL(specURL);
 	if (isLoading) {
 		return;
 	}
 
-	var actionURL = SettingsStore.getActionURL();
-	if (actionURL == null) {
-		var initialContent = SettingsStore.getInitialContentJSONForDocument(documentID);
-		if (initialContent) {
-			receiveLoadedContentForDocument(documentID, initialContent);
-		}
-		return;
+	var loadURL = undefined;
+
+	var actionURL = ConfigurationStore.getActionURL("specs/");
+	if (actionURL) {
+		loadURL = actionURL + specURL + "/";
+	} else {
+		loadURL = specURL;
 	}
 
-	setLoadingContentForDocument(documentID, true);
+	setLoadingSpecWithURL(specURL, true);
 
-	qwest.get(actionURL + documentID + "/", {}, {
+	qwest.get(loadURL, null, {
+		cache: true,
 		dataType: "json",
 		responseType: "json"
-	}).then(function (contentBySectionsJSON) {
-		receiveLoadedContentForDocument(documentID, contentBySectionsJSON);
+	}).then(function (contentBySpecsURLJSON) {
+		receiveLoadedContentForSpecWithURL(specURL, contentBySpecsURLJSON);
 	})["catch"](function (message) {
-		ContentStoreLoading.trigger("loadContentDidFailForDocumentWithMessage", documentID, message);
+		console.error("Failed to load specs with URL " + specURL + " " + message);
+		SpecsStore.trigger("loadContentDidFailForSpecWithURLWithMessage", specURL, message);
 	}).complete(function () {
-		setLoadingContentForDocument(documentID, false);
+		setLoadingSpecWithURL(specURL, false);
 	});
 };
 
-AppDispatcher.register(function (payload) {
-	switch (payload.eventID) {
+function hasLoadedAllSpecsWithURLs(specURLs) {
+	var _ref = arguments[1] === undefined ? {} : arguments[1];
 
-		case documentSectionEventIDs.loadContent:
-			loadContentForDocument(payload.documentID);
-			break;
+	var _ref$loadIfNeeded = _ref.loadIfNeeded;
+	var loadIfNeeded = _ref$loadIfNeeded === undefined ? false : _ref$loadIfNeeded;
 
-	}
-});
-
-module.exports = ContentStoreLoading;
-
-},{"../actions/actions-content-eventIDs":175,"../app-dispatcher":177,"./store-content":189,"./store-settings":191,"immutable":11,"microevent":12,"qwest":19}],188:[function(require,module,exports){
-"use strict";
-
-var AppDispatcher = require("../app-dispatcher");
-var Immutable = require("immutable");
-var MicroEvent = require("microevent");
-var ContentStore = require("./store-content");
-var SettingsStore = require("./store-settings");
-var qwest = require("qwest");
-var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
-
-var documentSectionActivity = Immutable.Map({});
-
-var ContentStoreSaving = {
-	on: MicroEvent.prototype.bind,
-	trigger: MicroEvent.prototype.trigger,
-	off: MicroEvent.prototype.unbind
-};
-
-var isSavingContentForDocumentSection = function isSavingContentForDocumentSection(documentID, sectionID) {
-	var isSaving = documentSectionActivity.getIn([documentID, sectionID, "isSaving"], false);
-	return isSaving;
-};
-ContentStoreSaving.isSavingContentForDocumentSection = isSavingContentForDocumentSection;
-
-var setSavingContentForDocumentSection = function setSavingContentForDocumentSection(documentID, sectionID, isSaving) {
-	var isSavingCurrent = isSavingContentForDocumentSection(documentID, sectionID);
-	if (isSavingCurrent === isSaving) {
-		return;
-	}
-
-	documentSectionActivity = documentSectionActivity.setIn([documentID, sectionID, "isSaving"], isSaving);
-
-	ContentStoreSaving.trigger("isSavingDidChangeForDocumentSection", documentID, sectionID, isSaving);
-	//ContentStoreSaving.trigger('isSavingDidChangeForDocument', documentID, isSaving);
-};
-
-var saveContentForDocumentSection = function saveContentForDocumentSection(documentID, sectionID) {
-	var isSaving = isSavingContentForDocumentSection(documentID, sectionID);
-	if (isSaving) {
-		return;
-	}
-
-	var actionURL = SettingsStore.getActionURL();
-	var actionsFunctions = SettingsStore.getActionsFunctions();
-	if (!actionURL && !actionsFunctions) {
-		return;
-	}
-
-	setSavingContentForDocumentSection(documentID, sectionID, true);
-
-	var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
-
-	if (actionURL) {
-		qwest.post(actionURL + documentID + "/", {
-			sectionID: sectionID,
-			contentJSON: contentJSON
-		}, {
-			dataType: "json",
-			responseType: "json"
-		}).then(function (response) {})["catch"](function (message) {
-			ContentStoreSaving.trigger("saveContentDidFailForDocumentSectionWithMessage", documentID, sectionID, message);
-		}).complete(function () {
-			setSavingContentForDocumentSection(documentID, sectionID, false);
-		});
-	} else {
-		if (actionsFunctions.saveContentJSONForDocumentSection) {
-			actionsFunctions.saveContentJSONForDocumentSection(documentID, sectionID, contentJSON);
-		} else {
-			console.error("Icing actions functions must include 'saveContentJSONForDocumentSection'.");
+	var specURLsImmutable = Immutable.List(specURLs);
+	return specURLsImmutable.every(function (specURL) {
+		var hasLoaded = getSpecWithURL(specURL) != null;
+		if (!hasLoaded && loadIfNeeded) {
+			loadSpecWithURL(specURL);
 		}
+		return hasLoaded;
+	});
+}
+
+function getCombinedSpecsWithURLs(specURLs) {
+	var _ref = arguments[1] === undefined ? {} : arguments[1];
+
+	var _ref$prefixWithSpecsIdentifier = _ref.prefixWithSpecsIdentifier;
+	var prefixWithSpecsIdentifier = _ref$prefixWithSpecsIdentifier === undefined ? false : _ref$prefixWithSpecsIdentifier;
+
+	var specURLsImmutable = Immutable.List(specURLs);
+	var loadedSpecsContents = specURLsImmutable.map(function (specURL) {
+		return getSpecWithURL(specURL);
+	});
+
+	if (!loadedSpecsContents.every(function (value) {
+		return value != null;
+	})) {
+		return null;
 	}
-};
-ContentStoreSaving.saveContentForDocumentSection = saveContentForDocumentSection;
 
-AppDispatcher.register(function (payload) {
-	switch (payload.eventID) {
+	var combinedSpecsContent = Immutable.fromJS({
+		icingStandard: { id: "burnticing", version: "0.1.0" },
+		isCombined: true,
+		subsectionTypes: [],
+		blockTypesByGroup: {},
+		traitTypes: []
+	}).asMutable();
 
-		case documentSectionEventIDs.saveChanges:
-			saveContentForDocumentSection(payload.documentID, payload.sectionID);
-			break;
-
-	}
-});
-
-module.exports = ContentStoreSaving;
-
-},{"../actions/actions-content-eventIDs":175,"../app-dispatcher":177,"./store-content":189,"./store-settings":191,"immutable":11,"microevent":12,"qwest":19}],189:[function(require,module,exports){
-/**
-	Copyright 2015 Patrick George Wyndham Smith
-*/
-
-"use strict";
-
-var AppDispatcher = require("../app-dispatcher");
-var Immutable = require("immutable");
-var MicroEvent = require("microevent");
-var SettingsStore = require("./store-settings");
-var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
-
-//TODO: renamed Section to Portion?
-
-var getIndexForObjectKeyPath = function getIndexForObjectKeyPath(keyPath) {
-	return keyPath[keyPath.length - 1];
-};
-
-var getParentKeyPath = function getParentKeyPath(keyPath) {
-	return keyPath.slice(0, -1);
-};
-
-var getObjectKeyPathWithIndexChange = function getObjectKeyPathWithIndexChange(keyPath, changeCallback) {
-	var index = getIndexForObjectKeyPath(keyPath);
-	return getParentKeyPath(keyPath).concat(changeCallback(index));
-};
-
-var getBlocksKeyPath = function getBlocksKeyPath() {
-	return ["blocks"];
-};
-
-var getBlockKeyPathForItemKeyPath = function getBlockKeyPathForItemKeyPath(itemKeyPath) {
-	return itemKeyPath.slice(0, -2);
-};
-
-var documentSectionSpecs = Immutable.Map();
-
-var ContentStore = {
-	baseConfig: null,
-	documentSectionContents: Immutable.Map({}),
-	documentSectionEditedTextItemIdentifiers: Immutable.Map({}),
-
-	/*
- newContentForTextItems: function() {
- 	return Immutable.Map({
- 		"type": "textItems",
- 		"blocks": Immutable.List([
- 			this.newBlockOfType('text', 'body')
- 		])
- 	});
- },
- */
-
-	getIndexForObjectKeyPath: getIndexForObjectKeyPath,
-
-	newIdentifier: function newIdentifier() {
-		return "i-" + Math.random().toString().replace("0.", "");
-	},
-
-	newTextItem: function newTextItem(options) {
-		var textItem = Immutable.Map({
-			type: "text",
-			identifier: this.newIdentifier(),
-			traits: Immutable.Map(),
-			text: ""
-		});
-		if (options) {
-			textItem = textItem.merge(options);
-		}
-
-		return textItem;
-	},
-
-	newLineBreakTextItem: function newLineBreakTextItem() {
-		var textItem = Immutable.Map({
-			type: "lineBreak",
-			identifier: this.newIdentifier()
-		});
-
-		return textItem;
-	},
-
-	blockGroupTypeHasTextItems: function blockGroupTypeHasTextItems(blockGroupType) {
-		return blockGroupType === "text";
-	},
-
-	newBlockOfType: function newBlockOfType(typeGroup, type) {
-		var blockJSON = {
-			typeGroup: typeGroup,
-			type: type,
-			identifier: this.newIdentifier()
-		};
-
-		if (this.blockGroupTypeHasTextItems(typeGroup)) {
-			blockJSON.textItems = Immutable.List();
-		}
-
-		return Immutable.Map(blockJSON);
-	},
-
-	newBlockWithSameTypeAs: function newBlockWithSameTypeAs(block) {
-		return this.newBlockOfType(block.get("typeGroup"), block.get("type"));
-	},
-
-	newTextBlockWithDefaultType: function newTextBlockWithDefaultType() {
-		return this.newBlockOfType("text", "body");
-	},
-
-	newBlockSubsectionOfType: function newBlockSubsectionOfType(subsectionType) {
-		return Immutable.Map({
-			typeGroup: "subsection",
-			type: subsectionType,
-			identifier: this.newIdentifier()
-		});
-	},
-
-	blockKeyPathForItemKeyPath: getBlockKeyPathForItemKeyPath,
-
-	getSpecsForDocumentSection: function getSpecsForDocumentSection(documentID, sectionID) {
-		var keyPath = [documentID, sectionID];
-		var specs = documentSectionSpecs.getIn(keyPath);
-		if (!specs) {
-			specs = SettingsStore.getContentSpecsForDocumentSection(documentID, sectionID);
-			documentSectionSpecs.setIn(keyPath, specs);
-		}
-		return specs;
-	},
-
-	prepareContentFromJSON: function prepareContentFromJSON(contentJSON) {
-		var newItemIdentifier = this.newIdentifier.bind(this);
-
-		return Immutable.fromJS(contentJSON, function (key, value) {
-			var isIndexed = Immutable.Iterable.isIndexed(value);
-			var newValue = isIndexed ? value.toList() : value.toMap();
-
-			if (key === "blocks" || key === "textItems") {
-				newValue = newValue.map(function (item) {
-					if (!item.has("identifier")) {
-						item = item.set("identifier", newItemIdentifier());
-					}
-					return item;
-				});
+	loadedSpecsContents.forEach(function (specContent) {
+		specContent.forEach(function (value, key) {
+			// White-list keys
+			if (!combinedSpecsContent.has(key)) {
+				return;
 			}
 
-			return newValue;
-		});
-	},
-
-	getContentForDocumentSection: function getContentForDocumentSection(documentID, sectionID) {
-		return this.documentSectionContents.getIn([documentID, sectionID]);
-	},
-
-	getContentAsJSONForDocumentSection: function getContentAsJSONForDocumentSection(documentID, sectionID) {
-		var content = this.getContentForDocumentSection(documentID, sectionID);
-		if (content) {
-			return content.toJS();
-		} else {
-			return null;
-		}
-	},
-
-	setContentFromImmutableForDocumentSection: function setContentFromImmutableForDocumentSection(documentID, sectionID, content) {
-		this.documentSectionContents = this.documentSectionContents.setIn([documentID, sectionID], content);
-
-		this.trigger("contentChangedForDocumentSection", documentID, sectionID);
-	},
-
-	setContentFromJSONForDocumentSection: function setContentFromJSONForDocumentSection(documentID, sectionID, contentJSON) {
-		var content = null;
-		if (contentJSON) {
-			content = this.prepareContentFromJSON(contentJSON);
-		}
-		this.setContentFromImmutableForDocumentSection(documentID, sectionID, content);
-	},
-
-	getContentObjectAtKeyPathForDocumentSection: function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
-		return this.documentSectionContents.getIn([documentID, sectionID].concat(keyPath));
-	},
-
-	getIdentifierOfObjectAtKeyPathForDocumentSection: function getIdentifierOfObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
-		return this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath.concat("identifier"));
-	},
-
-	getNumberOfBlocksForDocumentSection: function getNumberOfBlocksForDocumentSection(documentID, sectionID, keyPath) {
-		var blocksKeyPath = getBlocksKeyPath();
-		var blocks = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath);
-		if (blocks) {
-			return blocks.size;
-		} else {
-			return null;
-		}
-	},
-
-	// UPDATING
-
-	updateContentObjectAtKeyPathForDocumentSection: function updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater) {
-		var _ref = arguments[4] === undefined ? {} : arguments[4];
-
-		var _ref$trigger = _ref.trigger;
-		var trigger = _ref$trigger === undefined ? true : _ref$trigger;
-
-		var fullKeyPath = [documentID, sectionID].concat(keyPath);
-		this.documentSectionContents = this.documentSectionContents.updateIn(fullKeyPath, updater);
-
-		if (trigger) {
-			this.trigger("contentChangedForDocumentSection", documentID, sectionID);
-		}
-	},
-
-	/*
- updateBlocksAtKeyPathForDocumentSection: function(documentID, sectionID, updater, options) {
- 	this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, ['blocks'], updater, options);
- },
- 	updateTextItemsAtKeyPathForDocumentSection: function(documentID, sectionID, textItemsKeyPath, updater, options) {
- 	this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, updater, options);
- },
- */
-
-	updateBlockAtKeyPathInDocumentSection: function updateBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, updater, options) {
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
-	},
-
-	removeBlockAtKeyPathInDocumentSection: function removeBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath) {
-		var _ref = arguments[3] === undefined ? {} : arguments[3];
-
-		var _ref$finishEditing = _ref.finishEditing;
-		var finishEditing = _ref$finishEditing === undefined ? false : _ref$finishEditing;
-		var _ref$editPrevious = _ref.editPrevious;
-		var editPrevious = _ref$editPrevious === undefined ? false : _ref$editPrevious;
-
-		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-		var isEditingThisBlock = editedBlockKeyPath == blockKeyPath;
-		if (isEditingThisBlock || finishEditing) {
-			this.finishEditingInDocumentSection(documentID, sectionID);
-		}
-
-		var blockIndex = blockKeyPath.slice(-1)[0];
-		var blocksKeyPath = blockKeyPath.slice(0, -1);
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
-			return blocks.remove(blockIndex);
-		});
-
-		if (editPrevious) {
-			var precedingBlockIndex = blockIndex - 1;
-			var precedingBlockKeyPath = blocksKeyPath.concat(precedingBlockIndex);
-			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath);
-		}
-
-		//this.trigger('contentChangedForDocumentSection', documentID, sectionID);
-	},
-
-	updateTextItemAtKeyPathInDocumentSection: function updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, updater, options) {
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, updater, options);
-	},
-
-	textItemIsEmptyAtKeyPathInDocumentSection: function textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, keyPath) {
-		var text = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath.concat("text"));
-		//var fullKeyPath = [documentID, sectionID].concat(keyPath).concat('text');
-		//var text = this.documentSectionContents.getIn(fullKeyPath);
-		var isEmpty = !text || text.length === 0;
-		return isEmpty;
-	},
-
-	removeTextItemAtKeyPathInDocumentSection: function removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath) {
-		var itemIndex = keyPath.slice(-1)[0];
-		var textItemsKeyPath = keyPath.slice(0, -1);
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
-			return textItems.remove(itemIndex);
-		});
-	},
-
-	insertItemAtKeyPathInDocumentSection: function insertItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options) {
-		var insertIndex = keyPath.slice(-1)[0];
-		var textItemsKeyPath = keyPath.slice(0, -1); // Without the index
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
-			// Insert the item.
-			return textItems.splice(insertIndex, 0, item);
-		});
-
-		if (options && options.edit) {
-			var newItemKeyPath = textItemsKeyPath.concat(insertIndex);
-			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
-		}
-	},
-
-	insertItemAfterItemAtKeyPathInDocumentSection: function insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options) {
-		var textItemIndex = keyPath.slice(-1)[0];
-		var textItemsKeyPath = keyPath.slice(0, -1);
-
-		var newItemIndex = textItemIndex + 1;
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath, function (textItems) {
-			// Insert the item.
-			return textItems.splice(newItemIndex, 0, item);
-		});
-
-		if (options && options.edit) {
-			var newItemKeyPath = textItemsKeyPath.concat(newItemIndex);
-			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, newItemKeyPath);
-		}
-	},
-
-	addNewItemAfterItemAtKeyPathInDocumentSection: function addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, options) {
-		var newTextItem = this.newTextItem();
-		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, newTextItem, options);
-	},
-
-	addLineBreakAfterItemAtKeyPathInDocumentSection: function addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, options) {
-		var item = this.newLineBreakTextItem();
-		this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, keyPath, item, options);
-	},
-
-	insertBlockAtKeyPathInDocumentSection: function insertBlockAtKeyPathInDocumentSection(documentID, sectionID, keyPath, block, options) {
-		var insertIndex = keyPath.slice(-1)[0];
-		var blocksKeyPath = keyPath.slice(0, -1); // Without the index
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
-			// Insert the item.
-			return blocks.splice(insertIndex, 0, block);
-		});
-
-		if (options && options.edit) {
-			var newBlockKeyPath = blocksKeyPath.concat(insertIndex);
-			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, { editTextItemsIfPresent: true });
-		}
-	},
-
-	insertSubsectionOfTypeAtBlockIndexInDocumentSection: function insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID, subsectionType, blockIndex) {
-		var _ref = arguments[4] === undefined ? {} : arguments[4];
-
-		var _ref$editFollowingBlock = _ref.editFollowingBlock;
-		var editFollowingBlock = _ref$editFollowingBlock === undefined ? false : _ref$editFollowingBlock;
-
-		var blocksKeyPath = getBlocksKeyPath();
-		var blockKeyPath = blocksKeyPath.concat(blockIndex);
-		var subsectionBlock = this.newBlockSubsectionOfType(subsectionType);
-		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, subsectionBlock);
-
-		if (editFollowingBlock) {
-			var followingBlockIndex = blockIndex + 1;
-			var followingBlockKeyPath = blocksKeyPath.concat(followingBlockIndex);
-			console.log("followingBlockIndex", "getNumberOfBlocks", this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
-			if (followingBlockIndex < this.getNumberOfBlocksForDocumentSection(documentID, sectionID)) {
-				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath, { editTextItemsIfPresent: true });
-			} else {
-				var newBlock = this.newTextBlockWithDefaultType();
-				this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath, newBlock, { edit: true });
-			}
-		}
-	},
-
-	changeTypeOfBlockAtKeyPathInDocumentSection: function changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlockTypeGroup, newBlockType) {
-		var hasDifferentTypeGroup = true;
-
-		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-		if (editedBlockKeyPath && this.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
-			var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-			if (this.blockGroupTypeHasTextItems(block.get("typeGroup"))) {
-				hasDifferentTypeGroup = false;
-			}
-		}
-
-		if (hasDifferentTypeGroup) {
-			// Finish editing, as changing to a different type may edit in a different way.
-			this.finishEditingInDocumentSection(documentID, sectionID);
-		}
-
-		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function (block) {
-			return block.withMutations(function (mutableBlock) {
-				mutableBlock.set("typeGroup", newBlockTypeGroup);
-				mutableBlock.set("type", newBlockType);
-
-				if (!ContentStore.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
-					mutableBlock.remove("textItems");
+			combinedSpecsContent.update(key, function (currentValue) {
+				if (Immutable.Iterable.isIndexed(currentValue)) {
+					return currentValue.concat(value);
+				} else if (key === "blockTypesByGroup") {
+					return currentValue.withMutations(function (currentValue) {
+						value.forEach(function (blockTypes, groupID) {
+							currentValue.update(groupID, Immutable.List(), function (currentBlockTypes) {
+								return currentBlockTypes.concat(blockTypes);
+							});
+						});
+					});
 				}
 			});
 		});
+	});
 
-		if (editedBlockKeyPath && hasDifferentTypeGroup) {
-			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, { editTextItemsIfPresent: true });
-		}
-	},
+	return combinedSpecsContent.asImmutable();
+}
 
-	changeTypeOfSubsectionAtKeyPathInDocumentSection: function changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, newSubsectionType) {
-		ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, subsectionKeyPath, function (block) {
-			return block.set("type", newSubsectionType);
-		});
-	},
-
-	insertBlockAfterBlockAtKeyPathInDocumentSection: function insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, block, options) {
-		var newBlockKeyPath = getObjectKeyPathWithIndexChange(blockKeyPath, function (originalIndex) {
-			return originalIndex + 1;
-		});
-
-		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, newBlockKeyPath, block, options);
-	},
-
-	moveBlockAtKeyPathToBeforeBlockAtIndexInDocumentSection: function moveBlockAtKeyPathToBeforeBlockAtIndexInDocumentSection(documentID, sectionID, blockKeyPath, newIndex, options) {
-		var blocksKeyPath = getParentKeyPath(blockKeyPath);
-		var blockOriginalIndex = getIndexForObjectKeyPath(blockKeyPath);
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
-			var blockToMove = blocks.get(blockOriginalIndex);
-			blocks = blocks.remove(blockOriginalIndex);
-			if (blockOriginalIndex < newIndex) {
-				newIndex -= 1;
-			}
-			blocks = blocks.splice(newIndex, 0, blockToMove);
-
-			return blocks;
-		});
-	},
-
-	insertBlockOfTypeAtIndexInDocumentSection: function insertBlockOfTypeAtIndexInDocumentSection(documentID, sectionID, typeGroup, type, blockIndex, options) {
-		var newBlock = this.newBlockOfType(typeGroup, type);
-
-		var blocksKeyPath = getBlocksKeyPath();
-		var blockKeyPath = blocksKeyPath.concat(blockIndex);
-
-		this.insertBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlock, options);
-	},
-
-	insertRelatedBlockAfterBlockAtKeyPathInDocumentSection: function insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, options) {
-		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var newBlock = this.newBlockWithSameTypeAs(currentBlock);
-
-		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, newBlock, options);
-	},
-
-	insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection: function insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, pastedText, options) {
-		pastedText = pastedText.replace(/\r\n/g, "\n");
-		var textParagraphs = pastedText.split("\n");
-		var whiteSpaceRE = /^[\s\n]+$/;
-		textParagraphs = textParagraphs.filter(function (paragraphText) {
-			if (whiteSpaceRE.test(paragraphText)) {
-				return false;
-			}
-
-			return true;
-		});
-
-		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-
-		var newBlocks = textParagraphs.map(function (paragraphText) {
-			var textItem = this.newTextItem({ text: paragraphText });
-			var block = this.newBlockWithSameTypeAs(currentBlock);
-			block = block.set("textItems", Immutable.List([textItem]));
-			return block;
-		}, this);
-
-		var sourceIndex = blockKeyPath.slice(-1)[0];
-		var insertIndex = sourceIndex + 1;
-		var blocksKeyPath = blockKeyPath.slice(0, -1); // Without the index
-
-		this.updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath, function (blocks) {
-			// Insert the blocks.
-			return blocks.splice.bind(blocks, insertIndex, 0).apply(blocks, newBlocks);
-		});
-
-		if (options && options.edit) {
-			var insertedBlockCount = newBlocks.length;
-			var lastBlockKeyPath = blocksKeyPath.concat(insertIndex + insertedBlockCount - 1);
-			this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, lastBlockKeyPath, { editTextItemsIfPresent: true });
-		}
-	},
-
-	splitBlockBeforeItemAtKeyPathInDocumentSection: function splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath) {
-		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-
-		var textItemIndex = itemKeyPath.slice(-1)[0];
-
-		var followingItems = [];
-		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, function (block) {
-			var textItems = block.get("textItems");
-			var precedingItems = textItems.slice(0, textItemIndex);
-			followingItems = textItems.slice(textItemIndex);
-
-			block = block.set("textItems", precedingItems);
-			return block;
-		});
-
-		var followingBlock = this.newBlockWithSameTypeAs(currentBlock);
-		followingBlock = followingBlock.set("textItems", followingItems);
-
-		this.insertBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, followingBlock, { edit: true });
-	},
-
-	joinBlockAtKeyPathWithPreviousInDocumentSection: function joinBlockAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, currentBlockKeyPath) {
-		var currentBlockIndex = currentBlockKeyPath.slice(-1)[0];
-		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, currentBlockKeyPath);
-
-		var currentBlockGroupType = currentBlock.get("typeGroup");
-		if (currentBlockIndex === 0 || !this.blockGroupTypeHasTextItems(currentBlockGroupType)) {
-			return false;
-		}
-
-		var precedingBlockIndex = currentBlockIndex - 1;
-		var precedingBlockKeyPath = currentBlockKeyPath.slice(0, -1).concat(precedingBlockIndex);
-		var precedingBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingBlockKeyPath);
-
-		var precedingBlockGroupType = precedingBlock.get("typeGroup");
-		if (!this.blockGroupTypeHasTextItems(precedingBlockGroupType)) {
-			return false;
-		}
-
-		var followingTextItems = currentBlock.get("textItems");
-		var precedingTextItems = precedingBlock.get("textItems");
-
-		this.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, precedingBlockKeyPath, function (block) {
-			return block.update("textItems", function (textItems) {
-				return textItems.concat(followingTextItems);
-			});
-		});
-
-		this.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, currentBlockKeyPath);
-
-		var itemKeyPath = precedingBlockKeyPath.concat("textItems", precedingTextItems.count());
-		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
-	},
-
-	joinItemAtKeyPathWithPreviousInDocumentSection: function joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, itemKeyPath) {
-		var itemIndex = itemKeyPath.slice(-1)[0];
-		if (itemIndex === 0) {
-			var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-			this.joinBlockAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, blockKeyPath);
-		} else {
-			var precedingItemIndex = itemIndex - 1;
-			var precedingItemKeyPath = itemKeyPath.slice(0, -1).concat(precedingItemIndex);
-			var precedingItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingItemKeyPath);
-			var followingItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath);
-
-			var precedingText = precedingItem.get("text");
-			var followingText = followingItem.get("text");
-			var combinedText = precedingText + followingText;
-			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath, function (textItem) {
-				return textItem.set("text", combinedText);
-			});
-
-			this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
-			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, precedingItemKeyPath);
-		}
-	},
-
-	splitTextInRangeOfItemAtKeyPathInDocumentSection: function splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, textSplitRange, itemKeyPath, insertedItem) {
-		var splitStart = textSplitRange.start;
-		var splitEnd = textSplitRange.end;
-
-		var currentItem = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath);
-		var currentText = currentItem.get("text");
-		var currentItemIndex = itemKeyPath.slice(-1)[0]; // Last item
-		var textItemsKeyPath = itemKeyPath.slice(0, -1); // Everything except last item
-
-		// Just a caret
-		if (splitStart === splitEnd) {
-			var itemAText = currentText.slice(0, splitStart);
-			var itemBText = currentText.slice(splitStart);
-
-			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function (textItem) {
-				return textItem.set("text", itemAText);
-			});
-
-			if (insertedItem) {
-				this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, insertedItem);
-			}
-
-			var itemB = this.newTextItem({ text: itemBText });
-			//var itemBIndex = currentItemIndex + 1;
-			//var itemBKeyPath = textItemsKeyPath.concat(itemBIndex);
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, { edit: true });
-		}
-		// Actual selection range
-		else {
-			var itemAText = currentText.slice(0, splitStart);
-			var itemBText = currentText.slice(splitStart, splitEnd);
-			var itemCText = currentText.slice(splitEnd);
-
-			this.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, function (textItem) {
-				return textItem.set("text", itemAText);
-			});
-
-			var itemB = this.newTextItem({ text: itemBText });
-			var itemC = this.newTextItem({ text: itemCText });
-
-			// Insert itemC then itemB, so that itemB is in front of itemC
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemC);
-			this.insertItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath, itemB, { edit: true });
-		}
-	},
-
-	getEditedBlockIdentifierForDocumentSection: function getEditedBlockIdentifierForDocumentSection(documentID, sectionID) {
-		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "identifier"], null);
-	},
-
-	getEditedBlockKeyPathForDocumentSection: function getEditedBlockKeyPathForDocumentSection(documentID, sectionID) {
-		var keyPath = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "keyPath"], null);
-		if (keyPath) {
-			keyPath = keyPath.toJS();
-		}
-		return keyPath;
-	},
-
-	getEditedTextItemIdentifierForDocumentSection: function getEditedTextItemIdentifierForDocumentSection(documentID, sectionID) {
-		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "identifier"], null);
-	},
-
-	getEditedTextItemKeyPathForDocumentSection: function getEditedTextItemKeyPathForDocumentSection(documentID, sectionID) {
-		var keyPath = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "keyPath"], null);
-		if (keyPath) {
-			keyPath = keyPath.toJS();
-		}
-		return keyPath;
-	},
-
-	editingWillEndInDocumentSection: function editingWillEndInDocumentSection(documentID, sectionID) {
-		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
-		if (!itemKeyPath) {
-			return;
-		}
-
-		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var blockGroupType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("typeGroup"));
-
-		if (this.blockGroupTypeHasTextItems(blockGroupType)) {
-			var isEmpty = this.textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
-			if (isEmpty) {
-				this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
-			}
-		}
-
-		this.trigger("editedItemWillEndEditingForDocumentSection", documentID, sectionID);
-	},
-
-	editBlockWithKeyPathInDocumentSection: function editBlockWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath) {
-		var _ref = arguments[3] === undefined ? {} : arguments[3];
-
-		var _ref$editTextItemsIfPresent = _ref.editTextItemsIfPresent;
-		var editTextItemsIfPresent = _ref$editTextItemsIfPresent === undefined ? false : _ref$editTextItemsIfPresent;
-		var _ref$editLastItem = _ref.editLastItem;
-		var editLastItem = _ref$editLastItem === undefined ? null : _ref$editLastItem;
-		var _ref$editFirstItem = _ref.editFirstItem;
-		var editFirstItem = _ref$editFirstItem === undefined ? null : _ref$editFirstItem;
-
-		editLastItem = !editFirstItem; // This is the default
-		editFirstItem = !editLastItem;
-
-		this.editingWillEndInDocumentSection(documentID, sectionID);
-
-		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-
-		if (editTextItemsIfPresent) {
-			if (this.blockGroupTypeHasTextItems(block.get("typeGroup"))) {
-				this.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath, {
-					lastItem: editLastItem,
-					firstItem: editFirstItem
-				});
-
-				return;
-			}
-		}
-
-		var blockIdentifier = block.get("identifier");
-		var state = Immutable.fromJS({
-			block: {
-				keyPath: blockKeyPath,
-				identifier: blockIdentifier
-			}
-		});
-
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
-
-		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
-	},
-
-	editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection: function editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath) {
-		var _ref = arguments[3] === undefined ? {} : arguments[3];
-
-		var _ref$lastItem = _ref.lastItem;
-		var lastItem = _ref$lastItem === undefined ? null : _ref$lastItem;
-		var _ref$firstItem = _ref.firstItem;
-		var firstItem = _ref$firstItem === undefined ? null : _ref$firstItem;
-
-		lastItem = !firstItem; // This is the default, will be true if firstItem is null.
-		firstItem = !lastItem;
-
-		this.editingWillEndInDocumentSection(documentID, sectionID);
-
-		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-		var textItems = block.get("textItems");
-		var textItemCount = textItems.count();
-		if (textItemCount === 0) {
-			// Insert an empty item and edit it.
-			var newTextItem = this.newTextItem();
-			this.insertItemAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat("textItems", 0), newTextItem, { edit: true });
-		} else {
-			var itemIndex = lastItem ? textItemCount - 1 : firstItem ? 0 : 0;
-			// Edit last item.
-			this.editItemWithKeyPathInDocumentSection(documentID, sectionID, blockKeyPath.concat("textItems", itemIndex));
-		}
-	},
-
-	editItemWithKeyPathInDocumentSection: function editItemWithKeyPathInDocumentSection(documentID, sectionID, itemKeyPath) {
-		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var blockIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("identifier"));
-
-		var itemIdentifier = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, itemKeyPath.concat("identifier"));
-
-		var currentEditedItemIdentifier = this.getEditedTextItemIdentifierForDocumentSection();
-		if (itemIdentifier !== currentEditedItemIdentifier) {
-			this.editingWillEndInDocumentSection(documentID, sectionID);
-		}
-
-		var state = Immutable.fromJS({
-			block: {
-				keyPath: blockKeyPath,
-				identifier: blockIdentifier
-			},
-			item: {
-				keyPath: itemKeyPath,
-				identifier: itemIdentifier
-			}
-		});
-
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
-
-		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
-		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
-	},
-
-	finishEditingInDocumentSection: function finishEditingInDocumentSection(documentID, sectionID) {
-		this.editingWillEndInDocumentSection(documentID, sectionID);
-
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.removeIn([documentID, sectionID]);
-
-		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
-		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
-	},
-
-	registerSelectedTextRangeFunctionForEditedItemInDocumentSection: function registerSelectedTextRangeFunctionForEditedItemInDocumentSection(documentID, sectionID, selectedTextRangeFunction) {
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID, "item", "selectedTextRangeFunction"], selectedTextRangeFunction);
-	},
-
-	unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection: function unregisterSelectedTextRangeFunctionForEditedItemInDocumentSection(documentID, sectionID) {
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.deleteIn([documentID, sectionID, "item", "selectedTextRangeFunction"]);
-	},
-
-	getSelectedTextRangeForEditedItemInDocumentSection: function getSelectedTextRangeForEditedItemInDocumentSection(documentID, sectionID, selectedTextRange) {
-		var selectedTextRangeFunction = this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "item", "selectedTextRangeFunction"], null);
-		if (selectedTextRangeFunction) {
-			var selectedTextRange = selectedTextRangeFunction();
-			console.log("selectedTextRange", selectedTextRange);
-			return selectedTextRange;
-		}
-
-		return null;
-	},
-
-	setSelectedTextRangeForEditedItemInDocumentSection: function setSelectedTextRangeForEditedItemInDocumentSection(documentID, sectionID, selectedTextRange) {
-		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID, "item", "selectedTextRange"], selectedTextRange);
-	},
-
-	editPreviousBlockInDocumentSection: function editPreviousBlockInDocumentSection(documentID, sectionID) {
-		var blockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-		if (!blockKeyPath) {
-			return false;
-		}
-
-		var blockIndex = blockKeyPath.slice(-1)[0];
-		if (blockIndex === 0) {
-			return false;
-		}
-
-		var previousBlockKeyPath = blockKeyPath.slice(0, -1).concat(blockIndex - 1);
-		this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, previousBlockKeyPath, {
-			editTextItemsIfPresent: true, editLastItem: true
-		});
-	},
-
-	editNextBlockInDocumentSection: function editNextBlockInDocumentSection(documentID, sectionID) {
-		var blockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-		if (!blockKeyPath) {
-			return false;
-		}
-
-		var blocksKeyPath = blockKeyPath.slice(0, -1);
-		var blocks = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blocksKeyPath);
-		var blockCount = blocks.count();
-
-		var blockIndex = blockKeyPath.slice(-1)[0];
-		if (blockIndex === blockCount - 1) {
-			return false;
-		}
-
-		var nextBlockKeyPath = blockKeyPath.slice(0, -1).concat(blockIndex + 1);
-		this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, nextBlockKeyPath, {
-			editTextItemsIfPresent: true, editFirstItem: true
-		});
-	},
-
-	editPreviousItemInDocumentSection: function editPreviousItemInDocumentSection(documentID, sectionID) {
-		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
-		if (!itemKeyPath) {
-			return false;
-		}
-
-		var itemIndex = itemKeyPath.slice(-1)[0];
-		// If first text item is being edited,
-		if (itemIndex === 0) {
-			// then edit the previous block.
-			return this.editPreviousBlockInDocumentSection(documentID, sectionID);
-		}
-
-		var previousItemKeyPath = itemKeyPath.slice(0, -1).concat(itemIndex - 1);
-		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, previousItemKeyPath);
-	},
-
-	editNextItemInDocumentSection: function editNextItemInDocumentSection(documentID, sectionID) {
-		var itemKeyPath = this.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
-		if (!itemKeyPath) {
-			return false;
-		}
-
-		var blockKeyPath = this.blockKeyPathForItemKeyPath(itemKeyPath);
-		var textItemsKeyPath = blockKeyPath.concat("textItems");
-		var textItems = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, textItemsKeyPath);
-		var itemCount = textItems.count();
-
-		var itemIndex = itemKeyPath.slice(-1)[0];
-		// If last text item is being edited,
-		if (itemIndex === itemCount - 1) {
-			// then edit the next block.
-			return this.editNextBlockInDocumentSection(documentID, sectionID);
-		}
-
-		var nextItemKeyPath = itemKeyPath.slice(0, -1).concat(itemIndex + 1);
-		this.editItemWithKeyPathInDocumentSection(documentID, sectionID, nextItemKeyPath);
-	},
-
-	getDocumentSection: function getDocumentSection(documentID, sectionID) {
-		return {
-			getContent: this.getContentForDocumentSection.bind(this, documentID, sectionID),
-			setContentFromJSON: this.setContentFromJSONForDocumentSection.bind(this, documentID, sectionID),
-			updateBlockAtKeyPath: this.updateBlockAtKeyPathInDocumentSection.bind(this, documentID, sectionID),
-			updateTextItemAtKeyPath: this.updateTextItemAtKeyPathInDocumentSection.bind(this, documentID, sectionID),
-			getEditedBlockIdentifier: this.getEditedBlockIdentifierForDocumentSection.bind(this, documentID, sectionID),
-			getEditedBlockKeyPath: this.getEditedBlockKeyPathForDocumentSection.bind(this, documentID, sectionID),
-			getEditedTextItemIdentifier: this.getEditedTextItemIdentifierForDocumentSection.bind(this, documentID, sectionID),
-			getEditedTextItemKeyPath: this.getEditedTextItemKeyPathForDocumentSection.bind(this, documentID, sectionID),
-			editItemWithKeyPath: this.editItemWithKeyPathInDocumentSection.bind(this, documentID, sectionID),
-			addNewItemAfterItemAtKeyPath: this.addNewItemAfterItemAtKeyPathInDocumentSection.bind(this, documentID, sectionID)
-		};
-	}
-};
-
-ContentStore.on = MicroEvent.prototype.bind;
-ContentStore.trigger = MicroEvent.prototype.trigger;
-ContentStore.off = MicroEvent.prototype.unbind;
-
-ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
-	if (!payload.eventID) {
-		return;
-	}
-
-	var documentID = null;
-	var sectionID = null;
-	// TODO: use these two variables.
-	var blockKeyPath = null;
-	var textItemKeyPath = null;
-	var editedBlockKeyPath = null;
-	var editedTextItemKeyPath = null;
-	var blockKeyPathIsEdited = false;
-
-	if (payload.documentID) {
-		documentID = payload.documentID;
-		if (payload.sectionID) {
-			sectionID = payload.sectionID;
-			editedBlockKeyPath = ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-			editedTextItemKeyPath = ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID);
-
-			// TODO: use these variables.
-			if (payload.useEditedBlockKeyPath) {
-				blockKeyPath = editedBlockKeyPath;
-			} else {
-				blockKeyPath = payload.blockKeyPath;
-			}
-			blockKeyPathIsEdited = blockKeyPath == editedBlockKeyPath;
-
-			if (payload.useEditedTextItemKeyPath) {
-				textItemKeyPath = editedTextItemKeyPath;
-			} else {
-				textItemKeyPath = payload.textItemKeyPath;
-			}
-		}
-	}
-
+SpecsStore.dispatchToken = AppDispatcher.register(function (payload) {
 	switch (payload.eventID) {
-
-		case documentSectionEventIDs.setContent:
-			ContentStore.setContentFromJSONForDocumentSection(documentID, sectionID, payload.content);
-			break;
-
-		case documentSectionEventIDs.edit.textItemWithKeyPath:
-			ContentStore.editItemWithKeyPathInDocumentSection(documentID, sectionID, payload.textItemKeyPath);
-			break;
-
-		case documentSectionEventIDs.edit.blockWithKeyPath:
-			ContentStore.editBlockWithKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
-
-			break;
-
-		case documentSectionEventIDs.finishEditing:
-			ContentStore.finishEditingInDocumentSection(documentID, sectionID);
-
-			break;
-
-		case documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex:
-			ContentStore.insertSubsectionOfTypeAtBlockIndexInDocumentSection(documentID, sectionID, payload.subsectionType, payload.blockIndex, { editFollowingBlock: true });
-
-			break;
-
-		case documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex:
-			ContentStore.insertBlockOfTypeAtIndexInDocumentSection(documentID, sectionID, payload.typeGroup, payload.type, payload.blockIndex, { edit: true });
-
-			break;
-
-		case documentSectionEventIDs.subsectionAtKeyPath.changeType:
-			ContentStore.changeTypeOfSubsectionAtKeyPathInDocumentSection(documentID, sectionID, payload.subsectionKeyPath, payload.subsectionType);
-
-			break;
-
-		case documentSectionEventIDs.subsectionAtKeyPath.remove:
-			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.subsectionKeyPath, { finishEditing: true });
-
-			break;
-
-		case documentSectionEventIDs.blockAtKeyPath.changeType:
-			ContentStore.changeTypeOfBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, payload.blockTypeGroup, payload.blockType);
-			break;
-
-		case documentSectionEventIDs.blockAtKeyPath.remove:
-			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath);
-			break;
-
-		case documentSectionEventIDs.blockAtKeyPath.changeValue:
-			var defaultValue = payload.defaultValue;
-			var newValueFunction = payload.newValueFunction;
-			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, payload.blockKeyPath, function (block) {
-				return block.updateIn(["value"], defaultValue, newValueFunction);
+		case specsEventIDs.loadSpecsWithURLs:
+			payload.specsURL.forEach(function (specsURL) {
+				loadSpecWithURL(specsURL);
 			});
 			break;
-
-		case documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter:
-			ContentStore.insertRelatedBlockAfterBlockAtKeyPathInDocumentSection(documentID, sectionID, blockKeyPath, { edit: blockKeyPathIsEdited });
-			break;
-
-		case documentSectionEventIDs.blockAtKeyPath.insertRelatedTextItemBlocksAfterWithPastedText:
-			ContentStore.insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, payload.pastedText, { edit: true });
-			break;
-
-		// EDITED BLOCK
-
-		case documentSectionEventIDs.editedBlock.remove:
-			ContentStore.removeBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, { editPrevious: true });
-			break;
-
-		case documentSectionEventIDs.editedBlock.changeTraitValue:
-			var traitID = payload.traitID;
-			var defaultValue = payload.defaultValue;
-			var newValueFunction = payload.newValueFunction;
-			ContentStore.updateBlockAtKeyPathInDocumentSection(documentID, sectionID, editedBlockKeyPath, function (block) {
-				return block.updateIn(["traits", traitID], defaultValue, newValueFunction);
-			});
-			break;
-
-		case documentSectionEventIDs.editedBlock.removeTrait:
-			var traitID = payload.traitID;
-			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (block) {
-				return block.removeIn(["traits", traitID]);
-			});
-			break;
-
-		// EDITED TEXT ITEM
-
-		case documentSectionEventIDs.editedItem.remove:
-			ContentStore.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { editPrevious: true });
-			break;
-
-		case documentSectionEventIDs.editedItem.setText:
-			var text = payload.textItemText;
-			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
-				return textItem.set("text", text);
-			});
-			break;
-
-		case documentSectionEventIDs.editedItem.changeTraitValue:
-			var traitID = payload.traitID;
-			var defaultValue = payload.defaultValue;
-			var newValueFunction = payload.newValueFunction;
-			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
-				return textItem.updateIn(["traits", traitID], defaultValue, newValueFunction);
-			});
-			break;
-
-		case documentSectionEventIDs.editedItem.removeTrait:
-			var traitID = payload.traitID;
-			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
-				return textItem.removeIn(["traits", traitID]);
-			});
-			break;
-
-		case documentSectionEventIDs.editedItem.editPreviousItem:
-			ContentStore.editPreviousItemInDocumentSection(documentID, sectionID);
-			break;
-
-		case documentSectionEventIDs.editedItem.editNextItem:
-			ContentStore.editNextItemInDocumentSection(documentID, sectionID);
-			break;
-
-		case documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded:
-			ContentStore.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, payload.blockKeyPath);
-			break;
-
-		case documentSectionEventIDs.editedItem.addNewTextItemAfter:
-			ContentStore.addNewItemAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { edit: true });
-			break;
-
-		case documentSectionEventIDs.editedItem.addNewLineBreakAfter:
-			ContentStore.addLineBreakAfterItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, { edit: true });
-			break;
-
-		case documentSectionEventIDs.editedItem.splitBlockBefore:
-			ContentStore.splitBlockBeforeItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-			break;
-
-		case documentSectionEventIDs.editedItem.joinWithPreviousItem:
-			ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-			break;
-
-		case documentSectionEventIDs.editedItem.remove:
-			ContentStore.joinItemAtKeyPathWithPreviousInDocumentSection(documentID, sectionID, editedTextItemKeyPath);
-			break;
-
-		case documentSectionEventIDs.editedItem.splitTextInRange:
-			ContentStore.splitTextInRangeOfItemAtKeyPathInDocumentSection(documentID, sectionID, payload.textRange, editedTextItemKeyPath);
-			break;
-
-		case documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex:
-			var ReorderingStore = require("./ReorderingStore");
-			var focusedBlockKeyPath = ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID);
-			ContentStore.moveBlockAtKeyPathToBeforeBlockAtIndexInDocumentSection(documentID, sectionID, focusedBlockKeyPath, payload.beforeBlockAtIndex);
-			break;
-
-	}
-
-	return true;
-});
-
-module.exports = ContentStore;
-
-},{"../actions/actions-content-eventIDs":175,"../app-dispatcher":177,"./ReorderingStore":186,"./store-settings":191,"immutable":11,"microevent":12}],190:[function(require,module,exports){
-/**
-	Copyright 2015 Patrick George Wyndham Smith
-*/
-
-"use strict";
-
-var AppDispatcher = require("../app-dispatcher");
-var Immutable = require("immutable");
-var MicroEvent = require("microevent");
-var ContentActionsEventIDs = require("../actions/actions-content-eventIDs");
-var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
-
-//var documentSectionActivity = Immutable.Map({});
-
-var StorePreview = {
-	on: MicroEvent.prototype.bind,
-	trigger: MicroEvent.prototype.trigger,
-	off: MicroEvent.prototype.unbind
-};
-
-var isPreviewing = false;
-StorePreview.getIsPreviewing = function () {
-	return isPreviewing;
-};
-
-StorePreview.enterPreview = function () {
-	if (!isPreviewing) {
-		isPreviewing = true;
-		StorePreview.trigger("didEnterPreview");
-	}
-};
-
-StorePreview.exitPreview = function () {
-	if (isPreviewing) {
-		isPreviewing = false;
-		StorePreview.trigger("didExitPreview");
-	}
-};
-
-AppDispatcher.register(function (payload) {
-	switch (payload.eventID) {
-
-		case documentSectionEventIDs.enterHTMLPreview:
-			StorePreview.enterPreview();
-			break;
-
-		case documentSectionEventIDs.exitHTMLPreview:
-			StorePreview.exitPreview();
-			break;
-
 	}
 });
 
-module.exports = StorePreview;
+// Public methods
+objectAssign(SpecsStore, {
+	isLoadingSpecWithURL: isLoadingSpecWithURL,
+	loadSpecWithURL: loadSpecWithURL,
+	getSpecWithURL: getSpecWithURL,
+	hasLoadedAllSpecsWithURLs: hasLoadedAllSpecsWithURLs,
+	setContentForSpecWithURL: setContentForSpecWithURL,
+	getCombinedSpecsWithURLs: getCombinedSpecsWithURLs
+});
 
-},{"../actions/actions-content-eventIDs":175,"../app-dispatcher":177,"immutable":11,"microevent":12}],191:[function(require,module,exports){
-"use strict";
+module.exports = SpecsStore;
 
-var AppDispatcher = require("../app-dispatcher");
-var MicroEvent = require("microevent");
-var Immutable = require("immutable");
-var qwest = require("qwest");
-
-var SettingsStore = {
-	on: MicroEvent.prototype.bind,
-	trigger: MicroEvent.prototype.trigger,
-	off: MicroEvent.prototype.unbind
-};
-
-var getSettingsJSON = function getSettingsJSON() {
-	if (window && window.burntIcing) {
-		return window.burntIcing.settingsJSON;
-	} else {
-		return null;
-	}
-};
-
-var getKeyFromObject = function getKeyFromObject(object, key, fallback) {
-	if (typeof fallback === "undefined") {
-		fallback = null;
-	}
-
-	if (!object || typeof object[key] === "undefined") {
-		return fallback;
-	}
-
-	return object[key];
-};
-
-var getKeyFromSettingsJSON = function getKeyFromSettingsJSON(key, fallback) {
-	if (typeof fallback === "undefined") {
-		fallback = null;
-	}
-
-	var settingsJSON = getSettingsJSON();
-	if (!settingsJSON || typeof settingsJSON[key] === "undefined") {
-		return fallback;
-	}
-
-	return settingsJSON[key];
-};
-
-SettingsStore.getActionURL = function () {
-	return getKeyFromSettingsJSON("actionURL");
-};
-
-SettingsStore.getActionsFunctions = function () {
-	return getKeyFromSettingsJSON("actionFunctions");
-};
-
-SettingsStore.wantsMainToolbar = function () {
-	return getKeyFromSettingsJSON("wantsMainToolbar", true);
-};
-
-SettingsStore.getWantsSaveFunctionality = function () {
-	return getKeyFromSettingsJSON("wantsSaveFunctionality", true);
-};
-
-SettingsStore.getWantsViewHTMLFunctionality = function () {
-	return getKeyFromSettingsJSON("wantsViewHTMLFunctionality", false);
-};
-
-SettingsStore.getWantsPlaceholderFunctionality = function () {
-	return getKeyFromSettingsJSON("wantsPlaceholderFunctionality", false);
-};
-
-SettingsStore.getShowsDocumentTitle = function () {
-	return false;
-};
-
-SettingsStore.getAvailableBlockTypesForDocumentSectionAlternate = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" },
-	//{'id': 'figure', 'title': 'Figure'},
-	//{'id': 'media', 'title': 'Media'},
-	//{'id': 'quote', 'title': 'Quote'},
-	{ id: "placeholder", title: "Particular" }, { id: "subsection", title: "Subsection" }
-	//{'id': 'external', 'title': 'External Element'},
-	//{'id': 'placeholder', 'title': 'Placeholder'}
-	];
-};
-
-SettingsStore.getAvailableBlockTypesForDocumentSection = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{ id: "body", title: "Paragraph" }, { id: "heading", title: "Heading 1" }, { id: "subhead1", title: "Heading 2" }, { id: "subhead2", title: "Heading 3" }, { id: "subhead3", title: "Heading 4" }, { id: "placeholder", title: "Particular" }];
-};
-
-SettingsStore.getAvailableSubsectionTypesForDocumentSection = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{ id: "normal", title: "Normal" }, { id: "unorderedList", title: "Unordered List" }, { id: "orderedList", title: "Ordered List" }];
-};
-
-SettingsStore.getAvailableBlockTypesGroups = function () {
-	return Immutable.fromJS([{
-		id: "text",
-		title: "Text"
-	}, {
-		id: "media",
-		title: "Media"
-	}, {
-		id: "particular",
-		title: "Particular"
-	}]);
-};
-
-SettingsStore.getAvailableBlockTypesGroupedForDocumentSection = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{
-		id: "text",
-		types: [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" }]
-	}, {
-		id: "media",
-		types: [{ id: "externalImage", title: "External Image" }, { id: "youTubeVideo", title: "YouTube Video" }, { id: "vimeoVideo", title: "Vimeo Video" }
-		//{"id": "iframe", "title": "HTML iframe"}
-		]
-	}, {
-		id: "particular",
-		types: [{ id: "streetAddress", title: "Street Address" }]
-	}, {
-		id: "section",
-		types: [{ id: "list", title: "List" }, { id: "quote", title: "Quote" }]
-	}];
-};
-
-SettingsStore.getInitialDocumentState = function () {
-	return getKeyFromSettingsJSON("initialDocumentState", {});
-};
-
-SettingsStore.getInitialAvailableDocuments = function () {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), "availableDocuments", []);
-};
-
-SettingsStore.getInitialDocumentID = function () {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), "documentID");
-};
-
-SettingsStore.getInitialDocumentSectionID = function () {
-	return getKeyFromObject(SettingsStore.getInitialDocumentState(), "documentSectionID");
-};
-
-SettingsStore.getInitialContentJSONForDocument = function (documentID) {
-	var initialContentJSON = getKeyFromObject(SettingsStore.getInitialDocumentState(), "contentJSONByDocumentID");
-	//console.log('initialContentJSON', initialContentJSON);
-
-	if (!initialContentJSON) {
-		return null;
-	}
-
-	if (initialContentJSON[documentID]) {
-		return initialContentJSON[documentID];
-	}
-
-	return null;
-};
-
-var availableDocuments = null;
-SettingsStore.getAvailableDocuments = function () {
-	if (!availableDocuments) {
-		availableDocuments = SettingsStore.getInitialAvailableDocuments();
-	}
-
-	return availableDocuments;
-};
-
-SettingsStore.getAvailableSectionIDsForDocumentID = function (documentID) {
-	return [];
-};
-
-var currentDocumentID = null;
-var currentDocumentSectionID = null;
-
-SettingsStore.getCurrentDocumentID = function () {
-	if (!currentDocumentID) {
-		currentDocumentID = SettingsStore.getInitialDocumentID();
-	}
-
-	return currentDocumentID;
-};
-SettingsStore.setCurrentDocumentID = function (newDocumentID) {
-	currentDocumentID = newDocumentID;
-
-	this.trigger("currentDocumentDidChange");
-};
-
-SettingsStore.getCurrentDocumentSectionID = function () {
-	if (!currentDocumentSectionID) {
-		currentDocumentSectionID = SettingsStore.getInitialDocumentSectionID();
-	}
-	return currentDocumentSectionID;
-};
-
-SettingsStore.getContentSpecsForDocumentSection = function (documentID, sectionID) {
-	var contentSpecsJSON = require("../dummy/dummy-content-specs.json");
-	var contentSpecs = Immutable.fromJS(contentSpecsJSON);
-	return contentSpecs;
-};
-
-module.exports = SettingsStore;
-
-},{"../app-dispatcher":177,"../dummy/dummy-content-specs.json":180,"immutable":11,"microevent":12,"qwest":19}],192:[function(require,module,exports){
-"use strict";
-
-exports.KeyCodes = {
-	RETURN_OR_ENTER: 13,
-	DELETE_OR_BACKSPACE: 8,
-	TAB: 9,
-	SPACE: 32
-};
-
-},{}],193:[function(require,module,exports){
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"./ConfigurationStore":187,"immutable":11,"microevent":12,"object-assign":18,"qwest":19}],194:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -33099,6 +33889,44 @@ var BaseClassNamesMixin = {
 	}
 };
 
+module.exports = BaseClassNamesMixin;
+
+},{"react":174}],195:[function(require,module,exports){
+"use strict";
+
+var KeyCodes = {
+	ReturnOrEnter: 13,
+	DeleteOrBackspace: 8,
+	Tab: 9,
+	Space: 32,
+
+	ShiftModifier: 16,
+	OptionModifier: 18,
+	CommandModifier: 91,
+
+	isModifier: function isModifier(keyCode) {
+		switch (keyCode) {
+			case KeyCodes.ShiftModifier:
+			case KeyCodes.OptionModifier:
+			case KeyCodes.CommandModifier:
+				return true;
+			default:
+				return false;
+		}
+	}
+};
+
+module.exports = KeyCodes;
+
+},{}],196:[function(require,module,exports){
+/**
+	Copyright 2015 Patrick George Wyndham Smith
+*/
+
+"use strict";
+
+var React = require("react");
+
 var ButtonMixin = {
 	mixins: [BaseClassNamesMixin],
 
@@ -33136,8 +33964,8 @@ var ButtonMixin = {
 
 var Mixins = {
 	ButtonMixin: ButtonMixin,
-	BaseClassNamesMixin: BaseClassNamesMixin
+	BaseClassNamesMixin: require("./BaseClassNamesMixin")
 };
 module.exports = Mixins;
 
-},{"react":174}]},{},[1]);
+},{"./BaseClassNamesMixin":194,"react":174}]},{},[1]);

@@ -1,6 +1,0 @@
-exports.KeyCodes = {
-	RETURN_OR_ENTER: 13,
-	DELETE_OR_BACKSPACE: 8,
-	TAB: 9,
-	SPACE: 32
-};
