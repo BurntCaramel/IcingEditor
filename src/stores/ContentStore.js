@@ -215,6 +215,8 @@ objectAssign(ContentStore, {
 	},
 	*/
 	
+	getIndexForObjectKeyPath,
+	
 	newTextItem: function(options) {
 		var textItem = Immutable.Map({
 			"type": "text",

@@ -5,6 +5,9 @@
 var React = require('react');
 
 
+let BaseClassNamesMixin = require('./BaseClassNamesMixin');
+
+
 var ButtonMixin = {
 	mixins: [BaseClassNamesMixin],
 	
@@ -43,6 +46,6 @@ var ButtonMixin = {
 
 var Mixins = {
 	ButtonMixin,
-	BaseClassNamesMixin: require('./BaseClassNamesMixin')
+	BaseClassNamesMixin
 };
 module.exports = Mixins;

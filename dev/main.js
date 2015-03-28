@@ -31771,8 +31771,6 @@ PreviewElementsCreator.MainElement = React.createClass({
 	},
 
 	render: function render() {
-		console.log("Immutable.fromJS('info')", Immutable.fromJS("info"));
-
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;
@@ -32536,6 +32534,8 @@ objectAssign(ContentStore, {
  	});
  },
  */
+
+	getIndexForObjectKeyPath: getIndexForObjectKeyPath,
 
 	newTextItem: function newTextItem(options) {
 		var textItem = Immutable.Map({
@@ -33927,6 +33927,8 @@ module.exports = KeyCodes;
 
 var React = require("react");
 
+var BaseClassNamesMixin = require("./BaseClassNamesMixin");
+
 var ButtonMixin = {
 	mixins: [BaseClassNamesMixin],
 
@@ -33964,7 +33966,7 @@ var ButtonMixin = {
 
 var Mixins = {
 	ButtonMixin: ButtonMixin,
-	BaseClassNamesMixin: require("./BaseClassNamesMixin")
+	BaseClassNamesMixin: BaseClassNamesMixin
 };
 module.exports = Mixins;
 

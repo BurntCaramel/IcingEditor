@@ -314,8 +314,6 @@ PreviewElementsCreator.MainElement = React.createClass({
 	},
 	
 	render: function() {
-		console.log("Immutable.fromJS('info')", Immutable.fromJS('info'));
-		
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;
