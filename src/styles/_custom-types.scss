@@ -66,12 +66,16 @@
 {
 	font-style: italic;
 }
-.textItem-hasTrait-link {
-	:after {
-		
-	}
-	
-	.text {
-		border-bottom: 1px dotted rgba(20, 200, 255, 1.0);
-	}
+.textItem-hasTrait-link .text {
+	border-bottom: 1px dotted rgba(20, 200, 255, 1.0);
+}
+
+.textItem-hasTrait-lineBreakAfter .text:after {
+	//content: "\a"; // Carriage return (doesn't work?)
+	content: "";
+	display: block;
+}
+
+.textItem-hasTrait-hide .text {
+	opacity: 0.5;
 }

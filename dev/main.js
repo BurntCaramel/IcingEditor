@@ -27757,6 +27757,10 @@ var getAttributeValueForInfoAndSourceValue = (function (_getAttributeValueForInf
 	return attributeValue;
 });
 
+HTMLRepresentationAssistant.isValidHTMLRepresentationType = function (potentialHTMLRepresentation) {
+	return Immutable.List.isList(potentialHTMLRepresentation);
+};
+
 HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function (HTMLRepresentation, sourceValue) {
 	var reactElementForElementOptions = (function (_reactElementForElementOptions) {
 		var _reactElementForElementOptionsWrapper = function reactElementForElementOptions(_x, _x2) {
@@ -28242,6 +28246,16 @@ module.exports={
 			]
 		},
 		{
+			"id": "lineBreakAfter",
+			"title": "Line Break After",
+			"allowedForAnyTextItems": true,
+			"afterHTMLRepresentation": [
+				{
+					"tagName": "br"
+				}
+			]
+		},
+		{
 			"id": "class",
 			"disabled": true,
 			"title": "Class",
@@ -28424,8 +28438,8 @@ var ReorderingStore = require("../stores/ReorderingStore");
 /*
 * State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
 */
-var latestStateWithPreviousState = function latestStateWithPreviousState(_x, _ref) {
-	var previousState = arguments[0] === undefined ? null : arguments[0];
+var latestStateWithPreviousState = function latestStateWithPreviousState(props, _x, _ref) {
+	var previousState = arguments[1] === undefined ? null : arguments[1];
 	var _ref$updateAll = _ref.updateAll;
 	var updateAll = _ref$updateAll === undefined ? false : _ref$updateAll;
 	var _ref$updateDocumentState = _ref.updateDocumentState;
@@ -28443,14 +28457,16 @@ var latestStateWithPreviousState = function latestStateWithPreviousState(_x, _re
 			};
 		}
 
-		var documentID = ConfigurationStore.getCurrentDocumentID();
-		var sectionID = ConfigurationStore.getCurrentDocumentSectionID();
-
+		//let documentID = ConfigurationStore.getCurrentDocumentID();
+		//let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
+		var documentID = props.documentID;
+		var sectionID = props.sectionID;
 		var documentState = previousState.documentState;
 		var viewingState = previousState.viewingState;
 		var actions = previousState.actions;
 
 		if (updateDocumentState) {
+			var focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
 			var editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
 
 			var previousDocumentState = documentState;
@@ -28458,15 +28474,17 @@ var latestStateWithPreviousState = function latestStateWithPreviousState(_x, _re
 				documentID: documentID,
 				sectionID: sectionID,
 				specsURLs: ContentStore.getSpecsURLsForDocumentWithID(documentID),
-				content: ContentStore.getContentForDocumentSection(documentID, sectionID),
-				specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID),
+				documentSections: ContentStore.getSectionsInDocument(documentID),
+				focusedSectionID: focusedSectionID,
+				specs: ContentStore.getSpecsForDocument(documentID),
+				content: ContentStore.getContentForDocumentSection(documentID, focusedSectionID),
 				blockTypeGroups: ConfigurationStore.getAvailableBlockTypesGroups(),
-				editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID),
-				editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID),
-				editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID),
-				editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID),
-				focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, sectionID),
-				focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID)
+				editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID),
+				editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, focusedSectionID),
+				editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, focusedSectionID),
+				editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, focusedSectionID),
+				focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, focusedSectionID),
+				focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, focusedSectionID)
 			});
 		}
 
@@ -28478,9 +28496,7 @@ var latestStateWithPreviousState = function latestStateWithPreviousState(_x, _re
 			});
 		}
 
-		if (updateActions) {
-			actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
-		}
+		if (updateActions) {}
 
 		return {
 			documentState: documentState,
@@ -28494,7 +28510,7 @@ var EditorMain = React.createClass({
 	displayName: "EditorMain",
 
 	getInitialState: function getInitialState() {
-		return latestStateWithPreviousState(null, {
+		return latestStateWithPreviousState(this.props, null, {
 			updateAll: true
 		});
 	},
@@ -28559,7 +28575,7 @@ var EditorMain = React.createClass({
 		var options = arguments[0] === undefined ? {} : arguments[0];
 
 		this.setState(function (previousState, props) {
-			return latestStateWithPreviousState(previousState, options);
+			return latestStateWithPreviousState(props, previousState, options);
 		});
 	},
 
@@ -28599,6 +28615,9 @@ var EditorMain = React.createClass({
 	},
 
 	render: function render() {
+		var _props = this.props;
+		var documentID = _props.documentID;
+		var sectionID = _props.sectionID;
 		var _state = this.state;
 		var documentState = _state.documentState;
 		var viewingState = _state.viewingState;
@@ -28606,11 +28625,11 @@ var EditorMain = React.createClass({
 
 		var _documentState$toObject = documentState.toObject();
 
-		var documentID = _documentState$toObject.documentID;
-		var sectionID = _documentState$toObject.sectionID;
 		var specsURLs = _documentState$toObject.specsURLs;
-		var content = _documentState$toObject.content;
+		var documentSections = _documentState$toObject.documentSections;
+		var focusedSectionID = _documentState$toObject.focusedSectionID;
 		var specs = _documentState$toObject.specs;
+		var content = _documentState$toObject.content;
 		var blockTypeGroups = _documentState$toObject.blockTypeGroups;
 		var editedBlockIdentifier = _documentState$toObject.editedBlockIdentifier;
 		var editedBlockKeyPath = _documentState$toObject.editedBlockKeyPath;
@@ -28647,7 +28666,7 @@ var EditorMain = React.createClass({
 				key: "specsLoading",
 				className: "document_loadingSpecs"
 			}, "Loading Specs");
-		} else if (!content) {
+		} else if (!content || documentSections.count() === 0) {
 			innerElement = React.createElement("div", {
 				key: "contentLoading",
 				className: "document_loadingContent"
@@ -28662,20 +28681,39 @@ var EditorMain = React.createClass({
 				actions: actions
 			});
 		} else {
-			innerElement = React.createElement(EditorElementsCreator.MainElement, {
-				key: "content",
-				contentImmutable: content,
-				specsImmutable: specs,
-				actions: actions,
-				blockTypeGroups: blockTypeGroups,
-				editedBlockIdentifier: editedBlockIdentifier,
-				editedBlockKeyPath: editedBlockKeyPath,
-				editedTextItemIdentifier: editedTextItemIdentifier,
-				editedTextItemKeyPath: editedTextItemKeyPath,
-				isReordering: isReordering,
-				focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
-				focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
-			});
+			if (true) {
+				innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement, {
+					key: "documentSections",
+					documentID: documentID,
+					documentSections: documentSections,
+					focusedSectionID: focusedSectionID,
+					specs: specs,
+					actions: actions,
+					blockTypeGroups: blockTypeGroups,
+					editedBlockIdentifier: editedBlockIdentifier,
+					editedBlockKeyPath: editedBlockKeyPath,
+					editedTextItemIdentifier: editedTextItemIdentifier,
+					editedTextItemKeyPath: editedTextItemKeyPath,
+					isReordering: isReordering,
+					focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
+					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
+				});
+			} else {
+				innerElement = React.createElement(EditorElementsCreator.MainElement, {
+					key: "content",
+					contentImmutable: content,
+					specsImmutable: specs,
+					actions: actions,
+					blockTypeGroups: blockTypeGroups,
+					editedBlockIdentifier: editedBlockIdentifier,
+					editedBlockKeyPath: editedBlockKeyPath,
+					editedTextItemIdentifier: editedTextItemIdentifier,
+					editedTextItemKeyPath: editedTextItemKeyPath,
+					isReordering: isReordering,
+					focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
+					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
+				});
+			}
 		}
 
 		var children = [];
@@ -28712,7 +28750,8 @@ var EditorController = {
 		ContentActions.loadContentForDocumentWithID(documentID);
 
 		React.render(React.createElement(EditorMain, {
-			key: "editor"
+			key: "editor",
+			documentID: documentID
 		}), DOMElement);
 
 		window.burntIcing.editor = this;
@@ -28731,7 +28770,7 @@ var EditorController = {
 			var sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 			// Get content and specs
 			var content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-			var specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
+			var specs = ContentStore.getSpecsForDocument(documentID, sectionID);
 			// Create preview HTML.
 			var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
 
@@ -28762,6 +28801,9 @@ var EditorController = {
 
 module.exports = EditorController;
 
+// FIXME:
+//actions = ContentActions.getActionsForDocumentSection(documentID, focusedSectionID);
+
 },{"../actions/ContentActions":175,"../preview/PreviewElements":186,"../stores/ConfigurationStore":187,"../stores/ContentLoadingStore":188,"../stores/ContentSavingStore":189,"../stores/ContentStore":190,"../stores/PreviewStore":191,"../stores/ReorderingStore":192,"../stores/SpecsStore":193,"./ContentSettings":181,"./EditorElements":183,"./EditorToolbars":185,"immutable":11,"react":174}],183:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
@@ -28773,8 +28815,10 @@ var React = require("react");
 var Toolbars = require("./EditorToolbars");
 var Immutable = require("immutable");
 var ContentStore = require("../stores/ContentStore");
+var ContentActions = require("../actions/ContentActions");
 var ConfigurationStore = require("../stores/ConfigurationStore");
 var ReorderingStore = require("../stores/ReorderingStore");
+var objectAssign = require("object-assign");
 
 var _require = require("../assistants/TypesAssistant");
 
@@ -29369,11 +29413,13 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 	return elements;
 };
 
-EditorElementCreator.MainElement = React.createClass({
-	displayName: "MainElement",
+EditorElementCreator.SectionElement = React.createClass({
+	displayName: "SectionElement",
 
 	getDefaultProps: function getDefaultProps() {
 		return {
+			documentID: null,
+			sectionID: null,
 			contentImmutable: null,
 			specsImmutable: null,
 			actions: {},
@@ -29383,7 +29429,8 @@ EditorElementCreator.MainElement = React.createClass({
 			editedTextItemKeyPath: null,
 			isReordering: false,
 			focusedBlockIdentifierForReordering: null,
-			focusedBlockKeyPathForReordering: null
+			focusedBlockKeyPathForReordering: null,
+			showSectionTitle: false
 		};
 	},
 
@@ -29423,6 +29470,7 @@ EditorElementCreator.MainElement = React.createClass({
 
 	render: function render() {
 		var _props = this.props;
+		var sectionID = _props.sectionID;
 		var contentImmutable = _props.contentImmutable;
 		var specsImmutable = _props.specsImmutable;
 		var blockTypeGroups = _props.blockTypeGroups;
@@ -29434,6 +29482,7 @@ EditorElementCreator.MainElement = React.createClass({
 		var focusedBlockIdentifierForReordering = _props.focusedBlockIdentifierForReordering;
 		var focusedBlockKeyPathForReordering = _props.focusedBlockKeyPathForReordering;
 		var actions = _props.actions;
+		var showSectionTitle = _props.showSectionTitle;
 
 		var classNames = ["blocks"];
 
@@ -29451,6 +29500,13 @@ EditorElementCreator.MainElement = React.createClass({
 			actions: actions
 		});
 
+		if (showSectionTitle) {
+			elements.splice(0, 0, React.createElement("h3", {
+				key: "title",
+				className: "documentSection_title"
+			}, sectionID));
+		}
+
 		var isEditingBlock = editedBlockIdentifier != null;
 		if (isEditingBlock) {
 			classNames.push("blocks-hasEditedBlock");
@@ -29465,9 +29521,75 @@ EditorElementCreator.MainElement = React.createClass({
 	}
 });
 
+EditorElementCreator.DocumentSectionsElement = React.createClass({
+	displayName: "DocumentSectionsElement",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			documentID: null,
+			documentSections: null,
+			specs: null,
+			actions: {},
+			focusedSectionID: null,
+			editedBlockIdentifier: null,
+			editedBlockKeyPath: null,
+			editedTextItemIdentifier: null,
+			editedTextItemKeyPath: null,
+			isReordering: false,
+			focusedBlockIdentifierForReordering: null,
+			focusedBlockKeyPathForReordering: null
+		};
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var documentID = _props.documentID;
+		var documentSections = _props.documentSections;
+		var focusedSectionID = _props.focusedSectionID;
+		var specs = _props.specs;
+		var blockTypeGroups = _props.blockTypeGroups;
+		var actions = _props.actions;
+		var editedBlockIdentifier = _props.editedBlockIdentifier;
+		var editedBlockKeyPath = _props.editedBlockKeyPath;
+		var editedTextItemIdentifier = _props.editedTextItemIdentifier;
+		var editedTextItemKeyPath = _props.editedTextItemKeyPath;
+		var isReordering = _props.isReordering;
+		var focusedBlockIdentifierForReordering = _props.focusedBlockIdentifierForReordering;
+		var focusedBlockKeyPathForReordering = _props.focusedBlockKeyPathForReordering;
+
+		var sectionElements = documentSections.map(function (sectionContent, sectionID) {
+			var sectionProps = {
+				key: sectionID,
+				documentID: documentID,
+				sectionID: sectionID,
+				contentImmutable: documentSections.get(sectionID),
+				specsImmutable: specs,
+				blockTypeGroups: blockTypeGroups,
+				actions: ContentActions.getActionsForDocumentSection(documentID, sectionID),
+				showSectionTitle: true
+			};
+			if (sectionID == focusedSectionID) {
+				objectAssign(sectionProps, {
+					editedBlockIdentifier: editedBlockIdentifier,
+					editedBlockKeyPath: editedBlockKeyPath,
+					editedTextItemIdentifier: editedTextItemIdentifier,
+					editedTextItemKeyPath: editedTextItemKeyPath,
+					isReordering: isReordering,
+					focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
+					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering });
+			}
+
+			return React.createElement(EditorElementCreator.SectionElement, sectionProps);
+		}).toArray();
+
+		return React.createElement("div", {
+			className: "documentSections" }, sectionElements);
+	}
+});
+
 module.exports = EditorElementCreator;
 
-},{"../assistants/HTMLRepresentationAssistant":178,"../assistants/TypesAssistant":179,"../stores/ConfigurationStore":187,"../stores/ContentStore":190,"../stores/ReorderingStore":192,"../ui/KeyCodes":195,"../ui/ui-mixins":196,"./EditorToolbars":185,"immutable":11,"react":174}],184:[function(require,module,exports){
+},{"../actions/ContentActions":175,"../assistants/HTMLRepresentationAssistant":178,"../assistants/TypesAssistant":179,"../stores/ConfigurationStore":187,"../stores/ContentStore":190,"../stores/ReorderingStore":192,"../ui/KeyCodes":195,"../ui/ui-mixins":196,"./EditorToolbars":185,"immutable":11,"object-assign":18,"react":174}],184:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -31187,6 +31309,7 @@ var ChangeSubsectionElement = React.createClass({
 		var subsectionsSpecs = _props.subsectionsSpecs;
 		var selectedSubsectionType = _props.selectedSubsectionType;
 		var followingBlockIndex = _props.followingBlockIndex;
+		var active = this.state.active;
 
 		//var subsectionInfos = ConfigurationStore.getAvailableSubsectionTypesForDocumentSection();
 
@@ -31197,7 +31320,7 @@ var ChangeSubsectionElement = React.createClass({
 			children.push(React.createElement(SecondaryButton, {
 				key: "mainButton",
 				baseClassNames: this.getChildClassNamesWithSuffix("_mainButton"),
-				title: "Make Subsection",
+				title: "Make Portion",
 				onClick: this.onToggleActive
 			}));
 		} else {
@@ -31213,18 +31336,19 @@ var ChangeSubsectionElement = React.createClass({
 			}));
 		}
 
-		if (this.state.active) {
+		if (active) {
 			var subsectionChoices = subsectionsSpecs.map(function (subsectionInfo) {
 				return this.createElementForSubsectionInfo(subsectionInfo);
-			}, this);
+			}, this).toArray();
 
 			if (!isCreate) {
 				subsectionChoices.push(React.createElement(ButtonDivider, {
+					baseClassNames: this.getChildClassNamesWithSuffix("_divider"),
 					key: "dividerAboveRemove"
 				}), React.createElement(SecondaryButton, {
 					key: "removeSubsection",
 					baseClassNames: this.getChildClassNamesWithSuffix("_removeButton"),
-					title: "Remove Subsection",
+					title: "Remove Portion",
 					onClick: this.onRemoveSubsection
 				}));
 			}
@@ -31411,7 +31535,7 @@ var MainToolbar = React.createClass({
 
 		var children = [];
 
-		if (ConfigurationStore.getWantsSaveFunctionality()) {
+		if (ConfigurationStore.getWantsSaveUI()) {
 			children.push(React.createElement(ToolbarButton, {
 				key: "save",
 				title: "Save",
@@ -31519,28 +31643,43 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child,
 
 			var traitOptions = findParticularTraitOptionsInList(traitID, traitsSpecs);
 
+			var valueForRepresentation = undefined;
+			// Fields
+			if (traitOptions.has("fields")) {
+				valueForRepresentation = Immutable.Map({
+					originalElement: child,
+					fields: traitValue
+				});
+			}
+			// On/off trait
+			else {
+				valueForRepresentation = Immutable.Map({
+					originalElement: child
+				});
+			}
+
 			if (traitOptions.has("innerHTMLRepresentation")) {
 				var HTMLRepresentation = traitOptions.get("innerHTMLRepresentation");
 				if (HTMLRepresentation === false) {
 					// For example, hide trait
 					child = null;
-				} else if (HTMLRepresentation !== null) {
-					var valueForRepresentation = undefined;
-					// Fields
-					if (traitOptions.has("fields")) {
-						valueForRepresentation = Immutable.Map({
-							originalElement: child,
-							fields: traitValue
-						});
-					}
-					// On/off trait
-					else {
-						valueForRepresentation = Immutable.Map({
-							originalElement: child
-						});
-					}
-
+				} else if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {
 					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
+				}
+			}
+
+			if (child != null && traitOptions.has("afterHTMLRepresentation")) {
+				var HTMLRepresentation = traitOptions.get("afterHTMLRepresentation");
+				if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {
+					var afterElements = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
+
+					if (afterElements) {
+						if (!Array.isArray(child)) {
+							child = [child];
+						}
+
+						child = child.concat(afterElements);
+					}
 				}
 			}
 		});
@@ -31965,8 +32104,8 @@ ConfigurationStore.wantsMainToolbar = function () {
 	return getKeyFromSettingsJSON("wantsMainToolbar", true);
 };
 
-ConfigurationStore.getWantsSaveFunctionality = function () {
-	return getKeyFromSettingsJSON("wantsSaveFunctionality", true);
+ConfigurationStore.getWantsSaveUI = function () {
+	return getKeyFromSettingsJSON("wantsSaveUI", true);
 };
 
 ConfigurationStore.getWantsViewHTMLFunctionality = function () {
@@ -31975,10 +32114,6 @@ ConfigurationStore.getWantsViewHTMLFunctionality = function () {
 
 ConfigurationStore.getWantsContentSettingsFunctionality = function () {
 	return getKeyFromSettingsJSON("wantsContentSettingsFunctionality", true);
-};
-
-ConfigurationStore.getWantsPlaceholderFunctionality = function () {
-	return getKeyFromSettingsJSON("wantsPlaceholderFunctionality", false);
 };
 
 ConfigurationStore.getShowsDocumentTitle = function () {
@@ -32005,6 +32140,19 @@ ConfigurationStore.getAvailableBlockTypesForDocumentSection = function (document
 ConfigurationStore.getAvailableSubsectionTypesForDocumentSection = function (documentID, sectionID) {
 	//TODO: documentID, sectionID
 	return [{ id: "normal", title: "Normal" }, { id: "unorderedList", title: "Unordered List" }, { id: "orderedList", title: "Ordered List" }];
+};
+
+ConfigurationStore.getAvailableSectionTypes = function () {
+	return Immutable.fromJS([{
+		id: "writing", // Can be used for prose, articles, notes, sources
+		title: "Writing"
+	}, {
+		id: "catalog", // Can be used for information, reusable bits
+		title: "Catalog"
+	}, {
+		id: "external", // External writing or catalog to be brought into a document: has a URL
+		title: "External"
+	}]);
 };
 
 ConfigurationStore.getAvailableBlockTypesGroups = function () {
@@ -32391,6 +32539,10 @@ function getContentKeyPathForDocumentSection(documentID, sectionID, additionalKe
 	return keyPath;
 }
 
+function getSectionsInDocument(documentID) {
+	return documentSectionContents.getIn([documentID, "sections"]);
+}
+
 function getContentForDocumentSection(documentID, sectionID) {
 	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID));
 }
@@ -32471,7 +32623,7 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 	ContentStore.trigger("specsChangedForDocument", documentID);
 }
 
-function getSpecsForDocumentSection(documentID, sectionID) {
+function getSpecsForDocument(documentID) {
 	var specs = documentCombinedSpecs.get(documentID);
 	if (!specs) {
 		var specsURLs = getSpecsURLsForDocumentWithID(documentID);
@@ -32599,8 +32751,9 @@ objectAssign(ContentStore, {
 	getIsShowingSettings: getIsShowingSettings,
 
 	getSpecsURLsForDocumentWithID: getSpecsURLsForDocumentWithID,
-	getSpecsForDocumentSection: getSpecsForDocumentSection,
+	getSpecsForDocument: getSpecsForDocument,
 
+	getSectionsInDocument: getSectionsInDocument,
 	getContentForDocumentSection: getContentForDocumentSection,
 
 	getContentAsJSONForDocumentSection: function getContentAsJSONForDocumentSection(documentID, sectionID) {

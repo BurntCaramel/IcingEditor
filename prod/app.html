@@ -12,8 +12,9 @@
 window.burntIcing = {
 	delayed: true,
 	settingsJSON: {
-		wantsSaveFunctionality: false,
+		wantsSaveUI: false,
 		wantsViewHTMLFunctionality: true,
+		wantsContentSettingsFunctionality: false,
 		actionFunctions: {
 			saveContentJSONForDocumentSection: function(documentID, sectionID, contentJSON) {
 				window.webkit.messageHandlers.icingSaveContent.postMessage({

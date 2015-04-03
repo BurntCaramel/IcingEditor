@@ -69,6 +69,10 @@ function getContentKeyPathForDocumentSection(documentID, sectionID, additionalKe
 	return keyPath;
 }
 
+function getSectionsInDocument(documentID) {
+	return documentSectionContents.getIn([documentID, 'sections']);
+}
+
 function getContentForDocumentSection(documentID, sectionID) {
 	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID));
 }
@@ -148,7 +152,7 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 	ContentStore.trigger('specsChangedForDocument', documentID);
 }
 
-function getSpecsForDocumentSection(documentID, sectionID) {
+function getSpecsForDocument(documentID) {
 	var specs = documentCombinedSpecs.get(documentID);
 	if (!specs) {
 		let specsURLs = getSpecsURLsForDocumentWithID(documentID);
@@ -280,8 +284,9 @@ objectAssign(ContentStore, {
 	getIsShowingSettings,
 	
 	getSpecsURLsForDocumentWithID,
-	getSpecsForDocumentSection,
+	getSpecsForDocument,
 	
+	getSectionsInDocument,
 	getContentForDocumentSection,
 	
 	getContentAsJSONForDocumentSection: function(documentID, sectionID) {

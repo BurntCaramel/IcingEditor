@@ -23,6 +23,7 @@ var ReorderingStore = require('../stores/ReorderingStore');
 * State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
 */
 let latestStateWithPreviousState = function(
+	props,
 	previousState = null, {
 		updateAll = false,
 		updateDocumentState = updateAll,
@@ -38,8 +39,12 @@ let latestStateWithPreviousState = function(
 		};
 	}
 	
-	let documentID = ConfigurationStore.getCurrentDocumentID();
-	let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
+	//let documentID = ConfigurationStore.getCurrentDocumentID();
+	//let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
+	let {
+		documentID,
+		sectionID
+	} = props;
 	
 	let {
 		documentState,
@@ -48,6 +53,7 @@ let latestStateWithPreviousState = function(
 	} = previousState;
 	
 	if (updateDocumentState) {
+		let focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
 		let editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
 		
 		let previousDocumentState = documentState;
@@ -55,15 +61,17 @@ let latestStateWithPreviousState = function(
 			documentID,
 			sectionID,
 			specsURLs: ContentStore.getSpecsURLsForDocumentWithID(documentID),
-			content: ContentStore.getContentForDocumentSection(documentID, sectionID),
-			specs: ContentStore.getSpecsForDocumentSection(documentID, sectionID),
+			documentSections: ContentStore.getSectionsInDocument(documentID),
+			focusedSectionID,
+			specs: ContentStore.getSpecsForDocument(documentID),
+			content: ContentStore.getContentForDocumentSection(documentID, focusedSectionID),
 			blockTypeGroups: ConfigurationStore.getAvailableBlockTypesGroups(),
-			editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID),
-			editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, sectionID),
-			editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, sectionID),
-			editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, sectionID),
-			focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, sectionID),
-			focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, sectionID)
+			editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID),
+			editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, focusedSectionID),
+			editedTextItemIdentifier: ContentStore.getEditedTextItemIdentifierForDocumentSection(documentID, focusedSectionID),
+			editedTextItemKeyPath: ContentStore.getEditedTextItemKeyPathForDocumentSection(documentID, focusedSectionID),
+			focusedBlockIdentifierForReordering: ReorderingStore.getFocusedBlockIdentifierForDocumentSection(documentID, focusedSectionID),
+			focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, focusedSectionID)
 		});
 	}
 	
@@ -76,7 +84,8 @@ let latestStateWithPreviousState = function(
 	}
 	
 	if (updateActions) {
-		actions = ContentActions.getActionsForDocumentSection(documentID, sectionID);
+		// FIXME:
+		//actions = ContentActions.getActionsForDocumentSection(documentID, focusedSectionID);
 	}
 	
 	return {
@@ -89,7 +98,7 @@ let latestStateWithPreviousState = function(
 
 var EditorMain = React.createClass({
 	getInitialState() {
-		return latestStateWithPreviousState(null, {
+		return latestStateWithPreviousState(this.props, null, {
 			updateAll: true
 		});
 	},
@@ -154,7 +163,7 @@ var EditorMain = React.createClass({
 	updateState(options = {}) {
 		this.setState(function(previousState, props) {
 			return latestStateWithPreviousState(
-				previousState, options
+				props, previousState, options
 			);
 		});
 	},
@@ -196,16 +205,20 @@ var EditorMain = React.createClass({
 	
 	render() {
 		let {
+			documentID,
+			sectionID
+		} = this.props;
+		let {
 			documentState,
 			viewingState,
 			actions
 		} = this.state;
 		let {
-			documentID,
-			sectionID,
 			specsURLs,
-			content,
+			documentSections,
+			focusedSectionID,
 			specs,
+			content,
 			blockTypeGroups,
 			editedBlockIdentifier,
 			editedBlockKeyPath,
@@ -245,7 +258,7 @@ var EditorMain = React.createClass({
 				className: 'document_loadingSpecs'
 			}, 'Loading Specs');
 		}
-		else if (!content) {
+		else if (!content || documentSections.count() === 0) {
 			innerElement = React.createElement('div', {
 				key: 'contentLoading',
 				className: 'document_loadingContent'
@@ -262,20 +275,40 @@ var EditorMain = React.createClass({
 			});
 		}
 		else {
-			innerElement = React.createElement(EditorElementsCreator.MainElement, {
-				key: 'content',
-				contentImmutable: content,
-				specsImmutable: specs,
-				actions,
-				blockTypeGroups,
-				editedBlockIdentifier,
-				editedBlockKeyPath,
-				editedTextItemIdentifier,
-				editedTextItemKeyPath,
-				isReordering,
-				focusedBlockIdentifierForReordering,
-				focusedBlockKeyPathForReordering
-			});
+			if (true) {
+				innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement,{
+					key: 'documentSections',
+					documentID,
+					documentSections,
+					focusedSectionID,
+					specs,
+					actions,
+					blockTypeGroups,
+					editedBlockIdentifier,
+					editedBlockKeyPath,
+					editedTextItemIdentifier,
+					editedTextItemKeyPath,
+					isReordering,
+					focusedBlockIdentifierForReordering,
+					focusedBlockKeyPathForReordering
+				});
+			}
+			else {
+				innerElement = React.createElement(EditorElementsCreator.MainElement, {
+					key: 'content',
+					contentImmutable: content,
+					specsImmutable: specs,
+					actions,
+					blockTypeGroups,
+					editedBlockIdentifier,
+					editedBlockKeyPath,
+					editedTextItemIdentifier,
+					editedTextItemKeyPath,
+					isReordering,
+					focusedBlockIdentifierForReordering,
+					focusedBlockKeyPathForReordering
+				});
+			}
 		}
 		
 		let children = [];
@@ -314,7 +347,8 @@ let EditorController = {
 		
 		React.render(
 			React.createElement(EditorMain, {
-				key: 'editor'
+				key: 'editor',
+				documentID
 			}),
 			DOMElement
 		);
@@ -335,7 +369,7 @@ let EditorController = {
 			let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 			// Get content and specs
 			let content = ContentStore.getContentForDocumentSection(documentID, sectionID);
-			let specs = ContentStore.getSpecsForDocumentSection(documentID, sectionID);
+			let specs = ContentStore.getSpecsForDocument(documentID, sectionID);
 			// Create preview HTML.
 			let previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
 			

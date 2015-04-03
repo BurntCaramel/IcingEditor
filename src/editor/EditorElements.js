@@ -6,8 +6,10 @@ var React = require('react');
 var Toolbars = require('./EditorToolbars');
 var Immutable = require('immutable');
 var ContentStore = require('../stores/ContentStore');
+var ContentActions = require('../actions/ContentActions');
 var ConfigurationStore = require('../stores/ConfigurationStore');
 var ReorderingStore = require('../stores/ReorderingStore');
+let objectAssign = require('object-assign');
 
 let {
 	findParticularSubsectionOptionsInList,
@@ -651,9 +653,11 @@ EditorElementCreator.reactElementsWithBlocks = function(
 	return elements;
 };
 
-EditorElementCreator.MainElement = React.createClass({
+EditorElementCreator.SectionElement = React.createClass({
 	getDefaultProps() {
 		return {
+			documentID: null,
+			sectionID: null,
 			contentImmutable: null,
 			specsImmutable: null,
 			actions: {},
@@ -663,7 +667,8 @@ EditorElementCreator.MainElement = React.createClass({
 			editedTextItemKeyPath: null,
 			isReordering: false,
 			focusedBlockIdentifierForReordering: null,
-			focusedBlockKeyPathForReordering: null
+			focusedBlockKeyPathForReordering: null,
+			showSectionTitle: false
 		};
 	},
 	
@@ -703,6 +708,7 @@ EditorElementCreator.MainElement = React.createClass({
 	
 	render() {
 		let {
+			sectionID,
 			contentImmutable,
 			specsImmutable,
 			blockTypeGroups,
@@ -713,7 +719,8 @@ EditorElementCreator.MainElement = React.createClass({
 			isReordering,
 			focusedBlockIdentifierForReordering,
 			focusedBlockKeyPathForReordering,
-			actions
+			actions,
+			showSectionTitle
 		} = this.props;
 		
 		var classNames = ['blocks'];
@@ -732,6 +739,13 @@ EditorElementCreator.MainElement = React.createClass({
 				actions
 			}
 		);
+		
+		if (showSectionTitle) {
+			elements.splice(0, 0, React.createElement('h3', {
+				key: 'title',
+				className: 'documentSection_title'
+			}, sectionID));
+		}
 	
 		var isEditingBlock = (editedBlockIdentifier != null);
 		if (isEditingBlock) {
@@ -744,6 +758,73 @@ EditorElementCreator.MainElement = React.createClass({
 			onClick: this.onClick,
 			onKeyPress: this.onKeyPress
 		}, elements);
+	}
+});
+
+EditorElementCreator.DocumentSectionsElement = React.createClass({
+	getDefaultProps() {
+		return {
+			documentID: null,
+			documentSections: null,
+			specs: null,
+			actions: {},
+			focusedSectionID: null,
+			editedBlockIdentifier: null,
+			editedBlockKeyPath: null,
+			editedTextItemIdentifier: null,
+			editedTextItemKeyPath: null,
+			isReordering: false,
+			focusedBlockIdentifierForReordering: null,
+			focusedBlockKeyPathForReordering: null
+		};
+	},
+	
+	render() {
+		let {
+			documentID,
+			documentSections,
+			focusedSectionID,
+			specs,
+			blockTypeGroups,
+			actions,
+			editedBlockIdentifier,
+			editedBlockKeyPath,
+			editedTextItemIdentifier,
+			editedTextItemKeyPath,
+			isReordering,
+			focusedBlockIdentifierForReordering,
+			focusedBlockKeyPathForReordering,
+		} = this.props;
+		
+		let sectionElements = documentSections.map(function(sectionContent, sectionID) {
+			var sectionProps = {
+				key: sectionID,
+				documentID,
+				sectionID,
+				contentImmutable: documentSections.get(sectionID),
+				specsImmutable: specs,
+				blockTypeGroups,
+				actions: ContentActions.getActionsForDocumentSection(documentID, sectionID),
+				showSectionTitle: true
+			};
+			if (sectionID == focusedSectionID) {
+				objectAssign(sectionProps, {
+				editedBlockIdentifier,
+				editedBlockKeyPath,
+				editedTextItemIdentifier,
+				editedTextItemKeyPath,
+				isReordering,
+				focusedBlockIdentifierForReordering,
+				focusedBlockKeyPathForReordering,
+				});
+			}
+			
+			return React.createElement(EditorElementCreator.SectionElement, sectionProps);
+		}).toArray();
+	
+		return React.createElement('div', {
+			className: 'documentSections',
+		}, sectionElements);
 	}
 });
 

@@ -89,6 +89,10 @@ let getAttributeValueForInfoAndSourceValue = function(attributeValueRepresentati
 	return attributeValue;
 };
 
+HTMLRepresentationAssistant.isValidHTMLRepresentationType = function(potentialHTMLRepresentation) {
+	return Immutable.List.isList(potentialHTMLRepresentation);
+};
+
 HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(HTMLRepresentation, sourceValue) {
 	var reactElementForElementOptions = function(elementOptions, index) {
 		let indexPath = this;

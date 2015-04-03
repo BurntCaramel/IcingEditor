@@ -61,8 +61,8 @@ ConfigurationStore.wantsMainToolbar = function() {
 	return getKeyFromSettingsJSON('wantsMainToolbar', true);
 };
 
-ConfigurationStore.getWantsSaveFunctionality = function() {
-	return getKeyFromSettingsJSON('wantsSaveFunctionality', true);
+ConfigurationStore.getWantsSaveUI = function() {
+	return getKeyFromSettingsJSON('wantsSaveUI', true);
 };
 	
 ConfigurationStore.getWantsViewHTMLFunctionality = function() {
@@ -71,10 +71,6 @@ ConfigurationStore.getWantsViewHTMLFunctionality = function() {
 
 ConfigurationStore.getWantsContentSettingsFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsContentSettingsFunctionality', true);
-};
-
-ConfigurationStore.getWantsPlaceholderFunctionality = function() {
-	return getKeyFromSettingsJSON('wantsPlaceholderFunctionality', false);
 };
 
 ConfigurationStore.getShowsDocumentTitle = function() {
@@ -117,6 +113,23 @@ ConfigurationStore.getAvailableSubsectionTypesForDocumentSection = function(docu
 	];
 };
 
+ConfigurationStore.getAvailableSectionTypes = function() {
+	return Immutable.fromJS([
+		{
+			"id": "writing", // Can be used for prose, articles, notes, sources
+			"title": "Writing"
+		},
+		{
+			"id": "catalog", // Can be used for information, reusable bits
+			"title": "Catalog"
+		},
+		{
+			"id": "external", // External writing or catalog to be brought into a document: has a URL
+			"title": "External"
+		}
+	]);
+};
+
 ConfigurationStore.getAvailableBlockTypesGroups = function() {
 	return Immutable.fromJS([
 		{
@@ -132,7 +145,7 @@ ConfigurationStore.getAvailableBlockTypesGroups = function() {
 			"title": "Particular"
 		}
 	]);
-}
+};
 
 ConfigurationStore.getAvailableBlockTypesGroupedForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
 	return [

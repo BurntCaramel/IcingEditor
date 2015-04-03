@@ -1223,6 +1223,9 @@ var ChangeSubsectionElement = React.createClass({
 			selectedSubsectionType,
 			followingBlockIndex
 		} = this.props;
+		let {
+			active
+		} = this.state;
 		
 		//var subsectionInfos = ConfigurationStore.getAvailableSubsectionTypesForDocumentSection();
 		
@@ -1234,7 +1237,7 @@ var ChangeSubsectionElement = React.createClass({
 				React.createElement(SecondaryButton, {
 					key: 'mainButton',
 					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
-					title: 'Make Subsection',
+					title: 'Make Portion',
 					onClick: this.onToggleActive
 				})
 			);
@@ -1254,20 +1257,21 @@ var ChangeSubsectionElement = React.createClass({
 			);
 		}
 		
-		if (this.state.active) {
+		if (active) {
 			var subsectionChoices = subsectionsSpecs.map(function(subsectionInfo) {
 				return this.createElementForSubsectionInfo(subsectionInfo);
-			}, this);
+			}, this).toArray();
 			
 			if (!isCreate) {
 				subsectionChoices.push(
 					React.createElement(ButtonDivider, {
+						baseClassNames: this.getChildClassNamesWithSuffix('_divider'),
 						key: 'dividerAboveRemove'
 					}),
 					React.createElement(SecondaryButton, {
 						key: 'removeSubsection',
 						baseClassNames: this.getChildClassNamesWithSuffix('_removeButton'),
-						title: 'Remove Subsection',
+						title: 'Remove Portion',
 						onClick: this.onRemoveSubsection
 					})
 				);
@@ -1470,7 +1474,7 @@ var MainToolbar = React.createClass({
 		
 		var children = [];
 		
-		if (ConfigurationStore.getWantsSaveFunctionality()) {
+		if (ConfigurationStore.getWantsSaveUI()) {
 			children.push(
 				React.createElement(ToolbarButton, {
 					key: 'save',

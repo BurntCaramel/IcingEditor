@@ -107,6 +107,17 @@ body
 	}
 	
 	
+	.documentSection_title {
+		margin: 0;
+		text-align: left;
+		font-size: 14px;
+		font-weight: normal;
+		font-style: italic;
+		//text-transform: capitalize;
+		opacity: 0.1;
+	}
+	
+	
 	.blocks_changeSubsection
 	{
 		position: relative;
@@ -150,11 +161,14 @@ body
 		@include slightBoxShadow();
 		
 		button {
-			@include toolbarButton_dark($small: true);
+			@include toolbarButton_dark();
 			
 			display: block;
 			width: 100%;
 		}
+	}
+	.blocks_changeSubsection_divider {
+		border-top: 1px solid rgba(white, 0.1);
 	}
 	
 	
@@ -167,14 +181,13 @@ body
 		min-height: ceil(1.3 * 15px);
 		transition: background-color $hoverTransitionDuration ease;
 	}
-	.block-edited
-	//.block-hover //.block:hover
+	.block-edited .block_textItems,
+	.block .block_textItems:hover
+	//.block-hover
 	{
-		.block_textItems {
-			//background-color: rgba(white, 0.2);
-			background-color: rgba(black, 0.025);
-			//box-shadow: 0 0 4px rgba(black, 0.025);
-		}
+		//background-color: rgba(white, 0.2);
+		background-color: rgba(black, 0.025);
+		//box-shadow: 0 0 4px rgba(black, 0.025);
 	}
 	
 	.block-particular,

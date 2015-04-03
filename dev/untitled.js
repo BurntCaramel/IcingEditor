@@ -5,9 +5,8 @@ window.burntIcing = {
 	settingsJSON: {
 		//actionURL: '/-admin/burnt-icing/json/',
 		previewURL: "/-icing/preview/",
-		wantsSaveFunctionality: false,
+		wantsSaveUI: false,
 		wantsViewHTMLFunctionality: true,
-		wantsPlaceholderFunctionality: true,
 		initialDocumentState: {
 			availableDocuments: [{
 				ID: "untitled",

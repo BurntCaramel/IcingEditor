@@ -47,31 +47,48 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 			
 			let traitOptions = findParticularTraitOptionsInList(traitID, traitsSpecs);
 			
+			let valueForRepresentation;
+			// Fields
+			if (traitOptions.has('fields')) {
+				valueForRepresentation = Immutable.Map({
+					'originalElement': child,
+					'fields': traitValue
+				});
+			}
+			// On/off trait
+			else {
+				valueForRepresentation = Immutable.Map({
+					'originalElement': child
+				});
+			}
+			
 			if (traitOptions.has('innerHTMLRepresentation')) {
 				let HTMLRepresentation = traitOptions.get('innerHTMLRepresentation');
 				if (HTMLRepresentation === false) {
 					// For example, hide trait
 					child = null;
 				}
-				else if (HTMLRepresentation !== null) {
-					let valueForRepresentation;
-					// Fields
-					if (traitOptions.has('fields')) {
-						valueForRepresentation = Immutable.Map({
-							'originalElement': child,
-							'fields': traitValue
-						});
-					}
-					// On/off trait
-					else {
-						valueForRepresentation = Immutable.Map({
-							'originalElement': child
-						});
-					}
-					
+				else if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {					
 					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 						HTMLRepresentation, valueForRepresentation
 					);
+				}
+			}
+			
+			if (child != null && traitOptions.has('afterHTMLRepresentation')) {
+				let HTMLRepresentation = traitOptions.get('afterHTMLRepresentation');
+				if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {
+					let afterElements = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
+						HTMLRepresentation, valueForRepresentation
+					);
+					
+					if (afterElements) {
+						if (!Array.isArray(child)) {
+							child = [child];
+						}
+					
+						child = child.concat(afterElements);
+					}
 				}
 			}
 		});

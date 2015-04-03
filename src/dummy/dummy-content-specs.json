@@ -382,6 +382,16 @@
 			]
 		},
 		{
+			"id": "lineBreakAfter",
+			"title": "Line Break After",
+			"allowedForAnyTextItems": true,
+			"afterHTMLRepresentation": [
+				{
+					"tagName": "br"
+				}
+			]
+		},
+		{
 			"id": "class",
 			"disabled": true,
 			"title": "Class",
