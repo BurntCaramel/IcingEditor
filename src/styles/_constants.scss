@@ -3,15 +3,29 @@ $mainFontFamily: 'Helvetica Neue', sans-serif;
 $darkColor: #111;
 $darkLiftColor: #555;
 $backgroundColor: #f8f8f8;
-$backgroundColor: #eee;
-$backgroundColor: #ececec;
 $backgroundColor: #efefef;
+$backgroundColor: #f0f0f0;
+
 $toolbarButtonTextColor: $darkColor;
 $toolbarButtonBackgroundColor: #f7f7f7;
+@mixin toolbarButtonBackgroundColor($active: false) {
+	@if $active {
+		background-color: lighten($toolbarButtonBackgroundColor, 5.5%);;
+	}
+	@else {
+		background-color: $toolbarButtonBackgroundColor;
+	}
+};
+
 $toolbarButtonSelectedTextColor: white;
 //$toolbarButtonSelectedBackgroundColor: #404040;
 $toolbarButtonSelectedBackgroundColor: #6a6a6a;
 $toolbarButtonSelectedBackgroundColor: #5f5f5f;
+
+@mixin choicesBackgroundColor() {
+	background-color: darken($toolbarButtonSelectedBackgroundColor, 6.5%);
+}
+
 $inputBackgroundColor: white;
 
 $holderBorderRadius: 2px;
@@ -31,9 +45,13 @@ $zIndexActiveMenu: 2000;
 
 
 $editorMainToolbarHeight: 40px;
-$editorPreviewMaxWidth: 400px;
-$editorPreviewWidth: 40vw;
+$editorPreviewMaxWidth: 600px;
+$editorPreviewWidth: 60vw;
 $editorInputMaxWidth: 40vw;
 $editorInputWidth: 500px;
+
+$editorDocumentMaxWidth: 400px;
+$editorDocumentWidth: 40vw;
+$editorDocumentOffsetLeft: -5vw;
 
 $fieldsPadding: 10px;

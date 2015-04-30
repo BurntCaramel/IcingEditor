@@ -47,11 +47,11 @@
 %toolbarButton_light
 {
 	color: $toolbarButtonTextColor;
-	background-color: $toolbarButtonBackgroundColor;
+	@include toolbarButtonBackgroundColor();
 }
 %toolbarButton_light_hover
 {
-	background-color: lighten($toolbarButtonBackgroundColor, 5.5%);
+	@include toolbarButtonBackgroundColor($active: true);
 }
 %toolbarButton_dark
 {
@@ -106,10 +106,16 @@
 		}
 	}
 }
-@mixin toolbarButton_dark($small: false, $shadow: false) {
+@mixin toolbarButton_dark($small: false, $shadow: false, $showBackground: true) {
 	& {
 		@extend %toolbarButton;
-		@extend %toolbarButton_dark;
+		
+		@if $showBackground {
+			@extend %toolbarButton_dark;
+		}
+		@else {
+			color: $toolbarButtonSelectedTextColor;
+		}
 		
 		@if $small {
 			@extend %toolbarButton_small;

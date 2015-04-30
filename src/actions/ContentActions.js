@@ -42,6 +42,59 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 }
 
 
+function getActionsForDocument(documentID) {
+	function dispatchForThisDocumentSection(payload) {
+		payload.documentID = documentID;
+		
+		dispatchPayload(payload);
+	};
+	
+	return {
+		changeWantsDefaultBasicSpecs(booleanValue) {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.changeWantsDefaultBasicSpecs,
+				newValue: booleanValue
+			})
+		},
+		
+		changeWantsDefaultAdvancedSpecs(booleanValue) {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.changeWantsDefaultAdvancedSpecs,
+				newValue: booleanValue
+			})
+		},
+		
+		createNewWritingSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendNewSection,
+				sectionType: 'writing'
+			})
+		},
+		
+		addExternalWritingSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendExternalSection,
+				sectionType: 'writing'
+			})
+		},
+		
+		createNewCatalogSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendNewSection,
+				sectionType: 'catalog'
+			})
+		},
+		
+		addExternalCatalogSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendExternalSection,
+				sectionType: 'catalog'
+			})
+		}
+	};
+}
+
+
 function getActionsForDocumentSection(documentID, sectionID) {
 	function dispatchForThisDocumentSection(payload) {
 		payload.documentID = documentID;
@@ -390,6 +443,15 @@ function getActionsForDocumentSection(documentID, sectionID) {
 			});
 		},
 		
+		finishTextAsSentenceWithTrailingSpaceForEditedTextItem()
+		{
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.finishTextAsSentenceWithTrailingSpace,
+				documentID,
+				sectionID
+			});
+		},
+		
 		addLineBreakAfterEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -452,6 +514,7 @@ var ActionsContent = {
 	loadSpecsWithURLs,
 	loadContentForDocumentWithID,
 	setSpecsURLsForDocumentWithID,
+	getActionsForDocument,
 	getActionsForDocumentSection
 };
 

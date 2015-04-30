@@ -43,7 +43,8 @@ var FieldLabel = React.createClass({
 			additionalClassNameExtensions: [],
 			children: [],
 			required: false,
-			recommended: false
+			recommended: false,
+			showLabelBeforeChildren: true
 		}
 	},
 	
@@ -54,7 +55,8 @@ var FieldLabel = React.createClass({
 			title,
 			description,
 			required,
-			recommended
+			recommended,
+			showLabelBeforeChildren
 		} = props;
 		
 		if (required) {
@@ -78,7 +80,12 @@ var FieldLabel = React.createClass({
 			}, description)
 		}
 		
-		children = leadingChildren.concat(children);
+		if (showLabelBeforeChildren) {
+			children = leadingChildren.concat(children);
+		}
+		else {
+			children = children.concat(leadingChildren);
+		}
 		
 		return React.createElement('label', {
 			className: this.getClassNameStringWithExtensions()
@@ -182,6 +189,7 @@ let TextualField = React.createClass({
 					key: 'textarea',
 					value,
 					placeholder,
+					rows: 6,
 					onKeyDown: this.onKeyDown,
 					onBlur: this.onBlur,
 					onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
@@ -278,6 +286,61 @@ let TextualFieldMultiple = React.createClass({
 		
 		return React.createElement('div', {
 			className: 'fieldsMultiple'
+		}, children);
+	}
+});
+
+let SwitchField = React.createClass({
+	getDefaultProps() {
+		return {
+			value: false,
+			onValueChanged: null,
+			title: null,
+			description: null,
+			required: false,
+			recommended: false,
+			tabIndex: 0
+		};
+	},
+	
+	onChange(event) {
+		let previousValue = this.props.value;
+		let newValue = !previousValue;
+		
+		let onValueChanged = this.props.onValueChanged;
+		if (onValueChanged) {
+			onValueChanged(newValue);
+		}
+	},
+	
+	render() {
+		let {
+			ID,
+			value,
+			title,
+			description,
+			required,
+			recommended,
+			tabIndex
+		} = this.props;
+		
+		var children = [
+			React.createElement('input', {
+				key: 'checkbox',
+				type: 'checkbox',
+				checked: value,
+				onChange: this.onChange
+			})
+		];
+		
+		return React.createElement(FieldLabel, {
+			key: ID,
+			title,
+			description,
+			required,
+			recommended,
+			showLabelBeforeChildren: false,
+			additionalClassNameExtensions: ['-fieldType-boolean']
 		}, children);
 	}
 });
@@ -395,6 +458,8 @@ let FieldGroup = React.createClass({
 		return {
 			fields: [],
 			value: {},
+			title: null,
+			description: null,
 			onReplaceInfoAtKeyPath: null,
 			tabIndex: 0
 		};
@@ -412,11 +477,18 @@ let FieldGroup = React.createClass({
 			fields,
 			value,
 			title,
+			description,
 			ID,
 			tabIndex
 		} = this.props;
 		
 		let children = [
+			React.createElement(FieldLabel, {
+				key: 'label',
+				title,
+				description,
+				additionalClassNameExtensions: ['-fieldType-group']
+			}),
 			React.createElement(EditorFields.FieldsHolder, {
 				key: 'fields',
 				fields,
@@ -492,7 +564,7 @@ EditorFields.FieldsHolder = React.createClass({
 				key: ID,
 				ID,
 				choiceInfos: fieldJSON.choices,
-				value: value,
+				value,
 				title,
 				onReplaceInfoAtKeyPath(info, additionalKeyPath = []) {
 					let keyPath = [ID].concat(additionalKeyPath);
@@ -505,12 +577,23 @@ EditorFields.FieldsHolder = React.createClass({
 				key: ID,
 				ID,
 				fields: fieldJSON.fields,
-				value: value,
+				value,
 				title,
 				onReplaceInfoAtKeyPath(info, additionalKeyPath = []) {
 					let keyPath = [ID].concat(additionalKeyPath);
 					onReplaceInfoAtKeyPath(info, keyPath);
 				},
+			});
+		}
+		else if (type === 'boolean') {
+			return React.createElement(SwitchField, {
+				key: ID,
+				ID,
+				value,
+				title,
+				onValueChanged: newValue => {
+					onReplaceInfoAtKeyPath(newValue, [ID]);
+				}
 			});
 		}
 	

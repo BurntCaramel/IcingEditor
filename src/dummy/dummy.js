@@ -20,9 +20,7 @@ window.burntIcing = {
 			documentID: 'dummy',
 			documentSectionID: 'main',
 			contentJSONByDocumentID: {
-				"dummy": {
-					"main": require('./dummy-content.json')
-				}
+				"dummy": require('./dummy-content.json')
 			}
 		}
 	}

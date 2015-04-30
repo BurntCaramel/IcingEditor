@@ -153,7 +153,7 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 };
 
 
-PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements, subsectionsSpecs) {
+PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements, subsectionsSpecs, index) {
 	let subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
 	
 	let outerTagName = subsectionInfo.get('outerHTMLTagName');
@@ -161,7 +161,7 @@ PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(sub
 		// Wrap elements in holder element. Return type is array, so wrap in an array too.
 		return [
 			React.createElement(outerTagName, {
-				key: 'outerElement',
+				key: `outerElement-${index}`,
 			}, subsectionElements)
 		];
 	}
@@ -212,7 +212,7 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 		});
 		
 		return HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
-			subsectionChildHTMLRepresentation, valueForRepresentation
+			subsectionChildHTMLRepresentation, valueForRepresentation, `portionChild-${blockIndex}`
 		);
 		/*
 		return [
@@ -242,7 +242,7 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 		if (currentSubsectionElements.length > 0) {
 			mainElements = mainElements.concat(
 				PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(
-					currentSubsectionType, currentSubsectionElements, subsectionsSpecs
+					currentSubsectionType, currentSubsectionElements, subsectionsSpecs, mainElements.length
 				)
 			);
 			currentSubsectionElements = [];
@@ -336,6 +336,12 @@ PreviewElementsCreator.MainElement = React.createClass({
 		var specsImmutable = props.specsImmutable;
 		
 		var classNames = ['blocks'];
+		
+		if (!contentImmutable) {
+			return React.createElement('div', {
+				key: 'noContent'
+			}, '(Content Is Null)');
+		}
 		
 		var content = contentImmutable.toJS();
 		var blocks = content.blocks;

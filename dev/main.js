@@ -12,6 +12,32 @@ if (!window.burntIcing) {
 } else if (window.burntIcing.delayed === false || typeof window.burntIcing.delayed === "undefined") {
 	editor.goOnDocumentLoad();
 } else {
+	window.burntIcing.setInitialDocumentJSON = function (documentJSON) {
+		if (!documentJSON) {
+			documentJSON = {
+				sections: {
+					main: null
+				}
+			};
+		}
+		// REMOVEME: FIXME: For deprecated documents with one section.
+		else if (!documentJSON.sections) {
+			window.burntIcing.setInitialContentJSON(documentJSON);
+			return;
+		}
+
+		var initialDocumentState = window.burntIcing.settingsJSON.initialDocumentState;
+
+		if (!initialDocumentState.contentJSONByDocumentID) {
+			initialDocumentState.contentJSONByDocumentID = {};
+		}
+
+		initialDocumentState.contentJSONByDocumentID[initialDocumentState.documentID] = documentJSON;
+
+		editor.goOnDocumentLoad();
+	};
+
+	// DEPRECATED
 	window.burntIcing.setInitialContentJSON = function (contentJSON) {
 		var initialDocumentState = window.burntIcing.settingsJSON.initialDocumentState;
 
@@ -27174,6 +27200,58 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 	});
 }
 
+function getActionsForDocument(documentID) {
+	function dispatchForThisDocumentSection(payload) {
+		payload.documentID = documentID;
+
+		dispatchPayload(payload);
+	};
+
+	return {
+		changeWantsDefaultBasicSpecs: function changeWantsDefaultBasicSpecs(booleanValue) {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.changeWantsDefaultBasicSpecs,
+				newValue: booleanValue
+			});
+		},
+
+		changeWantsDefaultAdvancedSpecs: function changeWantsDefaultAdvancedSpecs(booleanValue) {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.changeWantsDefaultAdvancedSpecs,
+				newValue: booleanValue
+			});
+		},
+
+		createNewWritingSection: function createNewWritingSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendNewSection,
+				sectionType: "writing"
+			});
+		},
+
+		addExternalWritingSection: function addExternalWritingSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendExternalSection,
+				sectionType: "writing"
+			});
+		},
+
+		createNewCatalogSection: function createNewCatalogSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendNewSection,
+				sectionType: "catalog"
+			});
+		},
+
+		addExternalCatalogSection: function addExternalCatalogSection() {
+			dispatchForThisDocumentSection({
+				eventID: documentEventIDs.appendExternalSection,
+				sectionType: "catalog"
+			});
+		}
+	};
+}
+
 function getActionsForDocumentSection(documentID, sectionID) {
 	function dispatchForThisDocumentSection(payload) {
 		payload.documentID = documentID;
@@ -27509,6 +27587,14 @@ function getActionsForDocumentSection(documentID, sectionID) {
 			});
 		},
 
+		finishTextAsSentenceWithTrailingSpaceForEditedTextItem: function finishTextAsSentenceWithTrailingSpaceForEditedTextItem() {
+			AppDispatcher.dispatch({
+				eventID: documentSectionEventIDs.editedItem.finishTextAsSentenceWithTrailingSpace,
+				documentID: documentID,
+				sectionID: sectionID
+			});
+		},
+
 		addLineBreakAfterEditedTextItem: function addLineBreakAfterEditedTextItem() {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.editedItem.addLineBreakAfter,
@@ -27565,6 +27651,7 @@ var ActionsContent = {
 	loadSpecsWithURLs: loadSpecsWithURLs,
 	loadContentForDocumentWithID: loadContentForDocumentWithID,
 	setSpecsURLsForDocumentWithID: setSpecsURLsForDocumentWithID,
+	getActionsForDocument: getActionsForDocument,
 	getActionsForDocumentSection: getActionsForDocumentSection
 };
 
@@ -27583,7 +27670,11 @@ var ActionsContentEventIDs = {
 	},
 	document: {
 		loadContent: "document.loadContent",
-		setSpecsURLs: "document.setSpecsURLs"
+		changeWantsDefaultBasicSpecs: "document.changeWantsDefaultBasicSpecs",
+		changeWantsDefaultAdvancedSpecs: "document.changeWantsDefaultAdvancedSpecs",
+		setSpecsURLs: "document.setSpecsURLs",
+		appendNewSection: "document.appendNewSection",
+		appendExternalSection: "document.appendExternalSection"
 	},
 	documentSection: {
 		setContentJSON: "documentSection.setContentJSON",
@@ -27621,6 +27712,7 @@ var ActionsContentEventIDs = {
 		editedItem: {
 			remove: "documentSection.editedItem.remove",
 			setText: "documentSection.editedItem.setText",
+			finishTextAsSentenceWithTrailingSpace: "documentSection.editedItem.finishTextAsSentenceWithTrailingSpace",
 			changeTraitValue: "documentSection.editedItem.changeTraitValue",
 			removeTrait: "documentSection.editedItem.removeTrait",
 			editPreviousItem: "documentSection.editedItem.editPreviousItem",
@@ -27762,6 +27854,8 @@ HTMLRepresentationAssistant.isValidHTMLRepresentationType = function (potentialH
 };
 
 HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function (HTMLRepresentation, sourceValue) {
+	var uniqueIdentifier = arguments[2] === undefined ? "child" : arguments[2];
+
 	var reactElementForElementOptions = (function (_reactElementForElementOptions) {
 		var _reactElementForElementOptionsWrapper = function reactElementForElementOptions(_x, _x2) {
 			return _reactElementForElementOptions.apply(this, arguments);
@@ -27773,12 +27867,14 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 
 		return _reactElementForElementOptionsWrapper;
 	})(function (elementOptions, index) {
-		var indexPath = this;
-		indexPath = indexPath.concat(index);
-
 		if (!checkOptionsShouldShow(elementOptions, sourceValue)) {
 			return null;
 		}
+
+		var indexPath = this;
+		indexPath = indexPath.concat(index);
+		var indexPathString = indexPath.join("/");
+		var key = "child-" + indexPath.join();
 
 		// Referenced Element
 		if (elementOptions.get("placeOriginalElement", false)) {
@@ -27796,18 +27892,32 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 				}).toJS();
 			}
 
+			attributesReady.key = key;
+
 			var children = elementOptions.get("children");
 			var childrenReady = null;
 			if (children) {
 				childrenReady = children.map(reactElementForElementOptions, indexPath).toJS();
 			}
 
-			var indexPathString = indexPath.join("/");
-			attributesReady.key = "indexPath-" + indexPath.join();
-
 			return React.createElement(tagName, attributesReady, childrenReady);
+		}
+		// Unsafe HTML
+		else if (elementOptions.has("unsafeHTML")) {
+			var unsafeHTML = getAttributeValueForInfoAndSourceValue(elementOptions.get("unsafeHTML"), sourceValue);
+			if (!unsafeHTML) {
+				unsafeHTML = "";
+			}
+			var unsafeHTMLForReact = { __html: unsafeHTML };
+
+			return React.createElement("div", {
+				key: key,
+				dangerouslySetInnerHTML: unsafeHTMLForReact
+			});
 		} else if (elementOptions.get("lineBreak", false)) {
-			return React.createElement("br");
+			return React.createElement("br", {
+				key: key
+			});
 		}
 		// Text
 		else {
@@ -27815,7 +27925,7 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 		}
 	});
 
-	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();
+	return HTMLRepresentation.map(reactElementForElementOptions, [uniqueIdentifier]).toJS();
 };
 
 module.exports = HTMLRepresentationAssistant;
@@ -27864,7 +27974,7 @@ module.exports = TypesAssistant;
 },{}],180:[function(require,module,exports){
 module.exports={
 	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
-	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.0"},
+	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.1"},
 	"defaultSubsectionType": "normal",
 	"subsectionTypes": [
 		{
@@ -27997,6 +28107,23 @@ module.exports={
 								"text": ["fields", "description", "descriptionText"]
 							}
 						]
+					}
+				]
+			},
+			{
+				"disabled": true,
+				"id": "embed",
+				"title": "Embed",
+				"fields": [
+					{
+						"id": "embedCode",
+						"type": "text-long",
+						"title": "Embed Code"
+					}
+				],
+				"innerHTMLRepresentation": [
+					{
+						"unsafeHTML": ["fields", "embedCode"]
 					}
 				]
 			}
@@ -28169,7 +28296,6 @@ module.exports={
 				"media": true,
 				"particular": true
 			},
-			"disabled": false,
 			"title": "Link",
 			"type": "fields",
 			"fields": [
@@ -28199,6 +28325,15 @@ module.exports={
 									"id": "emailAddress",
 									"title": "Email Address",
 									"placeholder": "Enter the email address to link to"
+								}
+							]
+						},
+						{
+							"id": "catalogElement",
+							"title": "Element from Catalog Section",
+							"fields": [
+								{
+									"type": "choice-catalogElement"
 								}
 							]
 						}
@@ -28246,12 +28381,28 @@ module.exports={
 			]
 		},
 		{
+			"disabled": true,
 			"id": "lineBreakAfter",
 			"title": "Line Break After",
 			"allowedForAnyTextItems": true,
 			"afterHTMLRepresentation": [
 				{
 					"tagName": "br"
+				}
+			]
+		},
+		{
+			"id": "finePrint",
+			"title": "Fine Print",
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "small",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
 				}
 			]
 		},
@@ -28321,42 +28472,42 @@ var ContentSettingsElement = React.createClass({
 
 	getSettingsFields: function getSettingsFields() {
 		return [{
-			id: "specs",
-			title: "Specs",
-			type: "choice",
-			choices: [{
-				id: "default",
-				title: "Use Default Specs"
+			id: "defaultSpecs",
+			type: "group",
+			title: "Default Specs:",
+			fields: [{
+				id: "useBasicSpecs",
+				title: "Use Basic Specs",
+				type: "boolean",
+				value: false
 			}, {
-				id: "URLs",
-				title: "Enter List of Specs URLs",
-				fields: [{
-					id: "multiple",
-					type: "url",
-					multiple: true,
-					title: "Specs URLs",
-					description: "The Specs you would like to use for this document.",
-					placeholder: "Enter the URL to a Specs JSON file"
-				}]
+				id: "useAdvancedSpecs",
+				title: "Use Advanced Specs",
+				type: "boolean",
+				value: false
 			}]
+		}, {
+			id: "additionalSpecsURLs",
+			type: "url",
+			multiple: true,
+			title: "Additional Specs URLs:",
+			description: "The Specs you would like to use for this document.",
+			placeholder: "Enter the URL to a Specs JSON file"
 		}];
 	},
 
 	getSettingsValues: function getSettingsValues() {
 		var _props = this.props;
 		var documentID = _props.documentID;
+		var defaultSpecsOptions = _props.defaultSpecsOptions;
 		var specsURLs = _props.specsURLs;
 
 		return {
-			specs: specsURLs == null ? {
-				choice_selectedID: "default",
-				"default": null
-			} : {
-				choice_selectedID: "URLs",
-				URLs: {
-					multiple: specsURLs.toJS()
-				}
-			}
+			defaultSpecs: {
+				useBasicSpecs: defaultSpecsOptions.get("wantsDefaultBasicSpecs", true),
+				useAdvancedSpecs: defaultSpecsOptions.get("wantsDefaultAdvancedSpecs", false)
+			},
+			additionalSpecsURLs: specsURLs == null ? [] : specsURLs.toJS()
 		};
 	},
 
@@ -28366,24 +28517,25 @@ var ContentSettingsElement = React.createClass({
 		var specsURLs = _props.specsURLs;
 
 		//console.log(keyPath, info);
-		if (keyPath[0] === "specs") {
-			// Choice changed
-			if (keyPath[1] === undefined) {
-				var specsChoice = info.choice_selectedID;
-				if (specsChoice === "default") {
-					ContentActions.setSpecsURLsForDocumentWithID(documentID, null);
-				} else if (specsChoice === "URLs") {
-					//console.log('set []');
-					ContentActions.setSpecsURLsForDocumentWithID(documentID, Immutable.List());
-				}
-			} else if (keyPath[1] === "URLs") {
-				if (keyPath[2] === "multiple") {
-					var index = keyPath[3];
-					specsURLs = specsURLs.set(index, info);
-					//console.log('specsURLs set', specsURLs.toJS());
-					ContentActions.setSpecsURLsForDocumentWithID(documentID, specsURLs);
-				}
+		if (keyPath[0] === "defaultSpecs") {
+			var booleanValue = info;
+			var documentActions = ContentActions.getActionsForDocument(documentID);
+
+			if (keyPath[1] === "useBasicSpecs") {
+				documentActions.changeWantsDefaultBasicSpecs(booleanValue);
+			} else if (keyPath[1] === "useAdvancedSpecs") {
+				documentActions.changeWantsDefaultAdvancedSpecs(booleanValue);
 			}
+		} else if (keyPath[0] === "additionalSpecsURLs") {
+			var index = keyPath[1];
+
+			if (specsURLs == null) {
+				specsURLs = Immutable.List();
+			}
+
+			specsURLs = specsURLs.set(index, info);
+			//console.log('specsURLs set', specsURLs.toJS());
+			ContentActions.setSpecsURLsForDocumentWithID(documentID, specsURLs);
 		}
 	},
 
@@ -28400,7 +28552,7 @@ var ContentSettingsElement = React.createClass({
 			key: "fields",
 			className: this.getChildClassNameStringWithSuffix("_fields"),
 			fields: this.getSettingsFields(),
-			values: this.getSettingsValues(),
+			values: values,
 			onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 		}));
 
@@ -28466,18 +28618,19 @@ var latestStateWithPreviousState = function latestStateWithPreviousState(props, 
 		var actions = previousState.actions;
 
 		if (updateDocumentState) {
-			var focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
-			var editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
+			//let focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
+			var focusedSectionID = ContentStore.getEditedSectionForDocument(documentID);
+			var editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID);
 
 			var previousDocumentState = documentState;
 			documentState = documentState.merge({
 				documentID: documentID,
 				sectionID: sectionID,
+				defaultSpecsOptions: ContentStore.getDefaultSpecsOptionsForDocumentWithID(documentID),
 				specsURLs: ContentStore.getSpecsURLsForDocumentWithID(documentID),
 				documentSections: ContentStore.getSectionsInDocument(documentID),
 				focusedSectionID: focusedSectionID,
 				specs: ContentStore.getSpecsForDocument(documentID),
-				content: ContentStore.getContentForDocumentSection(documentID, focusedSectionID),
 				blockTypeGroups: ConfigurationStore.getAvailableBlockTypesGroups(),
 				editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID),
 				editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, focusedSectionID),
@@ -28519,7 +28672,9 @@ var EditorMain = React.createClass({
 		var method = on ? "on" : "off";
 
 		ContentStore[method]("specsChangedForDocument", this.updateDocumentState);
+		ContentStore[method]("sectionChangedForDocument", this.updateDocumentState);
 		ContentStore[method]("contentChangedForDocumentSection", this.updateDocumentState);
+		ContentStore[method]("editedSectionChangedForDocument", this.updateDocumentState);
 		ContentStore[method]("editedBlockChangedForDocumentSection", this.updateDocumentState);
 		ContentStore[method]("editedItemChangedForDocumentSection", this.updateDocumentState);
 		ContentStore[method]("isShowingSettingsDidChange", this.updateViewingState);
@@ -28625,11 +28780,11 @@ var EditorMain = React.createClass({
 
 		var _documentState$toObject = documentState.toObject();
 
+		var defaultSpecsOptions = _documentState$toObject.defaultSpecsOptions;
 		var specsURLs = _documentState$toObject.specsURLs;
 		var documentSections = _documentState$toObject.documentSections;
 		var focusedSectionID = _documentState$toObject.focusedSectionID;
 		var specs = _documentState$toObject.specs;
-		var content = _documentState$toObject.content;
 		var blockTypeGroups = _documentState$toObject.blockTypeGroups;
 		var editedBlockIdentifier = _documentState$toObject.editedBlockIdentifier;
 		var editedBlockKeyPath = _documentState$toObject.editedBlockKeyPath;
@@ -28659,6 +28814,7 @@ var EditorMain = React.createClass({
 			innerElement = React.createElement(ContentSettingsElement, {
 				key: "contentSettings",
 				documentID: documentID,
+				defaultSpecsOptions: defaultSpecsOptions,
 				specsURLs: specsURLs
 			});
 		} else if (!specs) {
@@ -28666,7 +28822,7 @@ var EditorMain = React.createClass({
 				key: "specsLoading",
 				className: "document_loadingSpecs"
 			}, "Loading Specs");
-		} else if (!content || documentSections.count() === 0) {
+		} else if (documentSections == null || documentSections.count() === 0) {
 			innerElement = React.createElement("div", {
 				key: "contentLoading",
 				className: "document_loadingContent"
@@ -28676,44 +28832,27 @@ var EditorMain = React.createClass({
 				key: "preview",
 				documentID: documentID,
 				sectionID: sectionID,
-				content: content,
+				content: documentSections.get("main"),
 				specs: specs,
 				actions: actions
 			});
 		} else {
-			if (true) {
-				innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement, {
-					key: "documentSections",
-					documentID: documentID,
-					documentSections: documentSections,
-					focusedSectionID: focusedSectionID,
-					specs: specs,
-					actions: actions,
-					blockTypeGroups: blockTypeGroups,
-					editedBlockIdentifier: editedBlockIdentifier,
-					editedBlockKeyPath: editedBlockKeyPath,
-					editedTextItemIdentifier: editedTextItemIdentifier,
-					editedTextItemKeyPath: editedTextItemKeyPath,
-					isReordering: isReordering,
-					focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
-					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
-				});
-			} else {
-				innerElement = React.createElement(EditorElementsCreator.MainElement, {
-					key: "content",
-					contentImmutable: content,
-					specsImmutable: specs,
-					actions: actions,
-					blockTypeGroups: blockTypeGroups,
-					editedBlockIdentifier: editedBlockIdentifier,
-					editedBlockKeyPath: editedBlockKeyPath,
-					editedTextItemIdentifier: editedTextItemIdentifier,
-					editedTextItemKeyPath: editedTextItemKeyPath,
-					isReordering: isReordering,
-					focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
-					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
-				});
-			}
+			innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement, {
+				key: "documentSections",
+				documentID: documentID,
+				documentSections: documentSections,
+				focusedSectionID: focusedSectionID,
+				specs: specs,
+				actions: actions,
+				blockTypeGroups: blockTypeGroups,
+				editedBlockIdentifier: editedBlockIdentifier,
+				editedBlockKeyPath: editedBlockKeyPath,
+				editedTextItemIdentifier: editedTextItemIdentifier,
+				editedTextItemKeyPath: editedTextItemKeyPath,
+				isReordering: isReordering,
+				focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
+				focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering
+			});
 		}
 
 		var children = [];
@@ -28721,7 +28860,7 @@ var EditorMain = React.createClass({
 		if (ConfigurationStore.wantsMainToolbar()) {
 			children.push(React.createElement(Toolbars.MainToolbar, {
 				key: "mainToolbar",
-				actions: actions,
+				actions: ContentActions.getActionsForDocumentSection(documentID, focusedSectionID),
 				isShowingSettings: isShowingSettings,
 				isPreviewing: isPreviewing,
 				isReordering: isReordering
@@ -28754,15 +28893,12 @@ var EditorController = {
 			documentID: documentID
 		}), DOMElement);
 
-		window.burntIcing.editor = this;
+		window.burntIcing.controller = this;
 
-		window.burntIcing.copyContentJSONForCurrentDocumentSection = function () {
+		window.burntIcing.copyJSONForCurrentDocument = function () {
 			var documentID = ConfigurationStore.getCurrentDocumentID();
-			var sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 
-			var contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
-
-			return contentJSON;
+			return ContentStore.getJSONForDocument(documentID);
 		};
 
 		window.burntIcing.copyPreviewHTMLForCurrentDocumentSection = function () {
@@ -29282,6 +29418,159 @@ EditorElementCreator.reactElementsWithTextItems = function (textItems, _ref) {
 	}
 };
 
+EditorElementCreator.BlocksElement = React.createClass({
+	displayName: "BlocksElement",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			baseClassNames: ["documentSection_blocks", "blocks"]
+		};
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var blocksImmutable = _props.blocksImmutable;
+		var specsImmutable = _props.specsImmutable;
+		var blockTypeGroups = _props.blockTypeGroups;
+		var editedBlockIdentifier = _props.editedBlockIdentifier;
+		var editedBlockKeyPath = _props.editedBlockKeyPath;
+		var editedTextItemIdentifier = _props.editedTextItemIdentifier;
+		var editedTextItemKeyPath = _props.editedTextItemKeyPath;
+		var isReordering = _props.isReordering;
+		var focusedBlockIdentifierForReordering = _props.focusedBlockIdentifierForReordering;
+		var focusedBlockKeyPathForReordering = _props.focusedBlockKeyPathForReordering;
+		var actions = _props.actions;
+
+		var classNameExtensions = [];
+
+		var subsectionsSpecs = specsImmutable.get("subsectionTypes", Immutable.List());
+		var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroup", Immutable.Map());
+		var traitSpecs = specsImmutable.get("traitTypes", Immutable.List());
+
+		var currentSubsectionType = specsImmutable.get("defaultSubsectionType", "normal");
+		var currentSubsectionChildIndex = 0;
+
+		var elementsForBlocks = blocksImmutable.map(function (blockImmutable, blockIndex) {
+			var blockIdentifier = blockImmutable.get("identifier");
+			var typeGroup = blockImmutable.get("typeGroup");
+			var type = blockImmutable.get("type");
+			var props = {
+				key: blockIdentifier,
+				block: blockImmutable,
+				typeGroup: typeGroup,
+				type: type,
+				subsectionType: currentSubsectionType,
+				subsectionChildIndex: currentSubsectionChildIndex,
+				actions: actions,
+				subsectionsSpecs: subsectionsSpecs,
+				traitSpecs: traitSpecs,
+				blockTypeGroups: blockTypeGroups,
+				blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+				edited: blockIdentifier == editedBlockIdentifier,
+				editedBlockIdentifier: editedBlockIdentifier,
+				editedBlockKeyPath: editedBlockKeyPath,
+				editedTextItemIdentifier: editedTextItemIdentifier,
+				editedTextItemKeyPath: editedTextItemKeyPath,
+				allowsEditing: !isReordering,
+				isReordering: isReordering,
+				isFocusedForReordering: blockIdentifier == focusedBlockIdentifierForReordering,
+				anotherBlockIsFocusedForReordering: focusedBlockIdentifierForReordering != null && blockIdentifier != focusedBlockIdentifierForReordering,
+				keyPath: ["blocks", blockIndex]
+			};
+
+			if (typeGroup === "text") {
+				props.textItems = blockImmutable.get("textItems", Immutable.List()).toJS();
+			}
+
+			var elementToReturn;
+
+			if (typeGroup === "subsection") {
+				elementToReturn = React.createElement(SubsectionElement, props);
+				currentSubsectionType = type;
+				currentSubsectionChildIndex = 0;
+			} else {
+				elementToReturn = React.createElement(BlockElement, props);
+				currentSubsectionChildIndex++;
+			}
+
+			return elementToReturn;
+		});
+
+		var focusedBlockIndexForReordering = null;
+		if (focusedBlockKeyPathForReordering) {
+			focusedBlockIndexForReordering = ContentStore.getIndexForObjectKeyPath(focusedBlockKeyPathForReordering);
+		}
+
+		var elements = [];
+		var blockCount = blocksImmutable.count();
+		var previousBlockWasSubsection = false;
+		for (var blockIndex = 0; blockIndex < blockCount + 1; blockIndex++) {
+			var blockTypeGroup = blocksImmutable.getIn([blockIndex, "typeGroup"]);
+			var currentBlockIsSubsection = blockTypeGroup === "subsection";
+
+			if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
+				if (isReordering) {
+					var hidden = true;
+					if (focusedBlockIndexForReordering !== null) {
+						if (focusedBlockIndexForReordering !== blockIndex && focusedBlockIndexForReordering + 1 !== blockIndex) {
+							hidden = false;
+						}
+					}
+
+					elements.push(React.createElement(Toolbars.RearrangeBlockMoveHere, {
+						key: "moveHere-" + blockIndex,
+						followingBlockIndex: blockIndex,
+						actions: actions,
+						hidden: hidden
+					}));
+				} else {
+					if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
+						elements.push(React.createElement(Toolbars.ChangeSubsectionElement, {
+							key: "changeSubsection-" + blockIndex,
+							isCreate: true,
+							followingBlockIndex: blockIndex,
+							subsectionsSpecs: subsectionsSpecs,
+							actions: actions
+						}));
+					}
+				}
+			}
+
+			previousBlockWasSubsection = currentBlockIsSubsection;
+
+			var blockElement = elementsForBlocks.get(blockIndex);
+			if (blockElement) {
+				elements.push(blockElement);
+			}
+		}
+
+		if (!isReordering) {
+			var createBlockOfTypeAtEnd = function createBlockOfTypeAtEnd(typeGroupOptions, typeExtensionOptions) {
+				actions.insertBlockOfTypeAtIndex(typeGroupOptions.get("id"), typeExtensionOptions.get("id"), blockCount);
+			};
+
+			elements.push(React.createElement(Toolbars.AddBlockElement, {
+				key: "addBlock-end",
+				addAtEnd: true,
+				blockTypeGroups: blockTypeGroups,
+				blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+				onCreateBlockOfType: createBlockOfTypeAtEnd
+			}));
+		}
+
+		var isEditingBlock = editedBlockIdentifier != null;
+		if (isEditingBlock) {
+			classNameExtensions.push("-hasEditedBlock");
+		}
+
+		return React.createElement("div", {
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
+		}, elements);
+	}
+});
+
 EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) {
 	var specsImmutable = _ref.specsImmutable;
 	var actions = _ref.actions;
@@ -29416,8 +29705,11 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 EditorElementCreator.SectionElement = React.createClass({
 	displayName: "SectionElement",
 
+	mixins: [BaseClassNamesMixin],
+
 	getDefaultProps: function getDefaultProps() {
 		return {
+			baseClassNames: ["document_section"],
 			documentID: null,
 			sectionID: null,
 			contentImmutable: null,
@@ -29434,6 +29726,12 @@ EditorElementCreator.SectionElement = React.createClass({
 		};
 	},
 
+	getInitialState: function getInitialState() {
+		return {
+			editingTitle: false
+		};
+	},
+
 	onClick: function onClick(event) {
 		event.stopPropagation();
 
@@ -29444,6 +29742,14 @@ EditorElementCreator.SectionElement = React.createClass({
 		actions.finishEditing();
 		//}
 	},
+
+	editTitle: function editTitle(event) {
+		this.setState({
+			editingTitle: true
+		});
+	},
+
+	onTitleChanged: function onTitleChanged(event) {},
 
 	onKeyPress: function onKeyPress(event) {
 		var actions = this.props.actions;
@@ -29483,11 +29789,50 @@ EditorElementCreator.SectionElement = React.createClass({
 		var focusedBlockKeyPathForReordering = _props.focusedBlockKeyPathForReordering;
 		var actions = _props.actions;
 		var showSectionTitle = _props.showSectionTitle;
+		var editingTitle = this.state.editingTitle;
 
 		var classNames = ["blocks"];
 
 		var blocksImmutable = contentImmutable.get("blocks");
-		var elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
+
+		/*let elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
+  		specsImmutable,
+  		blockTypeGroups,
+  		editedBlockIdentifier,
+  		editedBlockKeyPath,
+  		editedTextItemIdentifier,
+  		editedTextItemKeyPath,
+  		isReordering,
+  		focusedBlockIdentifierForReordering,
+  		focusedBlockKeyPathForReordering,
+  		actions
+  	}
+  );
+  */
+
+		var elements = [];
+
+		if (showSectionTitle) {
+			if (editingTitle) {
+				elements.push(React.createElement("input", {
+					key: "editedTitle",
+					value: sectionID,
+					onChange: this.onTitleChanged,
+					className: this.getChildClassNameStringWithSuffix("_editedTitle")
+				}));
+			} else {
+				elements.push(React.createElement("h3", {
+					key: "title",
+					className: this.getChildClassNameStringWithSuffix("_title"),
+					onClick: this.editTitle
+				}, sectionID));
+			}
+		}
+
+		elements.push(React.createElement(EditorElementCreator.BlocksElement, {
+			key: "blocks",
+			baseClassNames: this.getChildClassNamesWithSuffix("_blocks"),
+			blocksImmutable: blocksImmutable,
 			specsImmutable: specsImmutable,
 			blockTypeGroups: blockTypeGroups,
 			editedBlockIdentifier: editedBlockIdentifier,
@@ -29498,23 +29843,10 @@ EditorElementCreator.SectionElement = React.createClass({
 			focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
 			focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering,
 			actions: actions
-		});
-
-		if (showSectionTitle) {
-			elements.splice(0, 0, React.createElement("h3", {
-				key: "title",
-				className: "documentSection_title"
-			}, sectionID));
-		}
-
-		var isEditingBlock = editedBlockIdentifier != null;
-		if (isEditingBlock) {
-			classNames.push("blocks-hasEditedBlock");
-		}
+		}));
 
 		return React.createElement("div", {
-			key: "blocks",
-			className: classNames.join(" "),
+			className: this.getClassNameStringWithExtensions(),
 			onClick: this.onClick,
 			onKeyPress: this.onKeyPress
 		}, elements);
@@ -29548,7 +29880,6 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 		var focusedSectionID = _props.focusedSectionID;
 		var specs = _props.specs;
 		var blockTypeGroups = _props.blockTypeGroups;
-		var actions = _props.actions;
 		var editedBlockIdentifier = _props.editedBlockIdentifier;
 		var editedBlockKeyPath = _props.editedBlockKeyPath;
 		var editedTextItemIdentifier = _props.editedTextItemIdentifier;
@@ -29557,7 +29888,12 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 		var focusedBlockIdentifierForReordering = _props.focusedBlockIdentifierForReordering;
 		var focusedBlockKeyPathForReordering = _props.focusedBlockKeyPathForReordering;
 
-		var sectionElements = documentSections.map(function (sectionContent, sectionID) {
+		var documentActions = ContentActions.getActionsForDocument(documentID);
+
+		var writingElements = [];
+		var catalogElements = [];
+
+		documentSections.forEach(function (sectionContent, sectionID) {
 			var sectionProps = {
 				key: sectionID,
 				documentID: documentID,
@@ -29565,6 +29901,7 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 				contentImmutable: documentSections.get(sectionID),
 				specsImmutable: specs,
 				blockTypeGroups: blockTypeGroups,
+				isReordering: isReordering,
 				actions: ContentActions.getActionsForDocumentSection(documentID, sectionID),
 				showSectionTitle: true
 			};
@@ -29574,16 +29911,59 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 					editedBlockKeyPath: editedBlockKeyPath,
 					editedTextItemIdentifier: editedTextItemIdentifier,
 					editedTextItemKeyPath: editedTextItemKeyPath,
-					isReordering: isReordering,
 					focusedBlockIdentifierForReordering: focusedBlockIdentifierForReordering,
 					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering });
 			}
 
-			return React.createElement(EditorElementCreator.SectionElement, sectionProps);
-		}).toArray();
+			var sectionElement = React.createElement(EditorElementCreator.SectionElement, sectionProps);
+
+			var isExternal = sectionContent.get("isExternal", false);
+			if (isExternal) {
+				var isLoading = true;
+			}
+
+			var sectionType = sectionContent.get("type", "writing");
+			if (sectionType === "writing") {
+				writingElements.push(sectionElement);
+			} else if (sectionType === "catalog") {
+				catalogElements.push(sectionElement);
+			}
+		});
+
+		if (ConfigurationStore.getWantsMultipleSectionsFunctionality()) {
+			writingElements.push(React.createElement(Toolbars.CreateSectionElement, {
+				key: "createWritingSection",
+				type: "writing",
+				onCreateNewSection: function onCreateNewSection() {
+					documentActions.createNewWritingSection();
+				},
+				onAddExternalSection: function onAddExternalSection() {
+					documentActions.addExternalWritingSection();
+				}
+			}));
+
+			if (false) {
+				catalogElements.push(React.createElement(Toolbars.CreateSectionElement, {
+					key: "createCatalogSection",
+					type: "catalog",
+					onCreateNewSection: function onCreateNewSection() {
+						documentActions.createNewCatalogSection();
+					},
+					onAddExternalSection: function onAddExternalSection() {
+						documentActions.addExternalCatalogSection();
+					}
+				}));
+			}
+		}
 
 		return React.createElement("div", {
-			className: "documentSections" }, sectionElements);
+			className: "documentSections" }, [React.createElement("section", {
+			key: "writingSections",
+			className: "writingSections"
+		}, writingElements), React.createElement("section", {
+			key: "catalogSections",
+			className: "catalogSections"
+		}, catalogElements)]);
 	}
 });
 
@@ -29642,7 +30022,8 @@ var FieldLabel = React.createClass({
 			additionalClassNameExtensions: [],
 			children: [],
 			required: false,
-			recommended: false
+			recommended: false,
+			showLabelBeforeChildren: true
 		};
 	},
 
@@ -29653,6 +30034,7 @@ var FieldLabel = React.createClass({
 		var description = props.description;
 		var required = props.required;
 		var recommended = props.recommended;
+		var showLabelBeforeChildren = props.showLabelBeforeChildren;
 
 		if (required) {
 			title += " (required)";
@@ -29672,7 +30054,11 @@ var FieldLabel = React.createClass({
 			}, description);
 		}
 
-		children = leadingChildren.concat(children);
+		if (showLabelBeforeChildren) {
+			children = leadingChildren.concat(children);
+		} else {
+			children = children.concat(leadingChildren);
+		}
 
 		return React.createElement("label", {
 			className: this.getClassNameStringWithExtensions()
@@ -29771,6 +30157,7 @@ var TextualField = React.createClass({
 				key: "textarea",
 				value: value,
 				placeholder: placeholder,
+				rows: 6,
 				onKeyDown: this.onKeyDown,
 				onBlur: this.onBlur,
 				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
@@ -29862,6 +30249,60 @@ var TextualFieldMultiple = React.createClass({
 
 		return React.createElement("div", {
 			className: "fieldsMultiple"
+		}, children);
+	}
+});
+
+var SwitchField = React.createClass({
+	displayName: "SwitchField",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			value: false,
+			onValueChanged: null,
+			title: null,
+			description: null,
+			required: false,
+			recommended: false,
+			tabIndex: 0
+		};
+	},
+
+	onChange: function onChange(event) {
+		var previousValue = this.props.value;
+		var newValue = !previousValue;
+
+		var onValueChanged = this.props.onValueChanged;
+		if (onValueChanged) {
+			onValueChanged(newValue);
+		}
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var ID = _props.ID;
+		var value = _props.value;
+		var title = _props.title;
+		var description = _props.description;
+		var required = _props.required;
+		var recommended = _props.recommended;
+		var tabIndex = _props.tabIndex;
+
+		var children = [React.createElement("input", {
+			key: "checkbox",
+			type: "checkbox",
+			checked: value,
+			onChange: this.onChange
+		})];
+
+		return React.createElement(FieldLabel, {
+			key: ID,
+			title: title,
+			description: description,
+			required: required,
+			recommended: recommended,
+			showLabelBeforeChildren: false,
+			additionalClassNameExtensions: ["-fieldType-boolean"]
 		}, children);
 	}
 });
@@ -29975,6 +30416,8 @@ var FieldGroup = React.createClass({
 		return {
 			fields: [],
 			value: {},
+			title: null,
+			description: null,
 			onReplaceInfoAtKeyPath: null,
 			tabIndex: 0
 		};
@@ -29992,10 +30435,16 @@ var FieldGroup = React.createClass({
 		var fields = _props.fields;
 		var value = _props.value;
 		var title = _props.title;
+		var description = _props.description;
 		var ID = _props.ID;
 		var tabIndex = _props.tabIndex;
 
-		var children = [React.createElement(EditorFields.FieldsHolder, {
+		var children = [React.createElement(FieldLabel, {
+			key: "label",
+			title: title,
+			description: description,
+			additionalClassNameExtensions: ["-fieldType-group"]
+		}), React.createElement(EditorFields.FieldsHolder, {
 			key: "fields",
 			fields: fields,
 			values: value,
@@ -30108,6 +30557,16 @@ EditorFields.FieldsHolder = React.createClass({
 					var keyPath = [ID].concat(additionalKeyPath);
 					onReplaceInfoAtKeyPath(info, keyPath);
 				}) });
+		} else if (type === "boolean") {
+			return React.createElement(SwitchField, {
+				key: ID,
+				ID: ID,
+				value: value,
+				title: title,
+				onValueChanged: function (newValue) {
+					onReplaceInfoAtKeyPath(newValue, [ID]);
+				}
+			});
 		}
 
 		console.error("unknown field type", type);
@@ -30263,19 +30722,24 @@ var TextItemTextArea = React.createClass({
 			onModifierKeyChange(keyCode, true);
 		}
 
-		//console.log('key down', e.which);
-		if (keyCode == KeyCodes.Space) {
+		var spaceWasJustPressed = keyCode == KeyCodes.Space;
+		if (spaceWasJustPressed) {
 			// Space key
 			if (this.state.spaceWasJustPressed) {
+				var text = this.props.text;
+				// Only do something if some characters, and not just whitespace, have been typed.
+				if (text.trim() === "") {
+					return;
+				}
+
+				actions.finishTextAsSentenceWithTrailingSpaceForEditedTextItem();
 				actions.addNewTextItemAfterEditedTextItem();
-				this.setState({ spaceWasJustPressed: false });
 				e.preventDefault();
-			} else {
-				this.setState({ spaceWasJustPressed: true });
+				spaceWasJustPressed = false;
 			}
-		} else {
-			this.setState({ spaceWasJustPressed: false });
 		}
+
+		this.setState({ spaceWasJustPressed: spaceWasJustPressed });
 
 		if (keyCode == KeyCodes.DeleteOrBackspace) {
 			// Delete/Backspace key
@@ -30781,7 +31245,7 @@ var TextItemEditor = React.createClass({
 		} else if (commandKeyIsPressed) {
 			textEditorInstructions = "command-return/control-enter: finish editing";
 		} else {
-			textEditorInstructions = "return/enter: new paragraph · spacebar twice: new text item";
+			textEditorInstructions = "return/enter: new paragraph · spacebar twice: finish sentence";
 		}
 
 		var instructionsElement = React.createElement("div", {
@@ -30945,6 +31409,10 @@ var BlockTypeChoices = React.createClass({
 			}
 
 			var typeElements = typesMap.map(function (typeOptions) {
+				if (typeOptions.get("disabled", false)) {
+					return null;
+				}
+
 				var type = typeOptions.get("id");
 				var onClick = onChooseBlockType.bind(null, groupOptions, typeOptions);
 
@@ -31172,8 +31640,6 @@ var AddBlockElement = React.createClass({
 		var blockGroupIDsToTypesMap = _props.blockGroupIDsToTypesMap;
 		var active = this.state.active;
 
-		var classNameExtensions = [];
-
 		var children = [React.createElement(BlockTypeChooser, {
 			key: "typeChooser",
 			isCreate: true,
@@ -31181,35 +31647,10 @@ var AddBlockElement = React.createClass({
 			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
 			onChooseBlockType: this.onCreateBlockOfType,
 			baseClassNames: this.getChildClassNamesWithSuffix("_typeChooser")
-		})
-		/*
-  React.createElement(ToolbarButton, {
-  	key: 'mainButton',
-  	title: '+',
-  	onClick: this.onToggleActive,
-  	baseClassNames: this.getChildClassNamesWithSuffix('_mainButton')
-  })
-  */
-		];
-
-		/*
-  if (active) {
-  	children.push(
-  		React.createElement(BlockTypeChoices, {
-  			key: 'choices',
-  			blockTypeGroups,
-  			blockGroupIDsToTypesMap,
-  			onChooseBlockType: this.onCreateBlockOfType,
-  			baseClassNames: this.getChildClassNamesWithSuffix('_choices')
-  		})
-  	);
-  	
-  	classNameExtensions.push('-active');
-  }
-  */
+		})];
 
 		return React.createElement("div", {
-			className: this.getClassNameStringWithExtensions(classNameExtensions)
+			className: this.getClassNameStringWithExtensions()
 		}, children);
 	}
 });
@@ -31320,7 +31761,7 @@ var ChangeSubsectionElement = React.createClass({
 			children.push(React.createElement(SecondaryButton, {
 				key: "mainButton",
 				baseClassNames: this.getChildClassNamesWithSuffix("_mainButton"),
-				title: "Make Portion",
+				title: "Place Below in Portion",
 				onClick: this.onToggleActive
 			}));
 		} else {
@@ -31435,7 +31876,7 @@ var RearrangeBlockFocusOnThis = React.createClass({
 		var classNameExtensions = [];
 
 		if (hidden) {
-			classNameExtensions.push("-hidden");
+			classNameExtensions.push("-hidden"); // Used for CSS animations
 		}
 
 		return React.createElement(SecondaryButton, {
@@ -31444,6 +31885,47 @@ var RearrangeBlockFocusOnThis = React.createClass({
 			onClick: onClick,
 			hidden: hidden
 		});
+	}
+});
+
+var CreateSectionElement = React.createClass({
+	displayName: "CreateSectionElement",
+
+	mixins: [BaseClassNamesMixin],
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			type: "writing",
+			baseClassNames: ["sections_createNewSection"]
+		};
+	},
+
+	render: function render() {
+		var _props = this.props;
+		var type = _props.type;
+		var onCreateNewSection = _props.onCreateNewSection;
+		var onAddExternalSection = _props.onAddExternalSection;
+
+		var isWriting = type === "writing";
+		var buttonTitle = isWriting ? "New Writing" : "New Catalog";
+		var externalButtonTitle = isWriting ? "Add External Writing" : "Add External Catalog";
+
+		return React.createElement("div", {
+			className: this.getClassNameStringWithExtensions()
+		}, [React.createElement(SecondaryButton, {
+			key: "addNewButton",
+			className: this.getChildClassNameStringWithSuffix("_addNewButton"),
+			title: buttonTitle,
+			onClick: onCreateNewSection
+		})
+		/*,
+  React.createElement(SecondaryButton, {
+  	key: 'addExternalButton',
+  	className: this.getChildClassNameStringWithSuffix('_addExternalButton'),
+  	title: externalButtonTitle,
+  	onClick: onAddExternalSection
+  })*/
+		]);
 	}
 });
 
@@ -31500,6 +31982,8 @@ var MainToolbar = React.createClass({
 			actions.beginReordering();
 		}
 	},
+
+	onCreateNewSection: function onCreateNewSection() {},
 
 	createSelectForAvailableDocuments: function createSelectForAvailableDocuments() {
 		var availableDocuments = ConfigurationStore.getAvailableDocuments();
@@ -31582,6 +32066,7 @@ var MainToolbar = React.createClass({
 
 var ElementToolbars = {
 	MainToolbar: MainToolbar,
+	CreateSectionElement: CreateSectionElement,
 	BlockToolbar: BlockToolbar,
 	AddBlockElement: AddBlockElement,
 	BlockTraitsToolbar: BlockTraitsToolbar,
@@ -31753,14 +32238,14 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function (child,
 	}
 };
 
-PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function (subsectionType, subsectionElements, subsectionsSpecs) {
+PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function (subsectionType, subsectionElements, subsectionsSpecs, index) {
 	var subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
 
 	var outerTagName = subsectionInfo.get("outerHTMLTagName");
 	if (outerTagName) {
 		// Wrap elements in holder element. Return type is array, so wrap in an array too.
 		return [React.createElement(outerTagName, {
-			key: "outerElement" }, subsectionElements)];
+			key: "outerElement-" + index }, subsectionElements)];
 	} else {
 		return subsectionElements;
 	}
@@ -31802,7 +32287,7 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function (subsectionTyp
 			originalElement: innerElements
 		});
 
-		return HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(subsectionChildHTMLRepresentation, valueForRepresentation);
+		return HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(subsectionChildHTMLRepresentation, valueForRepresentation, "portionChild-" + blockIndex);
 		/*
   return [
   	React.createElement(tagNameForSubsectionChild, {
@@ -31828,7 +32313,7 @@ PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, spec
 
 	var processCurrentSubsectionChildren = function processCurrentSubsectionChildren() {
 		if (currentSubsectionElements.length > 0) {
-			mainElements = mainElements.concat(PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements, subsectionsSpecs));
+			mainElements = mainElements.concat(PreviewElementsCreator.reactElementsForWrappingSubsectionChildren(currentSubsectionType, currentSubsectionElements, subsectionsSpecs, mainElements.length));
 			currentSubsectionElements = [];
 		}
 	};
@@ -31915,6 +32400,12 @@ PreviewElementsCreator.MainElement = React.createClass({
 		var specsImmutable = props.specsImmutable;
 
 		var classNames = ["blocks"];
+
+		if (!contentImmutable) {
+			return React.createElement("div", {
+				key: "noContent"
+			}, "(Content Is Null)");
+		}
 
 		var content = contentImmutable.toJS();
 		var blocks = content.blocks;
@@ -32112,6 +32603,10 @@ ConfigurationStore.getWantsViewHTMLFunctionality = function () {
 	return getKeyFromSettingsJSON("wantsViewHTMLFunctionality", false);
 };
 
+ConfigurationStore.getWantsMultipleSectionsFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsMultipleSectionsFunctionality", true);
+};
+
 ConfigurationStore.getWantsContentSettingsFunctionality = function () {
 	return getKeyFromSettingsJSON("wantsContentSettingsFunctionality", true);
 };
@@ -32120,39 +32615,25 @@ ConfigurationStore.getShowsDocumentTitle = function () {
 	return false;
 };
 
-ConfigurationStore.getAvailableBlockTypesForDocumentSectionAlternate = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" },
-	//{'id': 'figure', 'title': 'Figure'},
-	//{'id': 'media', 'title': 'Media'},
-	//{'id': 'quote', 'title': 'Quote'},
-	{ id: "placeholder", title: "Particular" }, { id: "subsection", title: "Subsection" }
-	//{'id': 'external', 'title': 'External Element'},
-	//{'id': 'placeholder', 'title': 'Placeholder'}
-	];
-};
-
-ConfigurationStore.getAvailableBlockTypesForDocumentSection = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{ id: "body", title: "Paragraph" }, { id: "heading", title: "Heading 1" }, { id: "subhead1", title: "Heading 2" }, { id: "subhead2", title: "Heading 3" }, { id: "subhead3", title: "Heading 4" }, { id: "placeholder", title: "Particular" }];
-};
-
-ConfigurationStore.getAvailableSubsectionTypesForDocumentSection = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{ id: "normal", title: "Normal" }, { id: "unorderedList", title: "Unordered List" }, { id: "orderedList", title: "Ordered List" }];
-};
-
 ConfigurationStore.getAvailableSectionTypes = function () {
 	return Immutable.fromJS([{
-		id: "writing", // Can be used for prose, articles, notes, sources
+		id: "writing", // Can be used for articles, notes, prose, sources to quote from
 		title: "Writing"
 	}, {
-		id: "catalog", // Can be used for information, reusable bits
+		id: "catalog", // Can be used for information, reusable bits, footnotes/sidenotes
 		title: "Catalog"
 	}, {
-		id: "external", // External writing or catalog to be brought into a document: has a URL
-		title: "External"
-	}]);
+		id: "form", // Can be used for specific information
+		title: "Form"
+	}
+	/*
+ // Uses isExternal boolean instead, with above type still specified.
+ {
+ 	"id": "external", // External writing or catalog to be brought into a document: has a URL where this library is published.
+ 	"title": "External"
+ }
+ */
+	]);
 };
 
 ConfigurationStore.getAvailableBlockTypesGroups = function () {
@@ -32166,25 +32647,6 @@ ConfigurationStore.getAvailableBlockTypesGroups = function () {
 		id: "particular",
 		title: "Particular"
 	}]);
-};
-
-ConfigurationStore.getAvailableBlockTypesGroupedForDocumentSection = function (documentID, sectionID) {
-	//TODO: documentID, sectionID
-	return [{
-		id: "text",
-		types: [{ id: "body", title: "Body" }, { id: "heading", title: "Heading" }, { id: "subhead1", title: "Subheading" }, { id: "subhead2", title: "Subheading B" }, { id: "subhead3", title: "Subheading C" }]
-	}, {
-		id: "media",
-		types: [{ id: "externalImage", title: "External Image" }, { id: "youTubeVideo", title: "YouTube Video" }, { id: "vimeoVideo", title: "Vimeo Video" }
-		//{"id": "iframe", "title": "HTML iframe"}
-		]
-	}, {
-		id: "particular",
-		types: [{ id: "streetAddress", title: "Street Address" }]
-	}, {
-		id: "section",
-		types: [{ id: "list", title: "List" }, { id: "quote", title: "Quote" }]
-	}];
 };
 
 ConfigurationStore.getInitialDocumentState = function () {
@@ -32517,6 +32979,28 @@ var getBlockKeyPathForItemKeyPath = function getBlockKeyPathForItemKeyPath(itemK
 	return itemKeyPath.slice(0, -2);
 };
 
+var blockGroupTypeHasTextItems = function blockGroupTypeHasTextItems(blockGroupType) {
+	return blockGroupType === "text";
+};
+
+var newBlockOfType = function newBlockOfType(typeGroup, type) {
+	var blockJSON = {
+		typeGroup: typeGroup,
+		type: type,
+		identifier: newIdentifier()
+	};
+
+	if (blockGroupTypeHasTextItems(typeGroup)) {
+		blockJSON.textItems = Immutable.List();
+	}
+
+	return Immutable.Map(blockJSON);
+};
+
+var newTextBlockWithDefaultType = function newTextBlockWithDefaultType() {
+	return newBlockOfType("text", "body");
+};
+
 var ContentStore = {};
 
 ContentStore.on = MicroEvent.prototype.bind;
@@ -32525,6 +33009,7 @@ ContentStore.off = MicroEvent.prototype.unbind;
 
 var documentCombinedSpecs = Immutable.Map();
 var documentSectionContents = Immutable.Map();
+var documentEditedSection = null;
 var documentSectionEditedTextItemIdentifiers = Immutable.Map();
 
 function newIdentifier() {
@@ -32539,6 +33024,14 @@ function getContentKeyPathForDocumentSection(documentID, sectionID, additionalKe
 	return keyPath;
 }
 
+function getAvailableDocumentIDs() {
+	return documentSectionContents.keys();
+}
+
+function getMasterImmutableMapForDocument(documentID) {
+	return documentSectionContents.get(documentID);
+}
+
 function getSectionsInDocument(documentID) {
 	return documentSectionContents.getIn([documentID, "sections"]);
 }
@@ -32547,8 +33040,12 @@ function getContentForDocumentSection(documentID, sectionID) {
 	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID));
 }
 
-function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
-	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID, keyPath));
+function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, defaultValue) {
+	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID, keyPath), defaultValue);
+}
+
+function getTypeForDocumentSection(documentID, sectionID) {
+	return getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, ["type"], "writing");
 }
 
 function setContentFromImmutableForDocumentSection(documentID, sectionID, content) {
@@ -32597,6 +33094,22 @@ function updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, k
 	}
 }
 
+function getDefaultSpecsOptionsForDocumentWithID(documentID) {
+	var defaultSpecsOptions = documentSectionContents.getIn([documentID, "defaultSpecs"], Immutable.Map());
+	return defaultSpecsOptions;
+}
+
+function changeDefaultSpecsOptionForDocumentWithID(documentID, optionKey, optionValue) {
+	// Removed cached specs, which might have been combined from the URLs.
+	documentCombinedSpecs = documentCombinedSpecs.remove(documentID);
+
+	documentSectionContents = documentSectionContents.updateIn([documentID, "defaultSpecs"], Immutable.Map(), function (options) {
+		return options.set(optionKey, optionValue);
+	});
+
+	ContentStore.trigger("specsChangedForDocument", documentID);
+}
+
 function getSpecsURLsForDocumentWithID(documentID) {
 	var specsURLs = documentSectionContents.getIn([documentID, "specsURLs"]);
 	if (specsURLs) {
@@ -32626,19 +33139,28 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 function getSpecsForDocument(documentID) {
 	var specs = documentCombinedSpecs.get(documentID);
 	if (!specs) {
-		var specsURLs = getSpecsURLsForDocumentWithID(documentID);
+		var defaultSpecsOptions = getDefaultSpecsOptionsForDocumentWithID(documentID);
+		var specsURLs = [];
 
-		if (!specsURLs) {
-			if (true) {
-				var defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
-				if (!defaultSpecs) {
-					var defaultSpecsJSON = require("../dummy/dummy-content-specs.json");
-					defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
-					SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
-				}
+		if (defaultSpecsOptions.get("wantsDefaultBasicSpecs", true)) {
+			var defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
+			if (!defaultSpecs) {
+				var defaultSpecsJSON = require("../dummy/dummy-content-specs.json");
+				defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
+				SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
 			}
-			specsURLs = [defaultSpecsURL];
-		} else if (specsURLs.length === 0) {
+
+			specsURLs.push(defaultSpecsURL);
+		}
+
+		if (defaultSpecsOptions.get("wantsDefaultAdvancedSpecs", false)) {}
+
+		var additionalSpecsURLs = getSpecsURLsForDocumentWithID(documentID);
+		if (additionalSpecsURLs) {
+			specsURLs = specsURLs.concat(additionalSpecsURLs);
+		}
+
+		if (specsURLs.length === 0) {
 			return null;
 		}
 
@@ -32653,6 +33175,34 @@ function getSpecsForDocument(documentID) {
 		documentCombinedSpecs = documentCombinedSpecs.set(documentID, specs);
 	}
 	return specs;
+}
+
+function appendNewSectionToDocumentReturningSectionID(documentID, sectionType) {
+	var sectionID = newIdentifier();
+
+	var editFirstBlock = false;
+	var sectionContent = undefined;
+	if (sectionType === "writing") {
+		sectionContent = Immutable.fromJS({
+			blocks: [ContentStore.newTextBlockWithDefaultType()]
+		});
+
+		editFirstBlock = true;
+	} else if (sectionType === "catalog") {
+		sectionContent = Immutable.fromJS({
+			elementIndex: {}
+		});
+	}
+
+	documentSectionContents = documentSectionContents.setIn([documentID, "sections", sectionID], sectionContent);
+
+	ContentStore.trigger("sectionChangedForDocument", documentID);
+
+	if (editFirstBlock) {
+		ContentStore.editBlockWithKeyPathInDocumentSection(documentID, sectionID, ["blocks", 0]);
+	}
+
+	return sectionID;
 }
 
 // SETTINGS
@@ -32712,31 +33262,15 @@ objectAssign(ContentStore, {
 		return textItem;
 	},
 
-	blockGroupTypeHasTextItems: function blockGroupTypeHasTextItems(blockGroupType) {
-		return blockGroupType === "text";
-	},
+	blockGroupTypeHasTextItems: blockGroupTypeHasTextItems,
 
-	newBlockOfType: function newBlockOfType(typeGroup, type) {
-		var blockJSON = {
-			typeGroup: typeGroup,
-			type: type,
-			identifier: newIdentifier()
-		};
-
-		if (this.blockGroupTypeHasTextItems(typeGroup)) {
-			blockJSON.textItems = Immutable.List();
-		}
-
-		return Immutable.Map(blockJSON);
-	},
+	newBlockOfType: newBlockOfType,
 
 	newBlockWithSameTypeAs: function newBlockWithSameTypeAs(block) {
-		return this.newBlockOfType(block.get("typeGroup"), block.get("type"));
+		return newBlockOfType(block.get("typeGroup"), block.get("type"));
 	},
 
-	newTextBlockWithDefaultType: function newTextBlockWithDefaultType() {
-		return this.newBlockOfType("text", "body");
-	},
+	newTextBlockWithDefaultType: newTextBlockWithDefaultType,
 
 	newBlockSubsectionOfType: function newBlockSubsectionOfType(subsectionType) {
 		return Immutable.Map({
@@ -32750,6 +33284,20 @@ objectAssign(ContentStore, {
 
 	getIsShowingSettings: getIsShowingSettings,
 
+	getAvailableDocumentIDs: getAvailableDocumentIDs,
+	getMasterImmutableMapForDocument: getMasterImmutableMapForDocument,
+
+	getJSONForDocument: function getJSONForDocument(documentID, sectionID) {
+		var immutableObject = getMasterImmutableMapForDocument(documentID);
+		if (immutableObject) {
+			return immutableObject.toJSON();
+		} else {
+			return null;
+		}
+	},
+
+	getDefaultSpecsOptionsForDocumentWithID: getDefaultSpecsOptionsForDocumentWithID,
+
 	getSpecsURLsForDocumentWithID: getSpecsURLsForDocumentWithID,
 	getSpecsForDocument: getSpecsForDocument,
 
@@ -32759,7 +33307,7 @@ objectAssign(ContentStore, {
 	getContentAsJSONForDocumentSection: function getContentAsJSONForDocumentSection(documentID, sectionID) {
 		var content = this.getContentForDocumentSection(documentID, sectionID);
 		if (content) {
-			return content.toJS();
+			return content.toJSON();
 		} else {
 			return null;
 		}
@@ -32930,9 +33478,9 @@ objectAssign(ContentStore, {
 		var hasDifferentTypeGroup = true;
 
 		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-		if (editedBlockKeyPath && this.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+		if (editedBlockKeyPath && blockGroupTypeHasTextItems(newBlockTypeGroup)) {
 			var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-			if (this.blockGroupTypeHasTextItems(block.get("typeGroup"))) {
+			if (blockGroupTypeHasTextItems(block.get("typeGroup"))) {
 				hasDifferentTypeGroup = false;
 			}
 		}
@@ -32989,7 +33537,7 @@ objectAssign(ContentStore, {
 	},
 
 	insertBlockOfTypeAtIndexInDocumentSection: function insertBlockOfTypeAtIndexInDocumentSection(documentID, sectionID, typeGroup, type, blockIndex, options) {
-		var newBlock = this.newBlockOfType(typeGroup, type);
+		var newBlock = newBlockOfType(typeGroup, type);
 
 		var blocksKeyPath = getBlocksKeyPath();
 		var blockKeyPath = blocksKeyPath.concat(blockIndex);
@@ -33068,7 +33616,7 @@ objectAssign(ContentStore, {
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, currentBlockKeyPath);
 
 		var currentBlockGroupType = currentBlock.get("typeGroup");
-		if (currentBlockIndex === 0 || !this.blockGroupTypeHasTextItems(currentBlockGroupType)) {
+		if (currentBlockIndex === 0 || !blockGroupTypeHasTextItems(currentBlockGroupType)) {
 			return false;
 		}
 
@@ -33077,7 +33625,7 @@ objectAssign(ContentStore, {
 		var precedingBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingBlockKeyPath);
 
 		var precedingBlockGroupType = precedingBlock.get("typeGroup");
-		if (!this.blockGroupTypeHasTextItems(precedingBlockGroupType)) {
+		if (!blockGroupTypeHasTextItems(precedingBlockGroupType)) {
 			return false;
 		}
 
@@ -33170,6 +33718,10 @@ objectAssign(ContentStore, {
 		}
 	},
 
+	getEditedSectionForDocument: function getEditedSectionForDocument(documentID) {
+		return documentEditedSection;
+	},
+
 	getEditedBlockIdentifierForDocumentSection: function getEditedBlockIdentifierForDocumentSection(documentID, sectionID) {
 		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "identifier"], null);
 	},
@@ -33203,7 +33755,7 @@ objectAssign(ContentStore, {
 		var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
 		var blockGroupType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat("typeGroup"));
 
-		if (this.blockGroupTypeHasTextItems(blockGroupType)) {
+		if (blockGroupTypeHasTextItems(blockGroupType)) {
 			var isEmpty = this.textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 			if (isEmpty) {
 				this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
@@ -33231,7 +33783,7 @@ objectAssign(ContentStore, {
 		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
 
 		if (editTextItemsIfPresent) {
-			if (this.blockGroupTypeHasTextItems(block.get("typeGroup"))) {
+			if (blockGroupTypeHasTextItems(block.get("typeGroup"))) {
 				this.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath, {
 					lastItem: editLastItem,
 					firstItem: editFirstItem
@@ -33252,6 +33804,12 @@ objectAssign(ContentStore, {
 		this.documentSectionEditedTextItemIdentifiers = this.documentSectionEditedTextItemIdentifiers.setIn([documentID, sectionID], state);
 
 		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
+
+		if (documentEditedSection !== sectionID) {
+			documentEditedSection = sectionID;
+
+			this.trigger("editedSectionChangedForDocument", documentID);
+		}
 	},
 
 	editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection: function editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath) {
@@ -33307,6 +33865,12 @@ objectAssign(ContentStore, {
 
 		this.trigger("editedBlockChangedForDocumentSection", documentID, sectionID);
 		this.trigger("editedItemChangedForDocumentSection", documentID, sectionID);
+
+		if (documentEditedSection !== sectionID) {
+			documentEditedSection = sectionID;
+
+			this.trigger("editedSectionChangedForDocument", documentID);
+		}
 	},
 
 	finishEditingInDocumentSection: function finishEditingInDocumentSection(documentID, sectionID) {
@@ -33458,6 +34022,14 @@ ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
 
 	switch (payload.eventID) {
 
+		case documentEventIDs.changeWantsDefaultBasicSpecs:
+			changeDefaultSpecsOptionForDocumentWithID(documentID, "wantsDefaultBasicSpecs", payload.newValue);
+			break;
+
+		case documentEventIDs.changeWantsDefaultAdvancedSpecs:
+			changeDefaultSpecsOptionForDocumentWithID(documentID, "wantsDefaultAdvancedSpecs", payload.newValue);
+			break;
+
 		case documentEventIDs.setSpecsURLs:
 			setSpecsURLsForDocumentWithID(documentID, payload.specsURLs);
 			break;
@@ -33472,6 +34044,14 @@ ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
 
 		case documentSectionEventIDs.setContentJSON:
 			setContentFromJSONForDocumentSection(documentID, sectionID, payload.contentJSON);
+			break;
+
+		case documentEventIDs.appendNewSection:
+			appendNewSectionToDocumentReturningSectionID(documentID, payload.sectionType);
+			break;
+
+		case documentEventIDs.appendExternalSection:
+			// FIXME: implement
 			break;
 
 		case documentSectionEventIDs.edit.textItemWithKeyPath:
@@ -33567,6 +34147,21 @@ ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
 			});
 			break;
 
+		case documentSectionEventIDs.editedItem.finishTextAsSentenceWithTrailingSpace:
+			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
+				var text = textItem.get("text");
+
+				var textTrimmedEnd = text.replace(/[\s]$/, "");
+				var lastLetter = textTrimmedEnd.slice(-1);
+				var endsInPunctuation = lastLetter == "." || lastLetter == "!" || lastLetter == "?";
+				if (!endsInPunctuation) {
+					text = textTrimmedEnd + ". ";
+				}
+
+				return textItem.set("text", text);
+			});
+			break;
+
 		case documentSectionEventIDs.editedItem.changeTraitValue:
 			var traitID = payload.traitID;
 			var defaultValue = payload.defaultValue;
@@ -33630,6 +34225,15 @@ ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
 });
 
 module.exports = ContentStore;
+
+/*
+let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
+if (!defaultSpecs) {
+	var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
+	defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
+	SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
+}
+*/
 
 },{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"../dummy/dummy-content-specs.json":180,"./ConfigurationStore":187,"./ReorderingStore":192,"./SpecsStore":193,"immutable":11,"microevent":12,"object-assign":18}],191:[function(require,module,exports){
 /**
@@ -34013,6 +34617,8 @@ var BaseClassNamesMixin = {
 		return baseClassNames;
 	},
 
+	// For the main element
+
 	getClassNamesWithExtensions: function getClassNamesWithExtensions(additionalExtensions) {
 		var props = this.props;
 		var baseClassNames = this.getBaseClassNames();
@@ -34033,10 +34639,14 @@ var BaseClassNamesMixin = {
 		return this.getClassNamesWithExtensions(additionalExtensions).join(" ");
 	},
 
+	// For children of the main element
+
+	// Pass this to a child element's baseClassNames prop, if they also use BaseClassNamesMixin
 	getChildClassNamesWithSuffix: function getChildClassNamesWithSuffix(childSuffix) {
 		return getClassNamesWithSuffixes(this.getBaseClassNames(), [childSuffix]);
 	},
 
+	// Pass this to a child element's className prop
 	getChildClassNameStringWithSuffix: function getChildClassNameStringWithSuffix(childSuffix) {
 		return this.getChildClassNamesWithSuffix(childSuffix).join(" ");
 	}

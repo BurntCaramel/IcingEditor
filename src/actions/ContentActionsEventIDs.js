@@ -8,7 +8,11 @@ var ActionsContentEventIDs = {
 	},
 	document: {
 		loadContent: 'document.loadContent',
-		setSpecsURLs: 'document.setSpecsURLs'
+		changeWantsDefaultBasicSpecs: 'document.changeWantsDefaultBasicSpecs',
+		changeWantsDefaultAdvancedSpecs: 'document.changeWantsDefaultAdvancedSpecs',
+		setSpecsURLs: 'document.setSpecsURLs',
+		appendNewSection: 'document.appendNewSection',
+		appendExternalSection: 'document.appendExternalSection'
 	},
 	documentSection: {
 		setContentJSON: 'documentSection.setContentJSON',
@@ -46,6 +50,7 @@ var ActionsContentEventIDs = {
 		editedItem: {
 			remove: 'documentSection.editedItem.remove',
 			setText: 'documentSection.editedItem.setText',
+			finishTextAsSentenceWithTrailingSpace: 'documentSection.editedItem.finishTextAsSentenceWithTrailingSpace',
 			changeTraitValue: 'documentSection.editedItem.changeTraitValue',
 			removeTrait: 'documentSection.editedItem.removeTrait',
 			editPreviousItem: 'documentSection.editedItem.editPreviousItem',

@@ -11,6 +11,34 @@ else if (window.burntIcing.delayed === false || typeof window.burntIcing.delayed
 	editor.goOnDocumentLoad();
 }
 else {
+	window.burntIcing.setInitialDocumentJSON = function(documentJSON) {
+		if (!documentJSON) {
+			documentJSON = {
+				"sections": {
+					"main": null
+				}
+			};
+		}
+		// REMOVEME: FIXME: For deprecated documents with one section.
+		else if (!documentJSON["sections"]) {
+			window.burntIcing.setInitialContentJSON(documentJSON);
+			return;
+		}
+		
+		let initialDocumentState = window.burntIcing.settingsJSON.initialDocumentState;
+		
+		if (!initialDocumentState.contentJSONByDocumentID) {
+			initialDocumentState.contentJSONByDocumentID = {};
+		}
+		
+		initialDocumentState.contentJSONByDocumentID[initialDocumentState.documentID] = documentJSON;
+		
+		editor.goOnDocumentLoad();
+	};
+	
+	
+	
+	// DEPRECATED
 	window.burntIcing.setInitialContentJSON = function(contentJSON) {
 		let initialDocumentState = window.burntIcing.settingsJSON.initialDocumentState;
 		

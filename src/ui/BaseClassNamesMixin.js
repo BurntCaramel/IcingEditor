@@ -31,6 +31,8 @@ var BaseClassNamesMixin = {
 		return baseClassNames;
 	},
 	
+	// For the main element
+	
 	getClassNamesWithExtensions(additionalExtensions) {
 		var props = this.props;
 		var baseClassNames = this.getBaseClassNames();
@@ -51,11 +53,14 @@ var BaseClassNamesMixin = {
 		return this.getClassNamesWithExtensions(additionalExtensions).join(' ');
 	},
 	
+	// For children of the main element
 	
+	// Pass this to a child element's baseClassNames prop, if they also use BaseClassNamesMixin
 	getChildClassNamesWithSuffix(childSuffix) {
 		return getClassNamesWithSuffixes(this.getBaseClassNames(), [childSuffix]);
 	},
 	
+	// Pass this to a child element's className prop
 	getChildClassNameStringWithSuffix(childSuffix) {
 		return this.getChildClassNamesWithSuffix(childSuffix).join(' ');
 	}

@@ -69,6 +69,10 @@ ConfigurationStore.getWantsViewHTMLFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsViewHTMLFunctionality', false);
 };
 
+ConfigurationStore.getWantsMultipleSectionsFunctionality = function() {
+	return getKeyFromSettingsJSON('wantsMultipleSectionsFunctionality', true);
+};
+
 ConfigurationStore.getWantsContentSettingsFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsContentSettingsFunctionality', true);
 };
@@ -77,56 +81,27 @@ ConfigurationStore.getShowsDocumentTitle = function() {
 	return false;
 };
 
-ConfigurationStore.getAvailableBlockTypesForDocumentSectionAlternate = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{'id': 'body', 'title': 'Body'},
-		{'id': 'heading', 'title': 'Heading'},
-		{'id': 'subhead1', 'title': 'Subheading'},
-		{'id': 'subhead2', 'title': 'Subheading B'},
-		{'id': 'subhead3', 'title': 'Subheading C'},
-		//{'id': 'figure', 'title': 'Figure'},
-		//{'id': 'media', 'title': 'Media'},
-		//{'id': 'quote', 'title': 'Quote'},
-		{'id': 'placeholder', 'title': 'Particular'},
-		{'id': 'subsection', 'title': 'Subsection'}
-		//{'id': 'external', 'title': 'External Element'},
-		//{'id': 'placeholder', 'title': 'Placeholder'}
-	];
-};
-
-ConfigurationStore.getAvailableBlockTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{'id': 'body', 'title': 'Paragraph'},
-		{'id': 'heading', 'title': 'Heading 1'},
-		{'id': 'subhead1', 'title': 'Heading 2'},
-		{'id': 'subhead2', 'title': 'Heading 3'},
-		{'id': 'subhead3', 'title': 'Heading 4'},
-		{'id': 'placeholder', 'title': 'Particular'}
-	];
-};
-
-ConfigurationStore.getAvailableSubsectionTypesForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{'id': 'normal', 'title': 'Normal'},
-		{'id': 'unorderedList', 'title': 'Unordered List'},
-		{'id': 'orderedList', 'title': 'Ordered List'}
-	];
-};
-
 ConfigurationStore.getAvailableSectionTypes = function() {
 	return Immutable.fromJS([
 		{
-			"id": "writing", // Can be used for prose, articles, notes, sources
+			"id": "writing", // Can be used for articles, notes, prose, sources to quote from
 			"title": "Writing"
 		},
 		{
-			"id": "catalog", // Can be used for information, reusable bits
+			"id": "catalog", // Can be used for information, reusable bits, footnotes/sidenotes
 			"title": "Catalog"
 		},
 		{
-			"id": "external", // External writing or catalog to be brought into a document: has a URL
+			"id": "form", // Can be used for specific information
+			"title": "Form"
+		}
+		/*
+		// Uses isExternal boolean instead, with above type still specified.
+		{
+			"id": "external", // External writing or catalog to be brought into a document: has a URL where this library is published.
 			"title": "External"
 		}
+		*/
 	]);
 };
 
@@ -145,43 +120,6 @@ ConfigurationStore.getAvailableBlockTypesGroups = function() {
 			"title": "Particular"
 		}
 	]);
-};
-
-ConfigurationStore.getAvailableBlockTypesGroupedForDocumentSection = function(documentID, sectionID) { //TODO: documentID, sectionID
-	return [
-		{
-			"id": "text",
-			"types": [
-				{'id': 'body', 'title': 'Body'},
-				{'id': 'heading', 'title': 'Heading'},
-				{'id': 'subhead1', 'title': 'Subheading'},
-				{'id': 'subhead2', 'title': 'Subheading B'},
-				{'id': 'subhead3', 'title': 'Subheading C'}
-			]
-		},
-		{
-			"id": "media",
-			"types": [
-				{"id": "externalImage", "title": "External Image"},
-				{"id": "youTubeVideo", "title": "YouTube Video"},
-				{"id": "vimeoVideo", "title": "Vimeo Video"}
-				//{"id": "iframe", "title": "HTML iframe"}
-			]
-		},
-		{
-			"id": "particular",
-			"types": [
-				{'id': 'streetAddress', 'title': 'Street Address'}
-			]
-		},
-		{
-			"id": "section",
-			"types": [
-				{'id': 'list', 'title': 'List'},
-				{'id': 'quote', 'title': 'Quote'}
-			]
-		}
-	];
 };
 
 ConfigurationStore.getInitialDocumentState = function() {

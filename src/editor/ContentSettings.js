@@ -27,29 +27,31 @@ let ContentSettingsElement = React.createClass({
 	getSettingsFields() {
 		return [
 			{
-				"id": "specs",
-				"title": "Specs",
-				"type": "choice",
-				"choices": [
+				"id": "defaultSpecs",
+				"type": "group",
+				"title": "Default Specs:",
+				"fields": [
 					{
-						"id": "default",
-						"title": "Use Default Specs"
+						"id": "useBasicSpecs",
+						"title": "Use Basic Specs",
+						"type": "boolean",
+						"value": false
 					},
 					{
-						"id": "URLs",
-						"title": "Enter List of Specs URLs",
-						"fields": [
-							{
-								"id": "multiple",
-								"type": "url",
-								"multiple": true,
-								"title": "Specs URLs",
-								"description": "The Specs you would like to use for this document.",
-								"placeholder": "Enter the URL to a Specs JSON file"
-							}
-						]
+						"id": "useAdvancedSpecs",
+						"title": "Use Advanced Specs",
+						"type": "boolean",
+						"value": false
 					}
 				]
+			},
+			{
+				"id": "additionalSpecsURLs",
+				"type": "url",
+				"multiple": true,
+				"title": "Additional Specs URLs:",
+				"description": "The Specs you would like to use for this document.",
+				"placeholder": "Enter the URL to a Specs JSON file"
 			}
 		]
 	},
@@ -57,24 +59,16 @@ let ContentSettingsElement = React.createClass({
 	getSettingsValues() {
 		let {
 			documentID,
+			defaultSpecsOptions,
 			specsURLs
 		} = this.props;
 		
 		return {
-			"specs": (
-				specsURLs == null ?
-				{
-					"choice_selectedID": "default",
-					"default": null
-				}
-				:
-				{
-					"choice_selectedID": "URLs",
-					"URLs": {
-						"multiple": specsURLs.toJS()
-					}
-				}
-			)
+			"defaultSpecs": {
+				"useBasicSpecs": defaultSpecsOptions.get('wantsDefaultBasicSpecs', true),
+				"useAdvancedSpecs": defaultSpecsOptions.get('wantsDefaultAdvancedSpecs', false)
+			},
+			"additionalSpecsURLs": (specsURLs == null ? [] : specsURLs.toJS())
 		}
 	},
 	
@@ -85,26 +79,27 @@ let ContentSettingsElement = React.createClass({
 		} = this.props;
 		
 		//console.log(keyPath, info);
-		if (keyPath[0] === 'specs') {
-			// Choice changed
-			if (keyPath[1] === undefined) {
-				let specsChoice = info['choice_selectedID'];
-				if (specsChoice === 'default') {
-					ContentActions.setSpecsURLsForDocumentWithID(documentID, null);
-				}
-				else if (specsChoice === 'URLs') {
-					//console.log('set []');
-					ContentActions.setSpecsURLsForDocumentWithID(documentID, Immutable.List());
-				}
+		if (keyPath[0] === 'defaultSpecs') {
+			var booleanValue = info;
+			let documentActions = ContentActions.getActionsForDocument(documentID);
+			
+			if (keyPath[1] === 'useBasicSpecs') {
+				documentActions.changeWantsDefaultBasicSpecs(booleanValue);
 			}
-			else if (keyPath[1] === 'URLs') {
-				if (keyPath[2] === 'multiple') {
-					let index = keyPath[3];
-					specsURLs = specsURLs.set(index, info);
-					//console.log('specsURLs set', specsURLs.toJS());
-					ContentActions.setSpecsURLsForDocumentWithID(documentID, specsURLs);
-				}
+			else if (keyPath[1] === 'useAdvancedSpecs') {
+				documentActions.changeWantsDefaultAdvancedSpecs(booleanValue);
 			}
+		}
+		else if (keyPath[0] === 'additionalSpecsURLs') {
+			let index = keyPath[1];
+			
+			if (specsURLs == null) {
+				specsURLs = Immutable.List();
+			}
+			
+			specsURLs = specsURLs.set(index, info);
+			//console.log('specsURLs set', specsURLs.toJS());
+			ContentActions.setSpecsURLsForDocumentWithID(documentID, specsURLs);
 		}
 	},
 	
@@ -123,7 +118,7 @@ let ContentSettingsElement = React.createClass({
 				key: 'fields',
 				className: this.getChildClassNameStringWithSuffix('_fields'),
 				fields: this.getSettingsFields(),
-				values: this.getSettingsValues(),
+				values,
 				onReplaceInfoAtKeyPath: this.onReplaceInfoAtKeyPath
 			})
 		);

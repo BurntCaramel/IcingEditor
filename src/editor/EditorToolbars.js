@@ -28,6 +28,7 @@ let KeyCodes = require('../ui/KeyCodes');
 let MicroEvent = require('microevent');
 
 
+
 var TextItemTextArea = React.createClass({
 	getDefaultProps() {
 		return {
@@ -125,20 +126,23 @@ var TextItemTextArea = React.createClass({
 			onModifierKeyChange(keyCode, true);
 		}
 		
-		//console.log('key down', e.which);
-		if (keyCode == KeyCodes.Space) { // Space key
+		var spaceWasJustPressed = (keyCode == KeyCodes.Space);
+		if (spaceWasJustPressed) { // Space key
 			if (this.state.spaceWasJustPressed) {
+				let text = this.props.text;
+				// Only do something if some characters, and not just whitespace, have been typed.
+				if (text.trim() === '') {
+					return;
+				}
+				
+				actions.finishTextAsSentenceWithTrailingSpaceForEditedTextItem()
 				actions.addNewTextItemAfterEditedTextItem();
-				this.setState({spaceWasJustPressed: false});
 				e.preventDefault();
-			}
-			else {
-				this.setState({spaceWasJustPressed: true});
+				spaceWasJustPressed = false;
 			}
 		}
-		else {
-			this.setState({spaceWasJustPressed: false});
-		}
+		
+		this.setState({spaceWasJustPressed});
 		
 		if (keyCode == KeyCodes.DeleteOrBackspace) { // Delete/Backspace key
 			/*if (this.hasNoText()) {
@@ -653,7 +657,7 @@ var TextItemEditor = React.createClass({
 			textEditorInstructions = 'command-return/control-enter: finish editing';
 		}
 		else {
-			textEditorInstructions = 'return/enter: new paragraph · spacebar twice: new text item';
+			textEditorInstructions = 'return/enter: new paragraph · spacebar twice: finish sentence';
 		}
 		
 		let instructionsElement = React.createElement('div', {
@@ -830,6 +834,10 @@ var BlockTypeChoices = React.createClass({
 			}
 			
 			var typeElements = typesMap.map(function(typeOptions) {
+				if (typeOptions.get('disabled', false)) {
+					return null;
+				}
+				
 				var type = typeOptions.get('id');
 				var onClick = onChooseBlockType.bind(null, groupOptions, typeOptions);
 				
@@ -1084,8 +1092,6 @@ let AddBlockElement = React.createClass({
 			active
 		} = this.state;
 		
-		let classNameExtensions = [];
-		
 		let children = [
 			React.createElement(BlockTypeChooser, {
 				key: 'typeChooser',
@@ -1095,34 +1101,10 @@ let AddBlockElement = React.createClass({
 				onChooseBlockType: this.onCreateBlockOfType,
 				baseClassNames: this.getChildClassNamesWithSuffix('_typeChooser')
 			})
-			/*
-			React.createElement(ToolbarButton, {
-				key: 'mainButton',
-				title: '+',
-				onClick: this.onToggleActive,
-				baseClassNames: this.getChildClassNamesWithSuffix('_mainButton')
-			})
-			*/
 		];
 		
-		/*
-		if (active) {
-			children.push(
-				React.createElement(BlockTypeChoices, {
-					key: 'choices',
-					blockTypeGroups,
-					blockGroupIDsToTypesMap,
-					onChooseBlockType: this.onCreateBlockOfType,
-					baseClassNames: this.getChildClassNamesWithSuffix('_choices')
-				})
-			);
-			
-			classNameExtensions.push('-active');
-		}
-		*/
-		
 		return React.createElement('div', {
-			className: this.getClassNameStringWithExtensions(classNameExtensions)
+			className: this.getClassNameStringWithExtensions()
 		}, children);
 	}
 })
@@ -1237,7 +1219,7 @@ var ChangeSubsectionElement = React.createClass({
 				React.createElement(SecondaryButton, {
 					key: 'mainButton',
 					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
-					title: 'Make Portion',
+					title: 'Place Below in Portion',
 					onClick: this.onToggleActive
 				})
 			);
@@ -1364,7 +1346,7 @@ var RearrangeBlockFocusOnThis = React.createClass({
 		let classNameExtensions = [];
 		
 		if (hidden) {
-			classNameExtensions.push('-hidden');
+			classNameExtensions.push('-hidden'); // Used for CSS animations
 		}
 		
 		return React.createElement(SecondaryButton, {
@@ -1373,6 +1355,47 @@ var RearrangeBlockFocusOnThis = React.createClass({
 			onClick,
 			hidden
 		})
+	}
+});
+
+var CreateSectionElement = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
+	getDefaultProps() {
+		return {
+			type: 'writing',
+			baseClassNames: ['sections_createNewSection']
+		};
+	},
+	
+	render() {
+		let {
+			type,
+			onCreateNewSection,
+			onAddExternalSection,
+		} = this.props;
+		
+		let isWriting = (type === 'writing');
+		let buttonTitle = isWriting ? 'New Writing' : 'New Catalog';
+		let externalButtonTitle = isWriting ? 'Add External Writing' : 'Add External Catalog';
+		
+		return React.createElement('div', {
+			className: this.getClassNameStringWithExtensions()
+		}, [
+			React.createElement(SecondaryButton, {
+				key: 'addNewButton',
+				className: this.getChildClassNameStringWithSuffix('_addNewButton'),
+				title: buttonTitle,
+				onClick: onCreateNewSection
+			})
+			/*,
+			React.createElement(SecondaryButton, {
+				key: 'addExternalButton',
+				className: this.getChildClassNameStringWithSuffix('_addExternalButton'),
+				title: externalButtonTitle,
+				onClick: onAddExternalSection
+			})*/
+		]);
 	}
 });
 
@@ -1437,6 +1460,10 @@ var MainToolbar = React.createClass({
 		else {
 			actions.beginReordering();
 		}
+	},
+	
+	onCreateNewSection() {
+		
 	},
 	
 	createSelectForAvailableDocuments() {
@@ -1531,6 +1558,7 @@ var MainToolbar = React.createClass({
 
 var ElementToolbars = {
 	MainToolbar,
+	CreateSectionElement,
 	BlockToolbar,
 	AddBlockElement,
 	BlockTraitsToolbar,

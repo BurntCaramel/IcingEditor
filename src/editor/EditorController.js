@@ -53,18 +53,19 @@ let latestStateWithPreviousState = function(
 	} = previousState;
 	
 	if (updateDocumentState) {
-		let focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
-		let editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, sectionID);
+		//let focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
+		let focusedSectionID = ContentStore.getEditedSectionForDocument(documentID);
+		let editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID);
 		
 		let previousDocumentState = documentState;
 		documentState = documentState.merge({
 			documentID,
 			sectionID,
+			defaultSpecsOptions: ContentStore.getDefaultSpecsOptionsForDocumentWithID(documentID),
 			specsURLs: ContentStore.getSpecsURLsForDocumentWithID(documentID),
 			documentSections: ContentStore.getSectionsInDocument(documentID),
 			focusedSectionID,
 			specs: ContentStore.getSpecsForDocument(documentID),
-			content: ContentStore.getContentForDocumentSection(documentID, focusedSectionID),
 			blockTypeGroups: ConfigurationStore.getAvailableBlockTypesGroups(),
 			editedBlockIdentifier: ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID),
 			editedBlockKeyPath: ContentStore.getEditedBlockKeyPathForDocumentSection(documentID, focusedSectionID),
@@ -107,7 +108,9 @@ var EditorMain = React.createClass({
 		let method = on ? 'on' : 'off';
 		
 		ContentStore[method]('specsChangedForDocument', this.updateDocumentState);
+		ContentStore[method]('sectionChangedForDocument', this.updateDocumentState);
 		ContentStore[method]('contentChangedForDocumentSection', this.updateDocumentState);
+		ContentStore[method]('editedSectionChangedForDocument', this.updateDocumentState);
 		ContentStore[method]('editedBlockChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('editedItemChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('isShowingSettingsDidChange', this.updateViewingState);
@@ -214,11 +217,11 @@ var EditorMain = React.createClass({
 			actions
 		} = this.state;
 		let {
+			defaultSpecsOptions,
 			specsURLs,
 			documentSections,
 			focusedSectionID,
 			specs,
-			content,
 			blockTypeGroups,
 			editedBlockIdentifier,
 			editedBlockKeyPath,
@@ -249,6 +252,7 @@ var EditorMain = React.createClass({
 			innerElement = React.createElement(ContentSettingsElement, {
 				key: 'contentSettings',
 				documentID,
+				defaultSpecsOptions,
 				specsURLs
 			});
 		}
@@ -258,7 +262,7 @@ var EditorMain = React.createClass({
 				className: 'document_loadingSpecs'
 			}, 'Loading Specs');
 		}
-		else if (!content || documentSections.count() === 0) {
+		else if (documentSections == null || documentSections.count() === 0) {
 			innerElement = React.createElement('div', {
 				key: 'contentLoading',
 				className: 'document_loadingContent'
@@ -269,46 +273,28 @@ var EditorMain = React.createClass({
 				key: 'preview',
 				documentID,
 				sectionID,
-				content,
+				content: documentSections.get('main'),
 				specs,
 				actions
 			});
 		}
 		else {
-			if (true) {
-				innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement,{
-					key: 'documentSections',
-					documentID,
-					documentSections,
-					focusedSectionID,
-					specs,
-					actions,
-					blockTypeGroups,
-					editedBlockIdentifier,
-					editedBlockKeyPath,
-					editedTextItemIdentifier,
-					editedTextItemKeyPath,
-					isReordering,
-					focusedBlockIdentifierForReordering,
-					focusedBlockKeyPathForReordering
-				});
-			}
-			else {
-				innerElement = React.createElement(EditorElementsCreator.MainElement, {
-					key: 'content',
-					contentImmutable: content,
-					specsImmutable: specs,
-					actions,
-					blockTypeGroups,
-					editedBlockIdentifier,
-					editedBlockKeyPath,
-					editedTextItemIdentifier,
-					editedTextItemKeyPath,
-					isReordering,
-					focusedBlockIdentifierForReordering,
-					focusedBlockKeyPathForReordering
-				});
-			}
+			innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement,{
+				key: 'documentSections',
+				documentID,
+				documentSections,
+				focusedSectionID,
+				specs,
+				actions,
+				blockTypeGroups,
+				editedBlockIdentifier,
+				editedBlockKeyPath,
+				editedTextItemIdentifier,
+				editedTextItemKeyPath,
+				isReordering,
+				focusedBlockIdentifierForReordering,
+				focusedBlockKeyPathForReordering
+			});
 		}
 		
 		let children = [];
@@ -317,7 +303,7 @@ var EditorMain = React.createClass({
 			children.push(
 				React.createElement(Toolbars.MainToolbar, {
 					key: 'mainToolbar',
-					actions,
+					actions: ContentActions.getActionsForDocumentSection(documentID, focusedSectionID),
 					isShowingSettings,
 					isPreviewing,
 					isReordering
@@ -353,16 +339,15 @@ let EditorController = {
 			DOMElement
 		);
 		
-		window.burntIcing.editor = this;
+		window.burntIcing.controller = this;
 		
-		window.burntIcing.copyContentJSONForCurrentDocumentSection = function() {
+		window.burntIcing.copyJSONForCurrentDocument = function() {
 			let documentID = ConfigurationStore.getCurrentDocumentID();
-			let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 			
-			let contentJSON = ContentStore.getContentAsJSONForDocumentSection(documentID, sectionID);
-			
-			return contentJSON;
+			return ContentStore.getJSONForDocument(documentID);
 		};
+		
+		
 		
 		window.burntIcing.copyPreviewHTMLForCurrentDocumentSection = function() {
 			let documentID = ConfigurationStore.getCurrentDocumentID();

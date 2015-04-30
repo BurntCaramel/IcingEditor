@@ -4,6 +4,7 @@ window.burntIcing = {
 		previewURL: '/-icing/preview/',
 		wantsSaveUI: false,
 		wantsViewHTMLFunctionality: true,
+		wantsMultipleSectionsFunctionality: false,
 		initialDocumentState: {
 			availableDocuments: [
 				{

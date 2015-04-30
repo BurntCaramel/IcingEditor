@@ -93,14 +93,18 @@ HTMLRepresentationAssistant.isValidHTMLRepresentationType = function(potentialHT
 	return Immutable.List.isList(potentialHTMLRepresentation);
 };
 
-HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(HTMLRepresentation, sourceValue) {
+HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = function(
+	HTMLRepresentation, sourceValue, uniqueIdentifier = "child"
+) {
 	var reactElementForElementOptions = function(elementOptions, index) {
-		let indexPath = this;
-		indexPath = indexPath.concat(index);
-		
 		if (!checkOptionsShouldShow(elementOptions, sourceValue)) {
 			return null;
 		}
+		
+		let indexPath = this;
+		indexPath = indexPath.concat(index);
+		let indexPathString = indexPath.join('/')
+		let key = `child-${indexPath.join()}`
 		
 		// Referenced Element
 		if (elementOptions.get('placeOriginalElement', false)) {
@@ -117,6 +121,8 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 					return getAttributeValueForInfoAndSourceValue(attributeValueRepresentation, sourceValue);
 				}).toJS();
 			}
+			
+			attributesReady.key = key;
 	
 			let children = elementOptions.get('children');
 			let childrenReady = null;
@@ -124,13 +130,25 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 				childrenReady = children.map(reactElementForElementOptions, indexPath).toJS();
 			}
 	
-			let indexPathString = indexPath.join('/')
-			attributesReady.key = `indexPath-${indexPath.join()}`
-	
 			return React.createElement(tagName, attributesReady, childrenReady);
 		}
+		// Unsafe HTML
+		else if (elementOptions.has('unsafeHTML')) {
+			let unsafeHTML = getAttributeValueForInfoAndSourceValue(elementOptions.get('unsafeHTML'), sourceValue);
+			if (!unsafeHTML) {
+				unsafeHTML = '';
+			}
+			let unsafeHTMLForReact = {__html: unsafeHTML};
+			
+			return React.createElement('div', {
+				key,
+				dangerouslySetInnerHTML: unsafeHTMLForReact
+			});
+		}
 		else if (elementOptions.get('lineBreak', false)) {
-			return React.createElement('br');
+			return React.createElement('br', {
+				key
+			});
 		}
 		// Text
 		else {
@@ -138,7 +156,7 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 		}
 	};
 	
-	return HTMLRepresentation.map(reactElementForElementOptions, []).toJS();
+	return HTMLRepresentation.map(reactElementForElementOptions, [uniqueIdentifier]).toJS();
 };
 
 module.exports = HTMLRepresentationAssistant;

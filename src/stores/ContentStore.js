@@ -44,6 +44,28 @@ let getBlockKeyPathForItemKeyPath = function(itemKeyPath) {
 	return itemKeyPath.slice(0, -2);
 };
 
+let blockGroupTypeHasTextItems = function(blockGroupType) {
+	return (blockGroupType === 'text');
+};
+
+let newBlockOfType = function(typeGroup, type) {
+	var blockJSON = {
+		"typeGroup": typeGroup,
+		"type": type,
+		"identifier": newIdentifier()
+	};
+	
+	if (blockGroupTypeHasTextItems(typeGroup)) {
+		blockJSON.textItems = Immutable.List();
+	}
+	
+	return Immutable.Map(blockJSON);
+};
+
+let newTextBlockWithDefaultType = function() {
+	return newBlockOfType('text', 'body');
+};
+
 
 let ContentStore = {}
 
@@ -55,6 +77,7 @@ ContentStore.off = MicroEvent.prototype.unbind;
 
 let documentCombinedSpecs = Immutable.Map();
 let documentSectionContents = Immutable.Map();
+let documentEditedSection = null;
 let documentSectionEditedTextItemIdentifiers =  Immutable.Map();
 
 function newIdentifier() {
@@ -69,6 +92,14 @@ function getContentKeyPathForDocumentSection(documentID, sectionID, additionalKe
 	return keyPath;
 }
 
+function getAvailableDocumentIDs() {
+	return documentSectionContents.keys();
+}
+
+function getMasterImmutableMapForDocument(documentID) {
+	return documentSectionContents.get(documentID);
+}
+
 function getSectionsInDocument(documentID) {
 	return documentSectionContents.getIn([documentID, 'sections']);
 }
@@ -77,8 +108,12 @@ function getContentForDocumentSection(documentID, sectionID) {
 	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID));
 }
 
-function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath) {
-	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID, keyPath));
+function getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, keyPath, defaultValue) {
+	return documentSectionContents.getIn(getContentKeyPathForDocumentSection(documentID, sectionID, keyPath), defaultValue);
+}
+
+function getTypeForDocumentSection(documentID, sectionID) {
+	return getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, ['type'], 'writing');
 }
 
 function setContentFromImmutableForDocumentSection(documentID, sectionID, content) {
@@ -124,6 +159,22 @@ function updateContentObjectAtKeyPathForDocumentSection(documentID, sectionID, k
 	}
 }
 
+function getDefaultSpecsOptionsForDocumentWithID(documentID) {
+	let defaultSpecsOptions = documentSectionContents.getIn([documentID, 'defaultSpecs'], Immutable.Map());
+	return defaultSpecsOptions;
+}
+
+function changeDefaultSpecsOptionForDocumentWithID(documentID, optionKey, optionValue) {
+	// Removed cached specs, which might have been combined from the URLs.
+	documentCombinedSpecs = documentCombinedSpecs.remove(documentID);
+	
+	documentSectionContents = documentSectionContents.updateIn([documentID, 'defaultSpecs'], Immutable.Map(), (options) => {
+		return options.set(optionKey, optionValue);
+	});
+	
+	ContentStore.trigger('specsChangedForDocument', documentID);
+}
+
 function getSpecsURLsForDocumentWithID(documentID) {
 	let specsURLs = documentSectionContents.getIn([documentID, 'specsURLs']);
 	if (specsURLs) {
@@ -155,20 +206,37 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 function getSpecsForDocument(documentID) {
 	var specs = documentCombinedSpecs.get(documentID);
 	if (!specs) {
-		let specsURLs = getSpecsURLsForDocumentWithID(documentID);
+		let defaultSpecsOptions = getDefaultSpecsOptionsForDocumentWithID(documentID);
+		var specsURLs = [];
 		
-		if (!specsURLs) {
-			if (true) {
-				let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
-				if (!defaultSpecs) {
-					var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
-					defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
-					SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
-				}
+		if (defaultSpecsOptions.get('wantsDefaultBasicSpecs', true)) {
+			let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
+			if (!defaultSpecs) {
+				var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
+				defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
+				SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
 			}
-			specsURLs = [defaultSpecsURL];
+			
+			specsURLs.push(defaultSpecsURL);
 		}
-		else if (specsURLs.length === 0) {
+		
+		if (defaultSpecsOptions.get('wantsDefaultAdvancedSpecs', false)) {
+			/*
+			let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
+			if (!defaultSpecs) {
+				var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
+				defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
+				SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
+			}
+			*/
+		}
+		
+		let additionalSpecsURLs = getSpecsURLsForDocumentWithID(documentID);
+		if (additionalSpecsURLs) {
+			specsURLs = specsURLs.concat(additionalSpecsURLs);
+		}
+		
+		if (specsURLs.length === 0) {
 			return null;
 		}
 		
@@ -183,6 +251,38 @@ function getSpecsForDocument(documentID) {
 		documentCombinedSpecs = documentCombinedSpecs.set(documentID, specs);
 	}
 	return specs;
+}
+
+function appendNewSectionToDocumentReturningSectionID(documentID, sectionType)
+{
+	let sectionID = newIdentifier();
+	
+	let editFirstBlock = false;
+	let sectionContent;
+	if (sectionType === 'writing') {
+		sectionContent = Immutable.fromJS({
+			"blocks": [
+				ContentStore.newTextBlockWithDefaultType()
+			]
+		});
+		
+		editFirstBlock = true;
+	}
+	else if (sectionType === 'catalog') {
+		sectionContent = Immutable.fromJS({
+			"elementIndex": {}
+		});
+	}
+	
+	documentSectionContents = documentSectionContents.setIn([documentID, 'sections', sectionID], sectionContent);
+	
+	ContentStore.trigger('sectionChangedForDocument', documentID);
+	
+	if (editFirstBlock) {
+		ContentStore.editBlockWithKeyPathInDocumentSection(documentID, sectionID, ['blocks', 0]);
+	}
+	
+	return sectionID;
 }
 
 // SETTINGS
@@ -244,31 +344,15 @@ objectAssign(ContentStore, {
 		return textItem;
 	},
 	
-	blockGroupTypeHasTextItems: function(blockGroupType) {
-		return (blockGroupType === 'text');
-	},
+	blockGroupTypeHasTextItems,
 	
-	newBlockOfType: function(typeGroup, type) {
-		var blockJSON = {
-			"typeGroup": typeGroup,
-			"type": type,
-			"identifier": newIdentifier()
-		};
-		
-		if (this.blockGroupTypeHasTextItems(typeGroup)) {
-			blockJSON.textItems = Immutable.List();
-		}
-		
-		return Immutable.Map(blockJSON);
-	},
+	newBlockOfType,
 	
 	newBlockWithSameTypeAs: function(block) {
-		return this.newBlockOfType(block.get('typeGroup'), block.get('type'));
+		return newBlockOfType(block.get('typeGroup'), block.get('type'));
 	},
 	
-	newTextBlockWithDefaultType: function() {
-		return this.newBlockOfType('text', 'body');
-	},
+	newTextBlockWithDefaultType,
 	
 	newBlockSubsectionOfType: function(subsectionType) {
 		return Immutable.Map({
@@ -283,6 +367,21 @@ objectAssign(ContentStore, {
 	
 	getIsShowingSettings,
 	
+	getAvailableDocumentIDs,
+	getMasterImmutableMapForDocument,
+	
+	getJSONForDocument: function(documentID, sectionID) {
+		var immutableObject = getMasterImmutableMapForDocument(documentID);
+		if (immutableObject) {
+			return immutableObject.toJSON();
+		}
+		else {
+			return null;
+		}
+	},
+	
+	getDefaultSpecsOptionsForDocumentWithID,
+	
 	getSpecsURLsForDocumentWithID,
 	getSpecsForDocument,
 	
@@ -292,7 +391,7 @@ objectAssign(ContentStore, {
 	getContentAsJSONForDocumentSection: function(documentID, sectionID) {
 		var content = this.getContentForDocumentSection(documentID, sectionID);
 		if (content) {
-			return content.toJS();
+			return content.toJSON();
 		}
 		else {
 			return null;
@@ -453,9 +552,9 @@ objectAssign(ContentStore, {
 		let hasDifferentTypeGroup = true;
 		
 		var editedBlockKeyPath = this.getEditedBlockKeyPathForDocumentSection(documentID, sectionID);
-		if (editedBlockKeyPath && this.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+		if (editedBlockKeyPath && blockGroupTypeHasTextItems(newBlockTypeGroup)) {
 			var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
-			if (this.blockGroupTypeHasTextItems(block.get('typeGroup'))) {
+			if (blockGroupTypeHasTextItems(block.get('typeGroup'))) {
 				hasDifferentTypeGroup = false;
 			}
 		}
@@ -512,7 +611,7 @@ objectAssign(ContentStore, {
 	},
 	
 	insertBlockOfTypeAtIndexInDocumentSection: function(documentID, sectionID, typeGroup, type, blockIndex, options) {
-		let newBlock = this.newBlockOfType(typeGroup, type);
+		let newBlock = newBlockOfType(typeGroup, type);
 		
 		let blocksKeyPath = getBlocksKeyPath();
 		var blockKeyPath = blocksKeyPath.concat(blockIndex);
@@ -593,7 +692,7 @@ objectAssign(ContentStore, {
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, currentBlockKeyPath);
 		
 		var currentBlockGroupType = currentBlock.get('typeGroup');
-		if (currentBlockIndex === 0 || !this.blockGroupTypeHasTextItems(currentBlockGroupType)) {
+		if (currentBlockIndex === 0 || !blockGroupTypeHasTextItems(currentBlockGroupType)) {
 			return false;
 		}
 		
@@ -602,7 +701,7 @@ objectAssign(ContentStore, {
 		var precedingBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, precedingBlockKeyPath);
 		
 		var precedingBlockGroupType = precedingBlock.get('typeGroup');
-		if (!this.blockGroupTypeHasTextItems(precedingBlockGroupType)) {
+		if (!blockGroupTypeHasTextItems(precedingBlockGroupType)) {
 			return false;
 		}
 		
@@ -696,6 +795,11 @@ objectAssign(ContentStore, {
 		}
 	},
 	
+	
+	getEditedSectionForDocument(documentID) {
+		return documentEditedSection;
+	},
+	
 	getEditedBlockIdentifierForDocumentSection: function(documentID, sectionID) {
 		return this.documentSectionEditedTextItemIdentifiers.getIn([documentID, sectionID, "block", "identifier"], null);
 	},
@@ -729,7 +833,7 @@ objectAssign(ContentStore, {
 		var blockKeyPath = getBlockKeyPathForItemKeyPath(itemKeyPath);
 		var blockGroupType = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath.concat('typeGroup'));
 		
-		if (this.blockGroupTypeHasTextItems(blockGroupType)) {
+		if (blockGroupTypeHasTextItems(blockGroupType)) {
 			var isEmpty = this.textItemIsEmptyAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
 			if (isEmpty) {
 				this.removeTextItemAtKeyPathInDocumentSection(documentID, sectionID, itemKeyPath);
@@ -750,7 +854,7 @@ objectAssign(ContentStore, {
 		var block = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
 		
 		if (editTextItemsIfPresent) {
-			if (this.blockGroupTypeHasTextItems(block.get('typeGroup'))) {
+			if (blockGroupTypeHasTextItems(block.get('typeGroup'))) {
 				this.editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection(documentID, sectionID, blockKeyPath, {
 					lastItem: editLastItem,
 					firstItem: editFirstItem
@@ -773,6 +877,12 @@ objectAssign(ContentStore, {
 		);
 		
 		this.trigger('editedBlockChangedForDocumentSection', documentID, sectionID);
+		
+		if (documentEditedSection !== sectionID) {
+			documentEditedSection = sectionID;
+			
+			this.trigger('editedSectionChangedForDocument', documentID);
+		}
 	},
 	
 	editTextItemBasedBlockWithKeyPathAddingIfNeededInDocumentSection: function(documentID, sectionID, blockKeyPath, {
@@ -826,6 +936,12 @@ objectAssign(ContentStore, {
 		
 		this.trigger('editedBlockChangedForDocumentSection', documentID, sectionID);
 		this.trigger('editedItemChangedForDocumentSection', documentID, sectionID);
+		
+		if (documentEditedSection !== sectionID) {
+			documentEditedSection = sectionID;
+			
+			this.trigger('editedSectionChangedForDocument', documentID);
+		}
 	},
 	
 	finishEditingInDocumentSection: function(documentID, sectionID) {
@@ -989,6 +1105,14 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 	
 	switch (payload.eventID) {
 		
+	case (documentEventIDs.changeWantsDefaultBasicSpecs):
+		changeDefaultSpecsOptionForDocumentWithID(documentID, 'wantsDefaultBasicSpecs', payload.newValue);
+		break;
+	
+	case (documentEventIDs.changeWantsDefaultAdvancedSpecs):
+		changeDefaultSpecsOptionForDocumentWithID(documentID, 'wantsDefaultAdvancedSpecs', payload.newValue);
+		break;
+		
 	case (documentEventIDs.setSpecsURLs):
 		setSpecsURLsForDocumentWithID(documentID, payload.specsURLs);
 		break;
@@ -1008,6 +1132,19 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 			payload.contentJSON
 		);
 		break;
+	
+	
+	case (documentEventIDs.appendNewSection):
+		appendNewSectionToDocumentReturningSectionID(
+			documentID,
+			payload.sectionType
+		);
+		break;
+	
+	case (documentEventIDs.appendExternalSection):
+		// FIXME: implement
+		break;
+	
 	
 	case (documentSectionEventIDs.edit.textItemWithKeyPath):
 		ContentStore.editItemWithKeyPathInDocumentSection(
@@ -1120,6 +1257,21 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 	case (documentSectionEventIDs.editedItem.setText):
 		var text = payload.textItemText;
 		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
+			return textItem.set('text', text);
+		});
+		break;
+	
+	case (documentSectionEventIDs.editedItem.finishTextAsSentenceWithTrailingSpace):
+		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
+			var text = textItem.get('text');
+			
+			var textTrimmedEnd = text.replace(/[\s]$/, '');
+			var lastLetter = textTrimmedEnd.slice(-1);
+			var endsInPunctuation = (lastLetter == '.' || lastLetter == '!' || lastLetter == '?');
+			if (!endsInPunctuation) {
+				text = textTrimmedEnd + '. ';
+			}
+			
 			return textItem.set('text', text);
 		});
 		break;

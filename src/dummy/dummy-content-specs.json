@@ -1,6 +1,6 @@
 {
 	"icingStandard": {"id": "burnticing", "version": "0.1.0"},
-	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.0"},
+	"specsIdentifier": {"id": "burntcaramel", "version": "1.0.1"},
 	"defaultSubsectionType": "normal",
 	"subsectionTypes": [
 		{
@@ -133,6 +133,23 @@
 								"text": ["fields", "description", "descriptionText"]
 							}
 						]
+					}
+				]
+			},
+			{
+				"disabled": true,
+				"id": "embed",
+				"title": "Embed",
+				"fields": [
+					{
+						"id": "embedCode",
+						"type": "text-long",
+						"title": "Embed Code"
+					}
+				],
+				"innerHTMLRepresentation": [
+					{
+						"unsafeHTML": ["fields", "embedCode"]
 					}
 				]
 			}
@@ -305,7 +322,6 @@
 				"media": true,
 				"particular": true
 			},
-			"disabled": false,
 			"title": "Link",
 			"type": "fields",
 			"fields": [
@@ -335,6 +351,15 @@
 									"id": "emailAddress",
 									"title": "Email Address",
 									"placeholder": "Enter the email address to link to"
+								}
+							]
+						},
+						{
+							"id": "catalogElement",
+							"title": "Element from Catalog Section",
+							"fields": [
+								{
+									"type": "choice-catalogElement"
 								}
 							]
 						}
@@ -382,12 +407,28 @@
 			]
 		},
 		{
+			"disabled": true,
 			"id": "lineBreakAfter",
 			"title": "Line Break After",
 			"allowedForAnyTextItems": true,
 			"afterHTMLRepresentation": [
 				{
 					"tagName": "br"
+				}
+			]
+		},
+		{
+			"id": "finePrint",
+			"title": "Fine Print",
+			"allowedForAnyTextItems": true,
+			"innerHTMLRepresentation": [
+				{
+					"tagName": "small",
+					"children": [
+						{
+							"placeOriginalElement": true
+						}
+					]
 				}
 			]
 		},
