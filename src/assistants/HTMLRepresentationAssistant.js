@@ -145,6 +145,7 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 				dangerouslySetInnerHTML: unsafeHTMLForReact
 			});
 		}
+		// Experimental: lineBreak
 		else if (elementOptions.get('lineBreak', false)) {
 			return React.createElement('br', {
 				key

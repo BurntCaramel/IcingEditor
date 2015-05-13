@@ -1,3 +1,4 @@
+@charset 'UTF-8';
 @import 'constants';
 @import 'mixins';
 
@@ -127,6 +128,7 @@ body
 	
 	.document_section_title {
 		margin: 0;
+		padding: 4px;
 		text-align: center;
 		font-size: 12px;
 		font-weight: normal;
@@ -139,57 +141,10 @@ body
 	.document_section_blocks {
 		position: relative;
 		margin-bottom: 40px;
+		//padding: 8px 8px;
 		transition: left $editSliderTransitionDuration ease-out, background-color $hoverTransitionDuration ease;
-	}
-	
-	
-	.blocks_changeSubsection
-	{
-		position: relative;
-		opacity: 0;
-		margin: auto;
-	}
-	.document_section_blocks .blocks_changeSubsection:hover,
-	.blocks_changeSubsection-active,
-	.blocks_changeSubsection-hasSelectedSubsectionType {
-		opacity: 1;
-	}
-	.blocks_changeSubsection_mainButton {
-		@include toolbarButton_light($small: true);
-		
-		display: block;
-		margin: auto;
-		opacity: (4.0/28.0);
-	}
-	.blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton {
-		opacity: 0.5;
-	}
-	.blocks_changeSubsection-active .blocks_changeSubsection_mainButton,
-	.blocks_changeSubsection_mainButton:hover {
-		opacity: 1.0;
-		
-		@extend %toolbarButton_light_hover;
-	};
-	
-	.blocks_changeSubsection_choices {
-		position: absolute;
-		//opacity: 0.98;
-		width: 50%;
-		left: 25%;
-		z-index: $zIndexActiveMenu;
-		background-color: $toolbarButtonSelectedBackgroundColor;
-		@include holderBorderRadius();
-		@include slightBoxShadow();
-		
-		button {
-			@include toolbarButton_dark();
-			
-			display: block;
-			width: 100%;
-		}
-	}
-	.blocks_changeSubsection_divider {
-		border-top: 1px solid rgba(white, 0.1);
+		background-color: $documentBackgroundColor;
+		//box-shadow: 0 0 8px 4px $documentBackgroundColor;
 	}
 	
 	
@@ -206,14 +161,15 @@ body
 		border: 1px solid rgba(white, 0.0);
 		transition: background-color $hoverTransitionDuration ease, border-color $hoverTransitionDuration ease;
 	}
-	.block-edited .block_textItems//,
-	//.block .block_textItems:hover
+	.block-edited .block_textItems
+	//.block:hover .block_textItems:hover
 	{
-		//background-color: rgba(white, 0.2);
-		//background-color: rgba(black, 0.025);
-		//box-shadow: 0 0 4px rgba(black, 0.025);
-		background-color: rgba(black, 0.02);
-		border-color: rgba(white, 0.2);
+		//background-color: rgba(black, 0.02);
+		//border-color: rgba(white, 0.2);
+	}
+	
+	.noItemsPlaceholder:after {
+		content: '\00A0';
 	}
 	
 	.block-particular,
@@ -244,112 +200,28 @@ body
 	}
 	
 	
-	.textItem
+	.textItem .text,
+	.noItemsPlaceholder
 	{
-		.text {
-			border: 1px dotted transparent;
-			word-wrap: break-word;
-			transition: background-color $hoverTransitionDuration ease;
-		}
+		border: 1px dotted transparent;
+		word-wrap: break-word;
+		transition: background-color $hoverTransitionDuration ease;
 	}
 	
-	.textItem:not(.textItem-edited):hover .text
-	{
-		background-color: rgba(white, 0.2);
-	}
 	.textItem-edited .text
 	{
-		//border: 1px dotted white;
 		background-color: white;
 	}
-	
-	
-	%blockAbsoluteOffLeft
+	.textItem:not(.textItem-edited) .text:hover,
+	//.block_textItems:hover .textItem:not(.textItem-edited):first-child .text,
+	.noItemsPlaceholder:hover,
+	//.block_textItems:hover .noItemsPlaceholder
 	{
-		position: absolute;
-		right: 100%;
-		padding-right: 3vw;
+		background-color: rgba(white, 0.8);
 	}
 	
-	.blockItemToolbar
-	{
-		@extend %blockAbsoluteOffLeft;
-		
-		top: 0;
-		bottom: 0;
-	}
-	.blocks_addBlock
-	{
-		@extend %blockAbsoluteOffLeft;
-	}
 	
-	.blockItemToolbar_typeChooser,
-	.blocks_addBlock_typeChooser
-	{
-		position: relative;
-	}
-	
-	.blockItemToolbar_typeChooser_mainButton,
-	.blocks_addBlock_typeChooser_mainButton
-	{
-		@include toolbarButton_light($small: true);
-	}
-	
-	.blockItemToolbar_typeChooser
-	{
-		opacity: 0.08;
-	}
-	.blockItemToolbar_typeChooser:hover,
-	.blockItemToolbar_typeChooser-active,
-	.block-edited .blockItemToolbar_typeChooser
-	{
-		opacity: 1.0;
-	}
-	
-	.blockItemToolbar_typeChooser_choices,
-	.blocks_addBlock_typeChooser_choices
-	{
-		position: absolute;
-		z-index: $zIndexActiveMenu;
-		top: 0;
-		left: 100%;
-		display: flex;
-		//align-items: flex-start;
-		//flex-wrap: wrap;
-		text-align: center;
-		@include choicesBackgroundColor();
-		@include holderBorderRadius();
-		@include slightBoxShadow();
-	}
-	
-	.blockItemToolbar_typeChooser_choices_group,
-	.blocks_addBlock_typeChooser_choices_group
-	{
-		padding: 4px;
-		
-		.toolbarButton {
-			@include toolbarButton_dark($small: true, $showBackground: false);
-			
-			display: block;
-			width: 100%;
-			padding: 5px 10px;
-		}
-		.toolbarButton-selected {
-			@extend %toolbarButton_dark_pressed;
-		}
-	}
-	.blockItemToolbar_typeChooser_choices_group_title,
-	.blocks_addBlock_typeChooser_choices_group_title
-	{
-		@extend %smallUIHeading;
-		
-		margin: 0;
-		padding: 0;
-		padding-top: 4px;
-		padding-bottom: 4px;
-		font-style: italic;
-		color: white;
-	}
+	@import 'type-controls';
 	
 	/*
 	.block:hover .blockItemToolbar
@@ -434,8 +306,20 @@ body
 		}
 		
 		.toolbarButton-showingFields {
-			border-bottom-left-radius: 0;
-			border-bottom-right-radius: 0;
+			//border-bottom-left-radius: 0;
+			//border-bottom-right-radius: 0;
+			
+			position: relative;
+			
+			&:after {
+				content: '▲';
+				position: absolute;
+				top: 100%;
+				left: 50%;
+				margin-top: -6px;
+				margin-left: -3px;
+				color: $traitOptionsBackgroundColor;
+			}
 		}
 	}
 	
@@ -450,99 +334,25 @@ body
 	}
 	
 	
-	.fieldsHolder,
-	.choice
-	{
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: flex-start;
-	}
+	@import 'fields';
 	
-	.fieldsHolder
-	{
-		margin: 0 (-$fieldsPadding);
-		
-		.fieldLabel,
-		.choice,
-		.group,
-		.fieldsMultiple,
-		.choice_fieldsHolder,
-		.group_fieldsHolder {
-			flex: 4 0 100%;
-			box-sizing: border-box;
-		}
-		
-		.group {
-			margin-bottom: $fieldsPadding;
-		}
-		
-		.fieldLabel,
-		.choice_fieldsHolder,
-		.group_fieldsHolder {
-			padding: 0 $fieldsPadding;
-		}
-		.choice_fieldsHolder {
-			// Nested fields get an indent.
-			padding-left: 20px;
-		}
-		
-		.fieldLabel_title {
-			//display: block;
-			display: flex;
-			font-size: 10px;
-		}
-		
-		.fieldsMultiple .fieldLabel {
-			display: block;
-		}
-		
-		.input-textual,
-		.choice_select {
-			box-sizing: border-box;
-			display: block;
-			min-width: 100%;
-			margin: 0;
-			margin-top: 2px;
-			margin-bottom: 10px;
-			font-size: 12px;
-			line-height: 1.3;
-		}
-		.input-textual {
-			border: none;
-			padding: 2px 4px;
-		}
-		
-		.fieldLabel-fieldType-number-integer {
-			flex: 2 0 33.333333%; // Up to 3 in one row
-		}
-		
-		.fieldLabel-fieldType-boolean,
-		.fieldLabel-fieldType-group {
-			.fieldLabel_title {
-				display: inline-block;
-			}
-		}
-		
-		.group_fieldsHolder {
-			.fieldLabel-fieldType-textual,
-			.choice {
-				flex: 2 0 50%;
-			}
-		}
-	}
 	
 	.traitOptions {
+		@include traitOptionsBackgroundColor();
+		
 		position: absolute;
 		z-index: 1000;
 		left: 0;
-		width: 280px;
+		//width: 280px;
+		width: 100%;
+		box-sizing: border-box;
 		margin-bottom: 10px;
 		padding: 12px;
-		background-color: $toolbarButtonSelectedBackgroundColor;
+		padding-top: 6px;
 		border-radius: $boxBorderRadius;
 		
 		.fieldLabel_title {
-			color: white;
+			color: $traitOptionsLabelColor;
 		}
 		
 		.traitOptions_buttons {
@@ -562,26 +372,26 @@ body
 			
 				& {
 					@extend %toolbarButton;
-					@extend %toolbarButton_dark;
-					@extend %toolbarButton_dark_hover;
-				}
-				&:hover,
-				&:active {
 					@extend %toolbarButton_light;
-					@extend %toolbarButton_light_hover;
+				}
+				@if false {
+					&:hover,
+					&:active {
+						@extend %toolbarButton_light_hover;
+					}
 				}
 			}
-		}
-		
-		.removeButton {
-			background-color: #554444;
-		}
-		.removeButton,
-		.doneButton {
-			//width: 50%;
-		}
-		.doneButton {
-			//float: right;
+			
+			.removeButton {
+				@include traitOptionsRemoveButtonStyling();
+			}
+			.removeButton,
+			.doneButton {
+				//width: 50%;
+			}
+			.doneButton {
+				//float: right;
+			}
 		}
 	}
 	.textItemEditor_traitsToolbar .buttonHolder:first-child .traitOptions
@@ -608,46 +418,6 @@ body
 		.fieldLabel_title {
 			font-size: 12px;
 		}
-	}
-	
-	
-	.block_reorder_moveThisButton,
-	.block_reorder_keepHereButton
-	{
-		@include toolbarButton_light($small: true);
-	}
-	.block_reorder_moveThisButton,
-	.block_reorder_moveHere
-	{
-		transition: opacity 0.35s ease;
-	}
-	.block_reorder_moveThisButton-hidden,
-	.block_reorder_moveHere-hidden
-	{
-		opacity: 0.0;
-	}
-	
-	.block_reorder_moveHere {
-		position: relative;
-		text-align: center;
-		
-		&:after {
-			content: '';
-			opacity: 0.333;
-			position: absolute;
-			left: 0;
-			right: 0;
-			top: 50%;
-			height: 2px;
-			background-color: white;
-			border-radius: 1px;
-		}
-	}
-	.block_reorder_moveHere_button {
-		@include toolbarButton_light($small: true);
-		
-		position: relative;
-		z-index: 1;
 	}
 	
 	

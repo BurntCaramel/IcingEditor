@@ -39,7 +39,7 @@ var FieldLabel = React.createClass({
 	
 	getDefaultProps() {
 		return {
-			baseClassNames: ['fieldLabel'],
+			className: 'fieldLabel',
 			additionalClassNameExtensions: [],
 			children: [],
 			required: false,
@@ -97,6 +97,7 @@ let TextualField = React.createClass({
 	getDefaultProps() {
 		return {
 			type: 'text',
+			useLabel: true,
 			value: null,
 			required: false,
 			recommended: false,
@@ -162,6 +163,7 @@ let TextualField = React.createClass({
 	render() {
 		let {
 			type,
+			useLabel,
 			ID,
 			required,
 			recommended,
@@ -181,55 +183,59 @@ let TextualField = React.createClass({
 			value = pendingValue;
 		}
 		
-		let children = [];
+		var inputElement;
 		
 		if (type === 'text-long') {
-			children.push(
-				React.createElement('textarea', {
-					key: 'textarea',
-					value,
-					placeholder,
-					rows: 6,
-					onKeyDown: this.onKeyDown,
-					onBlur: this.onBlur,
-					onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
-					className: 'input-textual input-' + type,
-					tabIndex
-				})
-			);
+			inputElement = React.createElement('textarea', {
+				key: 'textarea',
+				value,
+				placeholder,
+				rows: 6,
+				onKeyDown: this.onKeyDown,
+				onBlur: this.onBlur,
+				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
+				className: 'input-textual input-' + type,
+				tabIndex
+			})
 		}
 		else {
 			let inputType = this.getInputTypeForFieldType(type);
 			
-			children.push(
-				React.createElement('input', {
-					key: 'input',
-					type: inputType,
-					value,
-					placeholder,
-					onKeyDown: this.onKeyDown,
-					onBlur: this.onBlur,
-					onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
-					className: 'input-textual input-' + type,
-					tabIndex
-				})
-			);
+			inputElement = React.createElement('input', {
+				key: 'input',
+				type: inputType,
+				value,
+				placeholder,
+				onKeyDown: this.onKeyDown,
+				onBlur: this.onBlur,
+				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
+				className: 'input-textual input-' + type,
+				tabIndex
+			})
 		}
 		
-		return React.createElement(FieldLabel, {
-			key: ID,
-			title,
-			description,
-			required,
-			recommended,
-			additionalClassNameExtensions: ['-fieldType-textual', `-fieldType-${type}`]
-		}, children);
+		if (useLabel) {
+			return React.createElement(FieldLabel, {
+				key: ID,
+				title,
+				description,
+				required,
+				recommended,
+				additionalClassNameExtensions: ['-fieldType-textual', `-fieldType-${type}`]
+			}, inputElement);
+		}
+		else {
+			return inputElement;
+		}
 	}
 });
 
 let TextualFieldMultiple = React.createClass({
+	mixins: [BaseClassNamesMixin],
+	
 	getDefaultProps() {
 		return {
+			baseClassNames: ['fieldMultiple'],
 			type: 'text',
 			values: [],
 			required: false,
@@ -264,6 +270,7 @@ let TextualFieldMultiple = React.createClass({
 			return React.createElement(TextualField, {
 				key: `field-${valueIndex}`,
 				type,
+				useLabel: false,
 				ID,
 				required,
 				recommended,
@@ -275,17 +282,18 @@ let TextualFieldMultiple = React.createClass({
 					onValueChangedAtIndex(newValue, valueIndex)
 				}
 			});
-		});
+		}, this);
 		
 		let children = [
 			React.createElement(FieldLabel, {
 				key: 'label',
+				baseClassNames: this.getChildClassNamesWithSuffix('_mainFieldLabel'),
 				title
 			})
 		].concat(fieldElements);
 		
 		return React.createElement('div', {
-			className: 'fieldsMultiple'
+			className: this.getClassNameStringWithExtensions()
 		}, children);
 	}
 });

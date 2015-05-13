@@ -246,7 +246,8 @@ var ToolbarButton = React.createClass({
 	
 	getDefaultProps() {
 		return {
-			baseClassNames: ['toolbarButton']
+			//baseClassNames: ['toolbarButton']
+			className: 'toolbarButton'
 		};
 	}
 });
@@ -919,7 +920,7 @@ var BlockTypeChooser = React.createClass({
 		
 		var mainButtonTitle;
 		if (isCreate) {
-			mainButtonTitle = '+';
+			mainButtonTitle = '＋'; // Full width plus sign, not your usual plus sign.
 		}
 		else {
 			let chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
@@ -1189,7 +1190,7 @@ var ChangeSubsectionElement = React.createClass({
 		
 		let subsectionID = subsectionInfo.get('id');
 		
-		return React.createElement(SecondaryButton, {
+		return React.createElement(ToolbarButton, {
 			key: subsectionID,
 			baseClassNames: this.getChildClassNamesWithSuffix(`_choices_${subsectionID}`),
 			title: subsectionInfo.get('title'),
@@ -1219,7 +1220,7 @@ var ChangeSubsectionElement = React.createClass({
 				React.createElement(SecondaryButton, {
 					key: 'mainButton',
 					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
-					title: 'Place Below in Portion',
+					title: 'Portion Below',
 					onClick: this.onToggleActive
 				})
 			);
@@ -1230,7 +1231,7 @@ var ChangeSubsectionElement = React.createClass({
 			let selectedSubsectionInfo = findParticularSubsectionOptionsInList(selectedSubsectionType, subsectionsSpecs);
 			
 			children.push(
-				React.createElement(SecondaryButton, {
+				React.createElement(ToolbarButton, {
 					key: 'mainButton',
 					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
 					title: selectedSubsectionInfo.get('title'),
@@ -1250,7 +1251,7 @@ var ChangeSubsectionElement = React.createClass({
 						baseClassNames: this.getChildClassNamesWithSuffix('_divider'),
 						key: 'dividerAboveRemove'
 					}),
-					React.createElement(SecondaryButton, {
+					React.createElement(ToolbarButton, {
 						key: 'removeSubsection',
 						baseClassNames: this.getChildClassNamesWithSuffix('_removeButton'),
 						title: 'Remove Portion',

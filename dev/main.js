@@ -27914,7 +27914,9 @@ HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue = f
 				key: key,
 				dangerouslySetInnerHTML: unsafeHTMLForReact
 			});
-		} else if (elementOptions.get("lineBreak", false)) {
+		}
+		// Experimental: lineBreak
+		else if (elementOptions.get("lineBreak", false)) {
 			return React.createElement("br", {
 				key: key
 			});
@@ -29133,7 +29135,8 @@ var BlockElement = React.createClass({
 
 		var blockType = props.type;
 
-		var classNameExtensions = ["-" + typeGroup, "-" + typeGroup + "-" + blockType, "-inSubsection-" + subsectionType];
+		var classNameExtensions = ["-" + typeGroup, "-" + [typeGroup, blockType].join("-"), // So, this instead.
+		"-inSubsection-" + subsectionType];
 
 		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(typeGroup, blockType, blockGroupIDsToTypesMap);
 
@@ -29175,15 +29178,16 @@ var BlockElement = React.createClass({
 
 			if (textItemElements.length === 0) {
 				classNameExtensions.push("-textItemsIsEmpty");
-				children = [React.createElement("span", {
+				textItemElements = [React.createElement("span", {
+					className: "noItemsPlaceholder text",
 					key: "noItems"
 				})];
-			} else {
-				children = [React.createElement("div", {
-					key: "textItems",
-					className: this.getChildClassNameStringWithSuffix("_textItems")
-				}, textItemElements)];
 			}
+
+			children = [React.createElement("div", {
+				key: "textItems",
+				className: this.getChildClassNameStringWithSuffix("_textItems")
+			}, textItemElements)];
 		}
 
 		var toolbarActions = {
@@ -29503,6 +29507,10 @@ EditorElementCreator.BlocksElement = React.createClass({
 			focusedBlockIndexForReordering = ContentStore.getIndexForObjectKeyPath(focusedBlockKeyPathForReordering);
 		}
 
+		var createBlockOfTypeAtIndex = function createBlockOfTypeAtIndex(blockIndex, typeGroupOptions, typeExtensionOptions) {
+			actions.insertBlockOfTypeAtIndex(typeGroupOptions.get("id"), typeExtensionOptions.get("id"), blockIndex);
+		};
+
 		var elements = [];
 		var blockCount = blocksImmutable.count();
 		var previousBlockWasSubsection = false;
@@ -29510,146 +29518,6 @@ EditorElementCreator.BlocksElement = React.createClass({
 			var blockTypeGroup = blocksImmutable.getIn([blockIndex, "typeGroup"]);
 			var currentBlockIsSubsection = blockTypeGroup === "subsection";
 
-			if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
-				if (isReordering) {
-					var hidden = true;
-					if (focusedBlockIndexForReordering !== null) {
-						if (focusedBlockIndexForReordering !== blockIndex && focusedBlockIndexForReordering + 1 !== blockIndex) {
-							hidden = false;
-						}
-					}
-
-					elements.push(React.createElement(Toolbars.RearrangeBlockMoveHere, {
-						key: "moveHere-" + blockIndex,
-						followingBlockIndex: blockIndex,
-						actions: actions,
-						hidden: hidden
-					}));
-				} else {
-					if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
-						elements.push(React.createElement(Toolbars.ChangeSubsectionElement, {
-							key: "changeSubsection-" + blockIndex,
-							isCreate: true,
-							followingBlockIndex: blockIndex,
-							subsectionsSpecs: subsectionsSpecs,
-							actions: actions
-						}));
-					}
-				}
-			}
-
-			previousBlockWasSubsection = currentBlockIsSubsection;
-
-			var blockElement = elementsForBlocks.get(blockIndex);
-			if (blockElement) {
-				elements.push(blockElement);
-			}
-		}
-
-		if (!isReordering) {
-			var createBlockOfTypeAtEnd = function createBlockOfTypeAtEnd(typeGroupOptions, typeExtensionOptions) {
-				actions.insertBlockOfTypeAtIndex(typeGroupOptions.get("id"), typeExtensionOptions.get("id"), blockCount);
-			};
-
-			elements.push(React.createElement(Toolbars.AddBlockElement, {
-				key: "addBlock-end",
-				addAtEnd: true,
-				blockTypeGroups: blockTypeGroups,
-				blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
-				onCreateBlockOfType: createBlockOfTypeAtEnd
-			}));
-		}
-
-		var isEditingBlock = editedBlockIdentifier != null;
-		if (isEditingBlock) {
-			classNameExtensions.push("-hasEditedBlock");
-		}
-
-		return React.createElement("div", {
-			className: this.getClassNameStringWithExtensions(classNameExtensions)
-		}, elements);
-	}
-});
-
-EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) {
-	var specsImmutable = _ref.specsImmutable;
-	var actions = _ref.actions;
-	var blockTypeGroups = _ref.blockTypeGroups;
-	var editedBlockIdentifier = _ref.editedBlockIdentifier;
-	var editedBlockKeyPath = _ref.editedBlockKeyPath;
-	var editedTextItemIdentifier = _ref.editedTextItemIdentifier;
-	var editedTextItemKeyPath = _ref.editedTextItemKeyPath;
-	var _ref$isReordering = _ref.isReordering;
-	var isReordering = _ref$isReordering === undefined ? false : _ref$isReordering;
-	var focusedBlockIdentifierForReordering = _ref.focusedBlockIdentifierForReordering;
-	var focusedBlockKeyPathForReordering = _ref.focusedBlockKeyPathForReordering;
-
-	var subsectionsSpecs = specsImmutable.get("subsectionTypes", Immutable.List());
-	var blockGroupIDsToTypesMap = specsImmutable.get("blockTypesByGroup", Immutable.Map());
-	var traitSpecs = specsImmutable.get("traitTypes", Immutable.List());
-
-	var currentSubsectionType = specsImmutable.get("defaultSubsectionType", "normal");
-	var currentSubsectionChildIndex = 0;
-
-	var elementsForBlocks = blocksImmutable.map(function (blockImmutable, blockIndex) {
-		var blockIdentifier = blockImmutable.get("identifier");
-		var typeGroup = blockImmutable.get("typeGroup");
-		var type = blockImmutable.get("type");
-		var props = {
-			key: blockIdentifier,
-			block: blockImmutable,
-			typeGroup: typeGroup,
-			type: type,
-			subsectionType: currentSubsectionType,
-			subsectionChildIndex: currentSubsectionChildIndex,
-			actions: actions,
-			subsectionsSpecs: subsectionsSpecs,
-			traitSpecs: traitSpecs,
-			blockTypeGroups: blockTypeGroups,
-			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
-			edited: blockIdentifier == editedBlockIdentifier,
-			editedBlockIdentifier: editedBlockIdentifier,
-			editedBlockKeyPath: editedBlockKeyPath,
-			editedTextItemIdentifier: editedTextItemIdentifier,
-			editedTextItemKeyPath: editedTextItemKeyPath,
-			allowsEditing: !isReordering,
-			isReordering: isReordering,
-			isFocusedForReordering: blockIdentifier == focusedBlockIdentifierForReordering,
-			anotherBlockIsFocusedForReordering: focusedBlockIdentifierForReordering != null && blockIdentifier != focusedBlockIdentifierForReordering,
-			keyPath: ["blocks", blockIndex]
-		};
-
-		if (typeGroup === "text") {
-			props.textItems = blockImmutable.get("textItems", Immutable.List()).toJS();
-		}
-
-		var elementToReturn;
-
-		if (typeGroup === "subsection") {
-			elementToReturn = React.createElement(SubsectionElement, props);
-			currentSubsectionType = type;
-			currentSubsectionChildIndex = 0;
-		} else {
-			elementToReturn = React.createElement(BlockElement, props);
-			currentSubsectionChildIndex++;
-		}
-
-		return elementToReturn;
-	});
-
-	var focusedBlockIndexForReordering = null;
-	if (focusedBlockKeyPathForReordering) {
-		focusedBlockIndexForReordering = ContentStore.getIndexForObjectKeyPath(focusedBlockKeyPathForReordering);
-	}
-
-	var elements = [];
-	var blockCount = blocksImmutable.count();
-	var previousBlockWasSubsection = false;
-	for (var blockIndex = 0; blockIndex < blockCount + 1; blockIndex++) {
-		var blockTypeGroup = blocksImmutable.getIn([blockIndex, "typeGroup"]);
-		var currentBlockIsSubsection = blockTypeGroup === "subsection";
-
-		if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 			if (isReordering) {
 				var hidden = true;
 				if (focusedBlockIndexForReordering !== null) {
@@ -29665,6 +29533,13 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 					hidden: hidden
 				}));
 			} else {
+				elements.push(React.createElement(Toolbars.AddBlockElement, {
+					key: "addBlock-before" + blockIndex,
+					blockTypeGroups: blockTypeGroups,
+					blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
+					onCreateBlockOfType: createBlockOfTypeAtIndex.bind(null, blockIndex)
+				}));
+
 				if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 					elements.push(React.createElement(Toolbars.ChangeSubsectionElement, {
 						key: "changeSubsection-" + blockIndex,
@@ -29675,32 +29550,38 @@ EditorElementCreator.reactElementsWithBlocks = function (blocksImmutable, _ref) 
 					}));
 				}
 			}
+
+			previousBlockWasSubsection = currentBlockIsSubsection;
+
+			var blockElement = elementsForBlocks.get(blockIndex);
+			if (blockElement) {
+				elements.push(blockElement);
+			}
 		}
 
-		previousBlockWasSubsection = currentBlockIsSubsection;
+		/*
+  if (!isReordering) {	
+  	elements.push(
+  		React.createElement(Toolbars.AddBlockElement, {
+  			key: `addBlock-end`,
+  			addAtEnd: true,
+  			blockTypeGroups,
+  			blockGroupIDsToTypesMap,
+  			onCreateBlockOfType: createBlockOfTypeAtIndex.bind(null, blockCount)
+  		})
+  	);
+  }*/
 
-		var blockElement = elementsForBlocks.get(blockIndex);
-		if (blockElement) {
-			elements.push(blockElement);
+		var isEditingBlock = editedBlockIdentifier != null;
+		if (isEditingBlock) {
+			classNameExtensions.push("-hasEditedBlock");
 		}
+
+		return React.createElement("div", {
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
+		}, elements);
 	}
-
-	var createBlockOfTypeAtEnd = function createBlockOfTypeAtEnd(typeGroupOptions, typeExtensionOptions) {
-		actions.insertBlockOfTypeAtIndex(typeGroupOptions.get("id"), typeExtensionOptions.get("id"), blockCount);
-	};
-
-	if (!isReordering) {
-		elements.push(React.createElement(Toolbars.AddBlockElement, {
-			key: "addBlock-end",
-			addAtEnd: true,
-			blockTypeGroups: blockTypeGroups,
-			blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
-			onCreateBlockOfType: createBlockOfTypeAtEnd
-		}));
-	}
-
-	return elements;
-};
+});
 
 EditorElementCreator.SectionElement = React.createClass({
 	displayName: "SectionElement",
@@ -29791,29 +29672,12 @@ EditorElementCreator.SectionElement = React.createClass({
 		var showSectionTitle = _props.showSectionTitle;
 		var editingTitle = this.state.editingTitle;
 
-		var classNames = ["blocks"];
-
 		var blocksImmutable = contentImmutable.get("blocks");
-
-		/*let elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
-  		specsImmutable,
-  		blockTypeGroups,
-  		editedBlockIdentifier,
-  		editedBlockKeyPath,
-  		editedTextItemIdentifier,
-  		editedTextItemKeyPath,
-  		isReordering,
-  		focusedBlockIdentifierForReordering,
-  		focusedBlockKeyPathForReordering,
-  		actions
-  	}
-  );
-  */
-
+		var classNames = ["blocks"];
 		var elements = [];
 
 		if (showSectionTitle) {
-			if (editingTitle) {
+			if (editingTitle && false) {
 				elements.push(React.createElement("input", {
 					key: "editedTitle",
 					value: sectionID,
@@ -29969,6 +29833,8 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 
 module.exports = EditorElementCreator;
 
+//`-${typeGroup}-${blockType}`, // HAS REALLY WEIRD BUG IN WEBKIT? second - disappears sometimes.
+
 },{"../actions/ContentActions":175,"../assistants/HTMLRepresentationAssistant":178,"../assistants/TypesAssistant":179,"../stores/ConfigurationStore":187,"../stores/ContentStore":190,"../stores/ReorderingStore":192,"../ui/KeyCodes":195,"../ui/ui-mixins":196,"./EditorToolbars":185,"immutable":11,"object-assign":18,"react":174}],184:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
@@ -30018,7 +29884,7 @@ var FieldLabel = React.createClass({
 
 	getDefaultProps: function getDefaultProps() {
 		return {
-			baseClassNames: ["fieldLabel"],
+			className: "fieldLabel",
 			additionalClassNameExtensions: [],
 			children: [],
 			required: false,
@@ -30072,6 +29938,7 @@ var TextualField = React.createClass({
 	getDefaultProps: function getDefaultProps() {
 		return {
 			type: "text",
+			useLabel: true,
 			value: null,
 			required: false,
 			recommended: false,
@@ -30134,6 +30001,7 @@ var TextualField = React.createClass({
 	render: function render() {
 		var _props = this.props;
 		var type = _props.type;
+		var useLabel = _props.useLabel;
 		var ID = _props.ID;
 		var required = _props.required;
 		var recommended = _props.recommended;
@@ -30150,10 +30018,10 @@ var TextualField = React.createClass({
 			value = pendingValue;
 		}
 
-		var children = [];
+		var inputElement;
 
 		if (type === "text-long") {
-			children.push(React.createElement("textarea", {
+			inputElement = React.createElement("textarea", {
 				key: "textarea",
 				value: value,
 				placeholder: placeholder,
@@ -30163,11 +30031,11 @@ var TextualField = React.createClass({
 				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
 				className: "input-textual input-" + type,
 				tabIndex: tabIndex
-			}));
+			});
 		} else {
 			var inputType = this.getInputTypeForFieldType(type);
 
-			children.push(React.createElement("input", {
+			inputElement = React.createElement("input", {
 				key: "input",
 				type: inputType,
 				value: value,
@@ -30177,25 +30045,32 @@ var TextualField = React.createClass({
 				onChange: continuous ? this.onCommitChange : this.onMakePendingChange,
 				className: "input-textual input-" + type,
 				tabIndex: tabIndex
-			}));
+			});
 		}
 
-		return React.createElement(FieldLabel, {
-			key: ID,
-			title: title,
-			description: description,
-			required: required,
-			recommended: recommended,
-			additionalClassNameExtensions: ["-fieldType-textual", "-fieldType-" + type]
-		}, children);
+		if (useLabel) {
+			return React.createElement(FieldLabel, {
+				key: ID,
+				title: title,
+				description: description,
+				required: required,
+				recommended: recommended,
+				additionalClassNameExtensions: ["-fieldType-textual", "-fieldType-" + type]
+			}, inputElement);
+		} else {
+			return inputElement;
+		}
 	}
 });
 
 var TextualFieldMultiple = React.createClass({
 	displayName: "TextualFieldMultiple",
 
+	mixins: [BaseClassNamesMixin],
+
 	getDefaultProps: function getDefaultProps() {
 		return {
+			baseClassNames: ["fieldMultiple"],
 			type: "text",
 			values: [],
 			required: false,
@@ -30229,6 +30104,7 @@ var TextualFieldMultiple = React.createClass({
 			return React.createElement(TextualField, {
 				key: "field-" + valueIndex,
 				type: type,
+				useLabel: false,
 				ID: ID,
 				required: required,
 				recommended: recommended,
@@ -30240,15 +30116,16 @@ var TextualFieldMultiple = React.createClass({
 					onValueChangedAtIndex(newValue, valueIndex);
 				}
 			});
-		});
+		}, this);
 
 		var children = [React.createElement(FieldLabel, {
 			key: "label",
+			baseClassNames: this.getChildClassNamesWithSuffix("_mainFieldLabel"),
 			title: title
 		})].concat(fieldElements);
 
 		return React.createElement("div", {
-			className: "fieldsMultiple"
+			className: this.getClassNameStringWithExtensions()
 		}, children);
 	}
 });
@@ -30840,7 +30717,8 @@ var ToolbarButton = React.createClass({
 
 	getDefaultProps: function getDefaultProps() {
 		return {
-			baseClassNames: ["toolbarButton"]
+			//baseClassNames: ['toolbarButton']
+			className: "toolbarButton"
 		};
 	}
 });
@@ -31487,7 +31365,7 @@ var BlockTypeChooser = React.createClass({
 
 		var mainButtonTitle;
 		if (isCreate) {
-			mainButtonTitle = "+";
+			mainButtonTitle = "＋"; // Full width plus sign, not your usual plus sign.
 		} else {
 			var chosenBlockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(chosenBlockTypeGroup, chosenBlockType, blockGroupIDsToTypesMap);
 
@@ -31735,7 +31613,7 @@ var ChangeSubsectionElement = React.createClass({
 
 		var subsectionID = subsectionInfo.get("id");
 
-		return React.createElement(SecondaryButton, {
+		return React.createElement(ToolbarButton, {
 			key: subsectionID,
 			baseClassNames: this.getChildClassNamesWithSuffix("_choices_" + subsectionID),
 			title: subsectionInfo.get("title"),
@@ -31761,7 +31639,7 @@ var ChangeSubsectionElement = React.createClass({
 			children.push(React.createElement(SecondaryButton, {
 				key: "mainButton",
 				baseClassNames: this.getChildClassNamesWithSuffix("_mainButton"),
-				title: "Place Below in Portion",
+				title: "Portion Below",
 				onClick: this.onToggleActive
 			}));
 		} else {
@@ -31769,7 +31647,7 @@ var ChangeSubsectionElement = React.createClass({
 
 			var selectedSubsectionInfo = findParticularSubsectionOptionsInList(selectedSubsectionType, subsectionsSpecs);
 
-			children.push(React.createElement(SecondaryButton, {
+			children.push(React.createElement(ToolbarButton, {
 				key: "mainButton",
 				baseClassNames: this.getChildClassNamesWithSuffix("_mainButton"),
 				title: selectedSubsectionInfo.get("title"),
@@ -31786,7 +31664,7 @@ var ChangeSubsectionElement = React.createClass({
 				subsectionChoices.push(React.createElement(ButtonDivider, {
 					baseClassNames: this.getChildClassNamesWithSuffix("_divider"),
 					key: "dividerAboveRemove"
-				}), React.createElement(SecondaryButton, {
+				}), React.createElement(ToolbarButton, {
 					key: "removeSubsection",
 					baseClassNames: this.getChildClassNamesWithSuffix("_removeButton"),
 					title: "Remove Portion",
@@ -31806,6 +31684,20 @@ var ChangeSubsectionElement = React.createClass({
 			className: this.getClassNameStringWithExtensions(classNameExtensions)
 		}, children);
 	}
+});
+
+var InbetweenBlockControls = React.createClass({
+	displayName: "InbetweenBlockControls",
+
+	getDefaultProps: function getDefaultProps() {
+		return {
+			addAtEnd: false,
+			actions: null,
+			baseClassNames: ["blocks_addBlock"]
+		};
+	},
+
+	render: function render() {}
 });
 
 var RearrangeBlockMoveHere = React.createClass({
@@ -33464,7 +33356,7 @@ objectAssign(ContentStore, {
 		if (editFollowingBlock) {
 			var followingBlockIndex = blockIndex + 1;
 			var followingBlockKeyPath = blocksKeyPath.concat(followingBlockIndex);
-			console.log("followingBlockIndex", "getNumberOfBlocks", this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
+			//console.log('followingBlockIndex', 'getNumberOfBlocks', this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
 			if (followingBlockIndex < this.getNumberOfBlocksForDocumentSection(documentID, sectionID)) {
 				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath);
 			} else {
@@ -33553,10 +33445,14 @@ objectAssign(ContentStore, {
 	},
 
 	insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection: function insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, pastedText, options) {
+		// Conform line breaks into just one format: \n
 		pastedText = pastedText.replace(/\r\n/g, "\n");
-		var textParagraphs = pastedText.split("\n");
-		var whiteSpaceRE = /^[\s\n]+$/;
-		textParagraphs = textParagraphs.filter(function (paragraphText) {
+		pastedText = pastedText.replace(/\r/g, "\n");
+		// Split string into an array of lines
+		var textLines = pastedText.split("\n");
+		var whiteSpaceRE = /^[\s\n]*$/;
+		// Remove blank lines
+		textLines = textLines.filter(function (paragraphText) {
 			if (whiteSpaceRE.test(paragraphText)) {
 				return false;
 			}
@@ -33566,7 +33462,7 @@ objectAssign(ContentStore, {
 
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
 
-		var newBlocks = textParagraphs.map(function (paragraphText) {
+		var newBlocks = textLines.map(function (paragraphText) {
 			var textItem = this.newTextItem({ text: paragraphText });
 			var block = this.newBlockWithSameTypeAs(currentBlock);
 			block = block.set("textItems", Immutable.List([textItem]));

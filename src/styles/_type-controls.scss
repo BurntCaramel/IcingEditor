@@ -1,0 +1,215 @@
+%blockTypeControl
+{
+	position: absolute;
+	right: 100%;
+	margin-right: 3vw;
+}
+%blockTypeControl_typeChooser
+{
+	position: relative;
+}
+%blockTypeControl_mainButton
+{
+	@include toolbarButton_light($small: true);
+	
+	opacity: 0.02;
+	// Blur so you can get a sense of a button being there.
+	text-shadow: 0 0 4px black;
+	transition: opacity 0.2s ease-out, text-shadow 0.15s ease;
+}
+%blockTypeControl_mainButton-active
+{
+	opacity: 1.0;
+	text-shadow: none;
+}
+%blockTypeControl_choices
+{
+	position: absolute;
+	z-index: $zIndexActiveMenu;
+	top: 0;
+	left: 100%;
+	display: flex;
+	//align-items: flex-start;
+	//flex-wrap: wrap;
+	text-align: center;
+	@include choicesBackgroundColor();
+	@include holderBorderRadius();
+	@include slightBoxShadow();
+}
+%blockTypeControl_choices_group
+{
+	padding: 4px;
+	
+	.toolbarButton {
+		@include toolbarButton_dark($small: true, $showBackground: false);
+		
+		display: block;
+		width: 100%;
+		padding: 5px 10px;
+	}
+	.toolbarButton-selected {
+		@extend %toolbarButton_dark_pressed;
+	}
+}
+%blockTypeControl_choices_group_title
+{
+	@extend %smallUIHeading;
+	
+	margin: 0;
+	padding: 0;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	font-style: italic;
+	color: white;
+}
+
+
+.blockItemToolbar
+{
+	@extend %blockTypeControl;
+	
+	top: 0;
+	bottom: 0;
+}
+.blockItemToolbar_typeChooser
+{
+	@extend %blockTypeControl_typeChooser;
+}
+.blockItemToolbar_typeChooser_mainButton
+{
+	@extend %blockTypeControl_mainButton;
+}
+.blockItemToolbar_typeChooser_mainButton:hover,
+.blockItemToolbar_typeChooser-active .blockItemToolbar_typeChooser_mainButton,
+.block-edited .blockItemToolbar_typeChooser_mainButton
+{
+	@extend %blockTypeControl_mainButton-active;
+}
+.blockItemToolbar_typeChooser_choices
+{
+	@extend %blockTypeControl_choices;
+}
+.blockItemToolbar_typeChooser_choices_group
+{
+	@extend %blockTypeControl_choices_group;
+}
+.blockItemToolbar_typeChooser_choices_group_title
+{
+	@extend %blockTypeControl_choices_group_title;
+}
+
+
+.block_reorder_moveThisButton,
+.block_reorder_keepHereButton,
+.block_reorder_moveHere_button
+{
+	@include toolbarButton_light($small: true);
+}
+.block_reorder_moveThisButton,
+.block_reorder_moveHere
+{
+	transition: opacity 0.35s ease;
+}
+.block_reorder_moveThisButton-hidden,
+.block_reorder_moveHere-hidden
+{
+	opacity: 0.0;
+}
+
+.block_reorder_moveHere {
+	position: absolute;
+	width: 100%;
+	text-align: center;
+	
+	&:after {
+		content: '';
+		opacity: 0.2;
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 50%;
+		height: 1px;
+		border-bottom: 1px dotted black;
+		border-radius: 1px;
+	}
+}
+.block_reorder_moveHere_button {
+	position: relative;
+	z-index: 1;
+}
+
+
+.blocks_addBlock
+{
+	@extend %blockTypeControl;
+	
+	z-index: 10;
+}
+.blocks_addBlock_typeChooser
+{
+	@extend %blockTypeControl_typeChooser;
+}
+.blocks_addBlock_typeChooser_mainButton
+{
+	@extend %blockTypeControl_mainButton;
+}
+.blocks_addBlock_typeChooser_mainButton:hover,
+.blocks_addBlock_typeChooser-active .blocks_addBlock_typeChooser_mainButton,
+.block-edited .blocks_addBlock_typeChooser_mainButton
+{
+	@extend %blockTypeControl_mainButton-active;
+}
+.blocks_addBlock_typeChooser_choices
+{
+	@extend %blockTypeControl_choices;
+}
+.blocks_addBlock_typeChooser_choices_group
+{
+	@extend %blockTypeControl_choices_group;
+}
+.blocks_addBlock_typeChooser_choices_group_title
+{
+	@extend %blockTypeControl_choices_group_title;
+}
+
+
+.blocks_changeSubsection
+{
+	@extend %blockTypeControl;
+	
+	right: 106%;
+}
+.blocks_changeSubsection_mainButton
+{
+	@extend %blockTypeControl_mainButton;
+}
+.blocks_changeSubsection_choices
+{
+	@extend %blockTypeControl_choices;
+	@extend %blockTypeControl_choices_group;
+	
+	display: block;
+}
+.blocks_changeSubsection_mainButton:hover,
+.blocks_changeSubsection-active .blocks_changeSubsection_mainButton
+{
+	@extend %blockTypeControl_mainButton-active;
+}
+
+$inbetweenBlockSpacing: 22px;
+
+.block
+{
+	margin-bottom: $inbetweenBlockSpacing;
+}
+
+.blocks_addBlock,
+.blocks_changeSubsection,
+.block_reorder_moveHere
+{
+	margin-top: -$inbetweenBlockSpacing;
+}
+
+.blocks_changeSubsection_divider {
+	border-top: 1px solid rgba(white, 0.1);
+}

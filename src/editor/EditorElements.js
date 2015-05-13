@@ -202,7 +202,8 @@ var BlockElement = React.createClass({
 		
 		var classNameExtensions = [
 			`-${typeGroup}`,
-			`-${typeGroup}-${blockType}`,
+			//`-${typeGroup}-${blockType}`, // HAS REALLY WEIRD BUG IN WEBKIT? second - disappears sometimes.
+			("-" + [typeGroup, blockType].join("-")), // So, this instead.
 			`-inSubsection-${subsectionType}`
 		];
 		
@@ -259,20 +260,20 @@ var BlockElement = React.createClass({
 				classNameExtensions.push(
 					'-textItemsIsEmpty'
 				);
-				children = [
+				textItemElements = [
 					React.createElement('span', {
+						className: 'noItemsPlaceholder text',
 						key: 'noItems'
 					})
 				];
 			}
-			else {
-				children = [
-					React.createElement('div', {
-						key: 'textItems',
-						className: this.getChildClassNameStringWithSuffix('_textItems')
-					}, textItemElements)
-				];
-			}
+			
+			children = [
+				React.createElement('div', {
+					key: 'textItems',
+					className: this.getChildClassNameStringWithSuffix('_textItems')
+				}, textItemElements)
+			];
 		}
 		
 		var toolbarActions = {
@@ -597,6 +598,10 @@ EditorElementCreator.BlocksElement = React.createClass({
 		if (focusedBlockKeyPathForReordering) {
 			focusedBlockIndexForReordering = ContentStore.getIndexForObjectKeyPath(focusedBlockKeyPathForReordering);
 		}
+		
+		let createBlockOfTypeAtIndex = function(blockIndex, typeGroupOptions, typeExtensionOptions) {
+			actions.insertBlockOfTypeAtIndex(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), blockIndex);
+		};
 	
 		var elements = [];
 		var blockCount = blocksImmutable.count();
@@ -604,158 +609,8 @@ EditorElementCreator.BlocksElement = React.createClass({
 		for (var blockIndex = 0; blockIndex < (blockCount + 1); blockIndex++) {
 			var blockTypeGroup = blocksImmutable.getIn([blockIndex, 'typeGroup']);
 			var currentBlockIsSubsection = (blockTypeGroup === 'subsection');
-		
-			if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
-				if (isReordering) {
-					let hidden = true;
-					if (focusedBlockIndexForReordering !== null) {
-						if (focusedBlockIndexForReordering !== blockIndex && (focusedBlockIndexForReordering + 1) !== blockIndex) {
-							hidden = false;
-						}
-					}
-				
-					elements.push(
-						React.createElement(Toolbars.RearrangeBlockMoveHere, {
-							key: `moveHere-${blockIndex}`,
-							followingBlockIndex: blockIndex,
-							actions,
-							hidden
-						})	
-					);
-				}
-				else {
-					if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
-						elements.push(
-							React.createElement(Toolbars.ChangeSubsectionElement, {
-								key: `changeSubsection-${blockIndex}`,
-								isCreate: true,
-								followingBlockIndex: blockIndex,
-								subsectionsSpecs,
-								actions
-							})	
-						);
-					}
-				}
-			}
-		
-			previousBlockWasSubsection = currentBlockIsSubsection;
-		
-			let blockElement = elementsForBlocks.get(blockIndex);
-			if (blockElement) {
-				elements.push(blockElement);
-			}
-		}
-	
-		if (!isReordering) {
-			let createBlockOfTypeAtEnd = function(typeGroupOptions, typeExtensionOptions) {
-				actions.insertBlockOfTypeAtIndex(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), blockCount);
-			};
 			
-			elements.push(
-				React.createElement(Toolbars.AddBlockElement, {
-					key: `addBlock-end`,
-					addAtEnd: true,
-					blockTypeGroups,
-					blockGroupIDsToTypesMap,
-					onCreateBlockOfType: createBlockOfTypeAtEnd
-				})
-			);
-		}
 		
-		var isEditingBlock = (editedBlockIdentifier != null);
-		if (isEditingBlock) {
-			classNameExtensions.push('-hasEditedBlock');
-		}
-		
-		return React.createElement('div', {
-			className: this.getClassNameStringWithExtensions(classNameExtensions)
-		}, elements);
-	}
-})
-
-EditorElementCreator.reactElementsWithBlocks = function(
-	blocksImmutable, {
-		specsImmutable,
-		actions,
-		blockTypeGroups,
-		editedBlockIdentifier,
-		editedBlockKeyPath,
-		editedTextItemIdentifier,
-		editedTextItemKeyPath,
-		isReordering = false,
-		focusedBlockIdentifierForReordering,
-		focusedBlockKeyPathForReordering
-	}
-) {
-	let subsectionsSpecs = specsImmutable.get('subsectionTypes', Immutable.List());
-	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroup', Immutable.Map());
-	let traitSpecs = specsImmutable.get('traitTypes', Immutable.List());
-	
-	let currentSubsectionType = specsImmutable.get('defaultSubsectionType', 'normal');
-	let currentSubsectionChildIndex = 0;
-	
-	var elementsForBlocks = blocksImmutable.map(function(blockImmutable, blockIndex) {
-		var blockIdentifier = blockImmutable.get('identifier');
-		var typeGroup = blockImmutable.get('typeGroup');
-		var type = blockImmutable.get('type');
-		var props = {
-			key: blockIdentifier,
-			block: blockImmutable,
-			typeGroup,
-			type,
-			subsectionType: currentSubsectionType,
-			subsectionChildIndex: currentSubsectionChildIndex,
-			actions,
-			subsectionsSpecs,
-			traitSpecs,
-			blockTypeGroups,
-			blockGroupIDsToTypesMap,
-			edited: (blockIdentifier == editedBlockIdentifier),
-			editedBlockIdentifier,
-			editedBlockKeyPath,
-			editedTextItemIdentifier,
-			editedTextItemKeyPath,
-			allowsEditing: !isReordering,
-			isReordering,
-			isFocusedForReordering: (blockIdentifier == focusedBlockIdentifierForReordering),
-			anotherBlockIsFocusedForReordering: (
-				focusedBlockIdentifierForReordering != null && blockIdentifier != focusedBlockIdentifierForReordering
-			),
-			keyPath: ['blocks', blockIndex]
-		};
-		
-		if (typeGroup === 'text') {
-			props.textItems = blockImmutable.get('textItems', Immutable.List()).toJS();
-		}
-		
-		var elementToReturn;
-		
-		if (typeGroup === 'subsection') {
-			elementToReturn = React.createElement(SubsectionElement, props);
-			currentSubsectionType = type;
-			currentSubsectionChildIndex = 0;
-		}
-		else {
-			elementToReturn = React.createElement(BlockElement, props);
-			currentSubsectionChildIndex++;
-		}
-		
-		return elementToReturn;
-	});
-	
-	let focusedBlockIndexForReordering = null;
-	if (focusedBlockKeyPathForReordering) {
-		focusedBlockIndexForReordering = ContentStore.getIndexForObjectKeyPath(focusedBlockKeyPathForReordering);
-	}
-	
-	var elements = [];
-	var blockCount = blocksImmutable.count();
-	var previousBlockWasSubsection = false;
-	for (var blockIndex = 0; blockIndex < (blockCount + 1); blockIndex++) {
-		var blockTypeGroup = blocksImmutable.getIn([blockIndex, 'typeGroup']);
-		var currentBlockIsSubsection = (blockTypeGroup === 'subsection');
-		
-		if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 			if (isReordering) {
 				let hidden = true;
 				if (focusedBlockIndexForReordering !== null) {
@@ -763,7 +618,7 @@ EditorElementCreator.reactElementsWithBlocks = function(
 						hidden = false;
 					}
 				}
-				
+			
 				elements.push(
 					React.createElement(Toolbars.RearrangeBlockMoveHere, {
 						key: `moveHere-${blockIndex}`,
@@ -774,6 +629,15 @@ EditorElementCreator.reactElementsWithBlocks = function(
 				);
 			}
 			else {
+				elements.push(
+					React.createElement(Toolbars.AddBlockElement, {
+						key: `addBlock-before${blockIndex}`,
+						blockTypeGroups,
+						blockGroupIDsToTypesMap,
+						onCreateBlockOfType: createBlockOfTypeAtIndex.bind(null, blockIndex)
+					})
+				);
+				
 				if (!currentBlockIsSubsection && !previousBlockWasSubsection) {
 					elements.push(
 						React.createElement(Toolbars.ChangeSubsectionElement, {
@@ -786,34 +650,38 @@ EditorElementCreator.reactElementsWithBlocks = function(
 					);
 				}
 			}
+		
+			previousBlockWasSubsection = currentBlockIsSubsection;
+		
+			let blockElement = elementsForBlocks.get(blockIndex);
+			if (blockElement) {
+				elements.push(blockElement);
+			}
+		}
+	
+		/*
+		if (!isReordering) {	
+			elements.push(
+				React.createElement(Toolbars.AddBlockElement, {
+					key: `addBlock-end`,
+					addAtEnd: true,
+					blockTypeGroups,
+					blockGroupIDsToTypesMap,
+					onCreateBlockOfType: createBlockOfTypeAtIndex.bind(null, blockCount)
+				})
+			);
+		}*/
+		
+		var isEditingBlock = (editedBlockIdentifier != null);
+		if (isEditingBlock) {
+			classNameExtensions.push('-hasEditedBlock');
 		}
 		
-		previousBlockWasSubsection = currentBlockIsSubsection;
-		
-		let blockElement = elementsForBlocks.get(blockIndex);
-		if (blockElement) {
-			elements.push(blockElement);
-		}
+		return React.createElement('div', {
+			className: this.getClassNameStringWithExtensions(classNameExtensions)
+		}, elements);
 	}
-	
-	let createBlockOfTypeAtEnd = function(typeGroupOptions, typeExtensionOptions) {
-		actions.insertBlockOfTypeAtIndex(typeGroupOptions.get('id'), typeExtensionOptions.get('id'), blockCount);
-	};
-	
-	if (!isReordering) {
-		elements.push(
-			React.createElement(Toolbars.AddBlockElement, {
-				key: `addBlock-end`,
-				addAtEnd: true,
-				blockTypeGroups,
-				blockGroupIDsToTypesMap,
-				onCreateBlockOfType: createBlockOfTypeAtEnd
-			})	
-		);
-	}
-	
-	return elements;
-};
+})
 
 EditorElementCreator.SectionElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
@@ -907,30 +775,12 @@ EditorElementCreator.SectionElement = React.createClass({
 			editingTitle
 		} = this.state;
 		
-		var classNames = ['blocks'];
-	
 		let blocksImmutable = contentImmutable.get('blocks');
-		
-		/*let elements = EditorElementCreator.reactElementsWithBlocks(blocksImmutable, {
-				specsImmutable,
-				blockTypeGroups,
-				editedBlockIdentifier,
-				editedBlockKeyPath,
-				editedTextItemIdentifier,
-				editedTextItemKeyPath,
-				isReordering,
-				focusedBlockIdentifierForReordering,
-				focusedBlockKeyPathForReordering,
-				actions
-			}
-		);
-		*/
-		
-		
-		let elements = [];
+		var classNames = ['blocks'];
+		var elements = [];
 		
 		if (showSectionTitle) {
-			if (editingTitle) {
+			if (editingTitle && false) {
 				elements.push(React.createElement('input', {
 					key: 'editedTitle',
 					value: sectionID,

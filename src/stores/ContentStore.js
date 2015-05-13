@@ -537,7 +537,7 @@ objectAssign(ContentStore, {
 		if (editFollowingBlock) {
 			let followingBlockIndex = blockIndex + 1;
 			let followingBlockKeyPath = blocksKeyPath.concat(followingBlockIndex);
-			console.log('followingBlockIndex', 'getNumberOfBlocks', this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
+			//console.log('followingBlockIndex', 'getNumberOfBlocks', this.getNumberOfBlocksForDocumentSection(documentID, sectionID));
 			if (followingBlockIndex < this.getNumberOfBlocksForDocumentSection(documentID, sectionID)) {
 				this.editBlockWithKeyPathInDocumentSection(documentID, sectionID, followingBlockKeyPath);
 			}
@@ -627,10 +627,14 @@ objectAssign(ContentStore, {
 	},
 	
 	insertRelatedTextItemBlocksAfterBlockAtKeyPathWithPastedTextInDocumentSection(documentID, sectionID, blockKeyPath, pastedText, options) {
+		// Conform line breaks into just one format: \n
 		pastedText = pastedText.replace(/\r\n/g, "\n");
-		let textParagraphs = pastedText.split("\n");
-		let whiteSpaceRE = /^[\s\n]+$/;
-		textParagraphs = textParagraphs.filter(function(paragraphText) {
+		pastedText = pastedText.replace(/\r/g, "\n");
+		// Split string into an array of lines
+		let textLines = pastedText.split("\n");
+		let whiteSpaceRE = /^[\s\n]*$/;
+		// Remove blank lines
+		textLines = textLines.filter(function(paragraphText) {
 			if (whiteSpaceRE.test(paragraphText)) {
 				return false;
 			}
@@ -640,7 +644,7 @@ objectAssign(ContentStore, {
 		
 		var currentBlock = this.getContentObjectAtKeyPathForDocumentSection(documentID, sectionID, blockKeyPath);
 		
-		let newBlocks = textParagraphs.map(function(paragraphText) {
+		let newBlocks = textLines.map(function(paragraphText) {
 			let textItem = this.newTextItem({text: paragraphText});
 			let block = this.newBlockWithSameTypeAs(currentBlock);
 			block = block.set('textItems', Immutable.List([textItem]));
