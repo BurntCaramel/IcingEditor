@@ -29,28 +29,49 @@ $toolbarButtonSelectedBackgroundColor: #5f5f5f;
 $inputBackgroundColor: white;
 
 
+$holderBorderRadius: 2px;
+
+//$slightBoxShadow: 0 1px 1px rgba(darken(white, 50%), 0.2);
+$slightBoxShadow: 0 1px 1px rgba(black, 0.1);
+
+@mixin slightBoxShadow() {
+	box-shadow: $slightBoxShadow;
+}
+
+@mixin holderBorderRadius() {
+	border-radius: $holderBorderRadius;
+}
+
+
 $choicesBackgroundColor: darken($toolbarButtonSelectedBackgroundColor, 6.5%);
 @mixin choicesBackgroundColor() {
 	background-color: $choicesBackgroundColor;
 }
 
-$traitOptionsBackgroundColor: $toolbarButtonBackgroundColor-active; //darken(white, 4%);
-$traitOptionsLabelColor: #555;
+$optionsBackgroundColor: $toolbarButtonBackgroundColor-active; //darken(white, 4%);
+$optionsLabelColor: #555;
 
-@mixin traitOptionsBackgroundColor() {
+%optionsBoxStyling
+{
 	@include slightBoxShadow();
-	background-color: $traitOptionsBackgroundColor;
+	@include holderBorderRadius();
+	background-color: $optionsBackgroundColor;
+}
+
+@mixin particularFieldsHolderStyling()
+{
+	@extend %optionsBoxStyling;
+}
+
+@mixin traitOptionsStyling()
+{
+	@extend %optionsBoxStyling;
 }
 
 @mixin traitOptionsRemoveButtonStyling() {
 	color: mix(red, black, 30%);
 	background-color: mix(red, $toolbarButtonBackgroundColor, 1.5%);
 }
-
-$holderBorderRadius: 2px;
-
-//$slightBoxShadow: 0 1px 1px rgba(darken(white, 50%), 0.2);
-$slightBoxShadow: 0 1px 1px rgba(black, 0.1);
 
 $editSliderTransitionDuration: 0.7s;
 $hoverTransitionDuration: 0.25s;

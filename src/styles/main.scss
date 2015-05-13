@@ -318,7 +318,7 @@ body
 				left: 50%;
 				margin-top: -6px;
 				margin-left: -3px;
-				color: $traitOptionsBackgroundColor;
+				color: $optionsBackgroundColor;
 			}
 		}
 	}
@@ -338,7 +338,7 @@ body
 	
 	
 	.traitOptions {
-		@include traitOptionsBackgroundColor();
+		@include traitOptionsStyling();
 		
 		position: absolute;
 		z-index: 1000;
@@ -349,10 +349,12 @@ body
 		margin-bottom: 10px;
 		padding: 12px;
 		padding-top: 6px;
-		border-radius: $boxBorderRadius;
 		
-		.fieldLabel_title {
-			color: $traitOptionsLabelColor;
+		@if false
+		{
+			.fieldLabel_title {
+				color: $optionsLabelColor;
+			}
 		}
 		
 		.traitOptions_buttons {
@@ -413,6 +415,13 @@ body
 			margin-top: 20px;
 		}
 	}
+	.particularEditor_fieldsHolder
+	{
+		@include particularFieldsHolderStyling();
+		
+		padding-top: 6px;
+	}
+	
 	.particularEditor_fieldsHolder,
 	.document_contentSettings_fields {
 		.fieldLabel_title {

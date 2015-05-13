@@ -31686,20 +31686,6 @@ var ChangeSubsectionElement = React.createClass({
 	}
 });
 
-var InbetweenBlockControls = React.createClass({
-	displayName: "InbetweenBlockControls",
-
-	getDefaultProps: function getDefaultProps() {
-		return {
-			addAtEnd: false,
-			actions: null,
-			baseClassNames: ["blocks_addBlock"]
-		};
-	},
-
-	render: function render() {}
-});
-
 var RearrangeBlockMoveHere = React.createClass({
 	displayName: "RearrangeBlockMoveHere",
 

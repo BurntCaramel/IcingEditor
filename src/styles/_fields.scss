@@ -20,7 +20,6 @@
 		box-sizing: border-box;
 	}
 	
-	.fieldLabel,
 	.choice,
 	.choice_fieldsHolder,
 	.group,
@@ -48,11 +47,12 @@
 		flex-wrap: wrap;
 		justify-content: flex-start;
 		
-		flex: 1 0 33%;
+		flex: 1 0 50%;
 	}
 	.fieldLabel_title {
-		min-width: 72px;
-		font-size: 10px;
+		min-width: 7em;
+		//font-size: 10px;
+		font-size: 12px;
 		text-align: right;
 		padding-right: 1em;
 		line-height: 24px;
@@ -88,9 +88,11 @@
 		padding: 2px 4px;
 	}
 	
-	
+	.fieldLabel-fieldType-url {
+		flex: 1 0 100%; // Only 1 in one row
+	}
 	.fieldLabel-fieldType-number-integer {
-		flex: 2 0 33.333333%; // Up to 3 in one row
+		flex: 1 0 33%; // Up to 3 in one row
 	}
 	
 	.fieldLabel-fieldType-boolean,

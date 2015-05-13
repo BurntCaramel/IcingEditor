@@ -7,14 +7,6 @@
 	font-weight: normal;
 }
 
-@mixin slightBoxShadow() {
-	box-shadow: $slightBoxShadow;
-}
-
-@mixin holderBorderRadius() {
-	border-radius: $holderBorderRadius;
-}
-
 
 %toolbarItem
 {
