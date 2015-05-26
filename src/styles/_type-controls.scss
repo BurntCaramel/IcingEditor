@@ -15,12 +15,14 @@
 	opacity: 0.02;
 	// Blur so you can get a sense of a button being there.
 	text-shadow: 0 0 4px black;
-	transition: opacity 0.2s ease-out, text-shadow 0.15s ease;
+	transition: opacity 0.2s ease-out, text-shadow 0.15s 0.15s ease;
 }
 %blockTypeControl_mainButton-active
 {
 	opacity: 1.0;
 	text-shadow: none;
+	
+	transition: opacity 0.2s ease-out, text-shadow 0.15s 0s ease;
 }
 %blockTypeControl_choices
 {

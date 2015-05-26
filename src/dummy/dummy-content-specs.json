@@ -154,8 +154,61 @@
 				]
 			}
 		],
-		"particular_OFF": [
+		"particular": [
 			{
+				"id": "placeholder",
+				"title": "Placeholder",
+				"type": "fields",
+				"fields": [
+					{
+						"id": "typeChoice",
+						"title": "Type",
+						"type": "choice",
+						"choices": [
+							{
+								"id": "storedIdentifier",
+								"title": "Stored",
+								"fields": [
+									{
+										"id": "identifier",
+										"type": "sourcedValueChoice",
+										"source": "placeholderIdentifiers"
+									}
+								]
+							},
+							{
+								"id": "custom",
+								"title": "Custom",
+								"fields": [
+									{
+										"type": "text",
+										"id": "identifier",
+										"title": "Custom Identifier",
+										"placeholder": "Enter a custom identifier"
+									}
+								]
+							}
+						]
+					}
+				],
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "div",
+						"children": [
+							{
+								"text": {
+									"firstWhichIsPresent": [
+										["fields", "typeChoice", "custom", "identifier"],
+										["fields", "typeChoice", "storedIdentifier", "identifier"]
+									]
+								}
+							}
+						]
+					}
+				]
+			},
+			{
+				"disabled": true,
 				"id": "contactDetails",
 				"title": "Contact Details",
 				"fieldsAreRequired": false,
@@ -232,22 +285,7 @@
 				}
 			},
 			{
-				"id": "blikPlaceholder",
-				"title": "Blik Placeholder",
-				"choices": [
-					{
-						"id": "header",
-						"title": "Blik Header",
-						"description": "The Blik logo"
-					},
-					{
-						"id": "mac-app-store-link",
-						"title": "Blik Mac App Store Link",
-						"description": "The official-style black button linking to the Mac App Store."
-					}
-				]
-			},
-			{
+				"disabled": true,
 				"id": "featureHeading",
 				"title": "Feature Heading",
 				"fieldsAreRequired": true,
@@ -356,7 +394,7 @@
 						},
 						{
 							"id": "catalogElement",
-							"title": "Element from Catalog Section",
+							"title": "From Catalog",
 							"fields": [
 								{
 									"type": "choice-catalogElement"

@@ -28130,8 +28130,61 @@ module.exports={
 				]
 			}
 		],
-		"particular_OFF": [
+		"particular": [
 			{
+				"id": "placeholder",
+				"title": "Placeholder",
+				"type": "fields",
+				"fields": [
+					{
+						"id": "typeChoice",
+						"title": "Type",
+						"type": "choice",
+						"choices": [
+							{
+								"id": "storedIdentifier",
+								"title": "Stored",
+								"fields": [
+									{
+										"id": "identifier",
+										"type": "sourcedValueChoice",
+										"source": "placeholderIdentifiers"
+									}
+								]
+							},
+							{
+								"id": "custom",
+								"title": "Custom",
+								"fields": [
+									{
+										"type": "text",
+										"id": "identifier",
+										"title": "Custom Identifier",
+										"placeholder": "Enter a custom identifier"
+									}
+								]
+							}
+						]
+					}
+				],
+				"innerHTMLRepresentation": [
+					{
+						"tagName": "div",
+						"children": [
+							{
+								"text": {
+									"firstWhichIsPresent": [
+										["fields", "typeChoice", "custom", "identifier"],
+										["fields", "typeChoice", "storedIdentifier", "identifier"]
+									]
+								}
+							}
+						]
+					}
+				]
+			},
+			{
+				"disabled": true,
 				"id": "contactDetails",
 				"title": "Contact Details",
 				"fieldsAreRequired": false,
@@ -28208,22 +28261,7 @@ module.exports={
 				}
 			},
 			{
-				"id": "blikPlaceholder",
-				"title": "Blik Placeholder",
-				"choices": [
-					{
-						"id": "header",
-						"title": "Blik Header",
-						"description": "The Blik logo"
-					},
-					{
-						"id": "mac-app-store-link",
-						"title": "Blik Mac App Store Link",
-						"description": "The official-style black button linking to the Mac App Store."
-					}
-				]
-			},
-			{
+				"disabled": true,
 				"id": "featureHeading",
 				"title": "Feature Heading",
 				"fieldsAreRequired": true,
@@ -28332,7 +28370,7 @@ module.exports={
 						},
 						{
 							"id": "catalogElement",
-							"title": "Element from Catalog Section",
+							"title": "From Catalog",
 							"fields": [
 								{
 									"type": "choice-catalogElement"
@@ -33373,7 +33411,11 @@ objectAssign(ContentStore, {
 				mutableBlock.set("typeGroup", newBlockTypeGroup);
 				mutableBlock.set("type", newBlockType);
 
-				if (!ContentStore.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+				if (ContentStore.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+					if (!mutableBlock.has("textItems")) {
+						mutableBlock.set("textItems", Immutable.List());
+					}
+				} else {
 					mutableBlock.remove("textItems");
 				}
 			});
@@ -34033,8 +34075,12 @@ ContentStore.dispatchToken = AppDispatcher.register(function (payload) {
 			ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function (textItem) {
 				var text = textItem.get("text");
 
+				// Remove trailing space
 				var textTrimmedEnd = text.replace(/[\s]$/, "");
-				var lastLetter = textTrimmedEnd.slice(-1);
+				// Check for closing quotation marks – a full stop here should also be taken into consideration.
+				var textToCheckForPunctuation = textTrimmedEnd.replace(/["'”’]*$/, "");
+				// Get the last letter, we will check if ends in punctuation.
+				var lastLetter = textToCheckForPunctuation.slice(-1);
 				var endsInPunctuation = lastLetter == "." || lastLetter == "!" || lastLetter == "?";
 				if (!endsInPunctuation) {
 					text = textTrimmedEnd + ". ";

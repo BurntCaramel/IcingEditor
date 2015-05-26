@@ -569,7 +569,12 @@ objectAssign(ContentStore, {
 				mutableBlock.set('typeGroup', newBlockTypeGroup);
 				mutableBlock.set('type', newBlockType);
 				
-				if (!ContentStore.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+				if (ContentStore.blockGroupTypeHasTextItems(newBlockTypeGroup)) {
+					if (!mutableBlock.has('textItems')) {
+						mutableBlock.set('textItems', Immutable.List());
+					}
+				}
+				else {
 					mutableBlock.remove('textItems');
 				}
 			});
@@ -1269,8 +1274,12 @@ ContentStore.dispatchToken = AppDispatcher.register( function(payload) {
 		ContentStore.updateTextItemAtKeyPathInDocumentSection(documentID, sectionID, editedTextItemKeyPath, function(textItem) {
 			var text = textItem.get('text');
 			
+			// Remove trailing space
 			var textTrimmedEnd = text.replace(/[\s]$/, '');
-			var lastLetter = textTrimmedEnd.slice(-1);
+			// Check for closing quotation marks – a full stop here should also be taken into consideration.
+			var textToCheckForPunctuation = textTrimmedEnd.replace(/["'”’]*$/, '');
+			// Get the last letter, we will check if ends in punctuation.
+			var lastLetter = textToCheckForPunctuation.slice(-1);
 			var endsInPunctuation = (lastLetter == '.' || lastLetter == '!' || lastLetter == '?');
 			if (!endsInPunctuation) {
 				text = textTrimmedEnd + '. ';

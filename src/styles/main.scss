@@ -139,18 +139,19 @@ body
 	
 	
 	.document_section_blocks {
+		@include editorBlockStyle();
+		
 		position: relative;
 		margin-bottom: 40px;
-		//padding: 8px 8px;
+		padding: 8px 0;
 		transition: left $editSliderTransitionDuration ease-out, background-color $hoverTransitionDuration ease;
-		background-color: $documentBackgroundColor;
-		//box-shadow: 0 0 8px 4px $documentBackgroundColor;
 	}
 	
 	
 	.block
 	{
 		position: relative;
+		padding: 0 8px;
 		//margin-bottom: 20px;
 		font-size: 15px;
 		line-height: 1.3;
