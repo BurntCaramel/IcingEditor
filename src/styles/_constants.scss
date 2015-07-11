@@ -2,6 +2,8 @@ $mainFontFamily: 'Helvetica Neue', sans-serif;
 
 $darkColor: #111;
 $darkLiftColor: #555;
+$keyColor: rgba(20, 150, 255, 1.0);
+$linkColor: rgba(20, 200, 255, 1.0);
 $backgroundColor: #f8f8f8;
 $backgroundColor: #efefef;
 //$backgroundColor: #f0f0f0;
@@ -22,8 +24,9 @@ $toolbarButtonBackgroundColor-active: lighten($toolbarButtonBackgroundColor, 5.5
 
 $toolbarButtonSelectedTextColor: white;
 //$toolbarButtonSelectedBackgroundColor: #404040;
-$toolbarButtonSelectedBackgroundColor: #6a6a6a;
+//$toolbarButtonSelectedBackgroundColor: #6a6a6a;
 $toolbarButtonSelectedBackgroundColor: #5f5f5f;
+$toolbarButtonSelectedBackgroundColor: $keyColor;
 
 
 $inputBackgroundColor: white;
@@ -69,8 +72,8 @@ $optionsLabelColor: #555;
 }
 
 @mixin traitOptionsRemoveButtonStyling() {
-	color: mix(red, black, 30%);
-	background-color: mix(red, $toolbarButtonBackgroundColor, 1.5%);
+	color: rgb(200, 10, 0);
+	background-color: mix(red, $toolbarButtonBackgroundColor, 2.0%);
 }
 
 $editSliderTransitionDuration: 0.7s;

@@ -280,14 +280,26 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 			}
 			else if (typeGroup === 'text') {
 				elements = block.get('textItems').map(function(textItem) {
-					let element = textItem.get('text');
-					let traits = textItem.get('traits');
+					let itemType = textItem.get('type');
+					if (itemType === 'text') {
+						let element = textItem.get('text');
+						let traits = textItem.get('traits');
 					
-					if (traits) {
-						element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits, traitsSpecs);
-					}
+						if (traits) {
+							element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits, traitsSpecs);
+						}
 				
-					return element;
+						return element;
+					}
+					else if (itemType === 'lineBreak') {
+						return React.createElement('br');
+					}
+					else if (itemType === 'catalogItem') {
+						return null; // TODO
+					}
+					else if (itemType === 'placeholder') {
+						return null; // TODO
+					}
 				}).toJS();
 			}
 			

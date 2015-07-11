@@ -166,12 +166,12 @@
 						"type": "choice",
 						"choices": [
 							{
-								"id": "storedIdentifier",
-								"title": "Stored",
+								"id": "providedIdentifier",
+								"title": "Provided",
 								"fields": [
 									{
 										"id": "identifier",
-										"type": "sourcedValueChoice",
+										"type": "providedValueChoice",
 										"source": "placeholderIdentifiers"
 									}
 								]

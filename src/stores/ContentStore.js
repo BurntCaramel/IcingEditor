@@ -212,7 +212,7 @@ function getSpecsForDocument(documentID) {
 		if (defaultSpecsOptions.get('wantsDefaultBasicSpecs', true)) {
 			let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
 			if (!defaultSpecs) {
-				var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
+				var defaultSpecsJSON = require('../dummy/default-1.0.json');
 				defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
 				SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
 			}
@@ -224,7 +224,7 @@ function getSpecsForDocument(documentID) {
 			/*
 			let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
 			if (!defaultSpecs) {
-				var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
+				var defaultSpecsJSON = require('../dummy/default-1.0.json');
 				defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
 				SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
 			}
@@ -321,7 +321,7 @@ objectAssign(ContentStore, {
 	
 	getIndexForObjectKeyPath,
 	
-	newTextItem: function(options) {
+	newTextItem(options) {
 		var textItem = Immutable.Map({
 			"type": "text",
 			"identifier": newIdentifier(),
@@ -335,9 +335,27 @@ objectAssign(ContentStore, {
 		return textItem;
 	},
 	
-	newLineBreakTextItem: function() {
+	newLineBreakTextItem() {
 		var textItem = Immutable.Map({
 			"type": "lineBreak",
+			"identifier": newIdentifier()
+		});
+		
+		return textItem;
+	},
+	
+	newCatalogItemTextItem() {
+		var textItem = Immutable.Map({
+			"type": "catalogItem",
+			"identifier": newIdentifier()
+		});
+		
+		return textItem;
+	},
+	
+	newPlaceholderTextItem() {
+		var textItem = Immutable.Map({
+			"type": "placeholder",
 			"identifier": newIdentifier()
 		});
 		

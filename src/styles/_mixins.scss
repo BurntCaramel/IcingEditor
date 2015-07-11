@@ -30,14 +30,6 @@
 	border: none;
 	background: none;
 }
-%toolbarButton_small
-{
-	@extend %toolbarItem;
-	
-	padding: 3px 6px;
-	font-size: 10px;
-	border-radius: 2px;
-}
 %toolbarDivider
 {
 	@extend %toolbarItem;
@@ -47,6 +39,14 @@
 	@extend %toolbarItem;
 	
 	border-radius: $boxBorderRadius;
+}
+%toolbarButton_small
+{
+	@extend %toolbarItem;
+	
+	padding: 3px 6px;
+	font-size: 10px;
+	border-radius: 2px;
 }
 %toolbarButton_light
 {

@@ -3,18 +3,12 @@
 */
 
 var React = require('react');
-let {ButtonMixin, BaseClassNamesMixin} = require('../ui/ui-mixins');
+let {BaseClassNamesMixin} = require('../ui/ui-mixins');
 var normalizeURL = require('normalize-url');
 let KeyCodes = require('../ui/KeyCodes');
 
 
 var EditorFields = {};
-
-var changeInfoWithIDAndValue = function(ID, value) {
-	var changeInfo = {};
-	changeInfo[ID] = value;
-	return changeInfo;
-};
 
 EditorFields.fieldTypeIsTextual = function(fieldType) {
 	var textualFieldTypes = {
@@ -604,8 +598,9 @@ EditorFields.FieldsHolder = React.createClass({
 				}
 			});
 		}
-	
-		console.error('unknown field type', type);
+		else {
+			console.error('unknown field type', type);
+		}
 	},
 	
 	render() {

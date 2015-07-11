@@ -63,6 +63,17 @@
 		height: 0.8vh;
 	}
 }
+
+
+// burntcaramel/code
+.block-media-code-HTMLRepresentation {
+	overflow: auto;
+	margin: 0;
+}
+.textItem-hasTrait-code .text {
+	font-family: monospace;
+	white-space: pre;
+}
 	
 
 // TEXT ITEMS
@@ -76,7 +87,7 @@
 	font-style: italic;
 }
 .textItem-hasTrait-link .text {
-	border-bottom: 1px dotted rgba(20, 200, 255, 1.0);
+	border-bottom: 1px dotted $linkColor;
 }
 
 .textItem-hasTrait-lineBreakAfter .text:after {

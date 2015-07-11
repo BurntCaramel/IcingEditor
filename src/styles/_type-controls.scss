@@ -11,14 +11,22 @@
 %blockTypeControl_mainButton
 {
 	@include toolbarButton_light($small: true);
+	//@include toolbarButton_dark($small: true);
+	//@extend %toolbarButton_small;
 	
 	opacity: 0.02;
 	// Blur so you can get a sense of a button being there.
 	text-shadow: 0 0 4px black;
 	transition: opacity 0.2s ease-out, text-shadow 0.15s 0.15s ease;
 }
+%blockTypeControl_mainButton-chosen
+{
+	@include toolbarButton_dark($small: true);
+}
 %blockTypeControl_mainButton-active
 {
+	//@include toolbarButton_dark($small: true);
+	
 	opacity: 1.0;
 	text-shadow: none;
 	
@@ -80,6 +88,7 @@
 .blockItemToolbar_typeChooser_mainButton
 {
 	@extend %blockTypeControl_mainButton;
+	@extend %blockTypeControl_mainButton-chosen;
 }
 .blockItemToolbar_typeChooser_mainButton:hover,
 .blockItemToolbar_typeChooser-active .blockItemToolbar_typeChooser_mainButton,
@@ -184,6 +193,10 @@
 .blocks_changeSubsection_mainButton
 {
 	@extend %blockTypeControl_mainButton;
+}
+.blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton
+{
+	@extend %blockTypeControl_mainButton-chosen;
 }
 .blocks_changeSubsection_choices
 {

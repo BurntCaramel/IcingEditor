@@ -229,8 +229,11 @@ var BlockElement = React.createClass({
 					let elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 						HTMLRepresentation, valueForRepresentation
 					);
+					
+					var tagNameForBlock = blockTypeOptions.get('outerHTMLTagName', 'div');
+					
 					children = [
-						React.createElement('div', {
+						React.createElement(tagNameForBlock, {
 							key: 'HTMLRepresentation',
 							className: 'block-' + typeGroup + '-' + blockType + '-HTMLRepresentation'
 						}, elementsForHTMLRepresentation)
@@ -438,15 +441,9 @@ var TextItem = React.createClass({
 		}, contentChildren);
 	}
 });
-/*
-var PlaceholderItem = React.createClass({
-	getDefaultProps: function() {
-		return {
-			traits: {}
-		};
-	}
-});
-*/
+
+
+
 var EditorElementCreator = {};
 
 EditorElementCreator.BlockElement = BlockElement;
@@ -915,21 +912,32 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 					}
 				})
 			);
-			
-			if (false) {
-				catalogElements.push(
-					React.createElement(Toolbars.CreateSectionElement, {
-						key: 'createCatalogSection',
-						type: 'catalog',
-						onCreateNewSection() {
-							documentActions.createNewCatalogSection()
-						},
-						onAddExternalSection() {
-							documentActions.addExternalCatalogSection()
-						}
-					})
-				);
-			}
+		}
+		
+		if (ConfigurationStore.getWantsCreateCatalogsFunctionality()) {
+			catalogElements.push(
+				React.createElement(Toolbars.CreateSectionElement, {
+					key: 'createLinkCatalog',
+					type: 'catalogLinks',
+					onCreateNewSection() {
+						documentActions.createNewCatalogSection('link')
+					},
+					onAddExternalSection() {
+						documentActions.addExternalCatalogSection('link')
+					}
+				}),
+				
+				React.createElement(Toolbars.CreateSectionElement, {
+					key: 'createElementCatalog',
+					type: 'catalogElements',
+					onCreateNewSection() {
+						documentActions.createNewCatalogSection('element')
+					},
+					onAddExternalSection() {
+						documentActions.addExternalCatalogSection('element')
+					}
+				})
+			);
 		}
 		
 		

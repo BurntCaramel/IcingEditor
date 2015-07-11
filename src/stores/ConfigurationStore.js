@@ -70,8 +70,12 @@ ConfigurationStore.getWantsViewHTMLFunctionality = function() {
 };
 
 ConfigurationStore.getWantsMultipleSectionsFunctionality = function() {
-	return getKeyFromSettingsJSON('wantsMultipleSectionsFunctionality', true);
+	return getKeyFromSettingsJSON('wantsMultipleSectionsFunctionality', false);
 };
+
+ConfigurationStore.getWantsCreateCatalogsFunctionality = function() {
+	return getKeyFromSettingsJSON('wantsCreateCatalogsFunctionality', true);
+}
 
 ConfigurationStore.getWantsContentSettingsFunctionality = function() {
 	return getKeyFromSettingsJSON('wantsContentSettingsFunctionality', true);
@@ -84,16 +88,20 @@ ConfigurationStore.getShowsDocumentTitle = function() {
 ConfigurationStore.getAvailableSectionTypes = function() {
 	return Immutable.fromJS([
 		{
-			"id": "writing", // Can be used for articles, notes, prose, sources to quote from
+			"id": "writing", // Can be used for articles, notes, prose, sources to quote from, templates to be filled
 			"title": "Writing"
 		},
 		{
-			"id": "catalog", // Can be used for information, reusable bits, footnotes/sidenotes
+			"id": "catalog", // Can be used for links (referenced like Markdown), reusable elements, footnotes/sidenotes, and also for a linked list, list of inspiration, C.V.
 			"title": "Catalog"
 		},
 		{
-			"id": "form", // Can be used for specific information
+			"id": "form", // Can be used for specific information being requested
 			"title": "Form"
+		},
+		{
+			"id": "adjuster", // Can be used to add traits to writings, designations to catalogs, adjust placeholders.
+			"title": "Adjuster"
 		}
 		/*
 		// Uses isExternal boolean instead, with above type still specified.

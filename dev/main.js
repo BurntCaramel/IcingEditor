@@ -28142,12 +28142,12 @@ module.exports={
 						"type": "choice",
 						"choices": [
 							{
-								"id": "storedIdentifier",
-								"title": "Stored",
+								"id": "providedIdentifier",
+								"title": "Provided",
 								"fields": [
 									{
 										"id": "identifier",
-										"type": "sourcedValueChoice",
+										"type": "providedValueChoice",
 										"source": "placeholderIdentifiers"
 									}
 								]
@@ -29194,7 +29194,10 @@ var BlockElement = React.createClass({
 					});
 
 					var elementsForHTMLRepresentation = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(HTMLRepresentation, valueForRepresentation);
-					children = [React.createElement("div", {
+
+					var tagNameForBlock = blockTypeOptions.get("outerHTMLTagName", "div");
+
+					children = [React.createElement(tagNameForBlock, {
 						key: "HTMLRepresentation",
 						className: "block-" + typeGroup + "-" + blockType + "-HTMLRepresentation"
 					}, elementsForHTMLRepresentation)];
@@ -29378,15 +29381,7 @@ var TextItem = React.createClass({
 		}, contentChildren);
 	}
 });
-/*
-var PlaceholderItem = React.createClass({
-	getDefaultProps: function() {
-		return {
-			traits: {}
-		};
-	}
-});
-*/
+
 var EditorElementCreator = {};
 
 EditorElementCreator.BlockElement = BlockElement;
@@ -29843,19 +29838,28 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 					documentActions.addExternalWritingSection();
 				}
 			}));
+		}
 
-			if (false) {
-				catalogElements.push(React.createElement(Toolbars.CreateSectionElement, {
-					key: "createCatalogSection",
-					type: "catalog",
-					onCreateNewSection: function onCreateNewSection() {
-						documentActions.createNewCatalogSection();
-					},
-					onAddExternalSection: function onAddExternalSection() {
-						documentActions.addExternalCatalogSection();
-					}
-				}));
-			}
+		if (ConfigurationStore.getWantsCreateCatalogsFunctionality()) {
+			catalogElements.push(React.createElement(Toolbars.CreateSectionElement, {
+				key: "createLinkCatalog",
+				type: "catalogLinks",
+				onCreateNewSection: function onCreateNewSection() {
+					documentActions.createNewCatalogSection("link");
+				},
+				onAddExternalSection: function onAddExternalSection() {
+					documentActions.addExternalCatalogSection("link");
+				}
+			}), React.createElement(Toolbars.CreateSectionElement, {
+				key: "createElementCatalog",
+				type: "catalogElements",
+				onCreateNewSection: function onCreateNewSection() {
+					documentActions.createNewCatalogSection("element");
+				},
+				onAddExternalSection: function onAddExternalSection() {
+					documentActions.addExternalCatalogSection("element");
+				}
+			}));
 		}
 
 		return React.createElement("div", {
@@ -29884,19 +29888,12 @@ var React = require("react");
 
 var _require = require("../ui/ui-mixins");
 
-var ButtonMixin = _require.ButtonMixin;
 var BaseClassNamesMixin = _require.BaseClassNamesMixin;
 
 var normalizeURL = require("normalize-url");
 var KeyCodes = require("../ui/KeyCodes");
 
 var EditorFields = {};
-
-var changeInfoWithIDAndValue = function changeInfoWithIDAndValue(ID, value) {
-	var changeInfo = {};
-	changeInfo[ID] = value;
-	return changeInfo;
-};
 
 EditorFields.fieldTypeIsTextual = function (fieldType) {
 	var textualFieldTypes = {
@@ -30482,9 +30479,9 @@ EditorFields.FieldsHolder = React.createClass({
 					onReplaceInfoAtKeyPath(newValue, [ID]);
 				}
 			});
+		} else {
+			console.error("unknown field type", type);
 		}
-
-		console.error("unknown field type", type);
 	},
 
 	render: function render() {
@@ -30545,8 +30542,15 @@ var TextItemTextArea = React.createClass({
 	getDefaultProps: function getDefaultProps() {
 		return {
 			text: "",
+			shorter: false,
 			tabIndex: 0
 		};
+	},
+
+	propsTypes: {
+		text: React.PropTypes.string.isRequired,
+		shorter: React.PropTypes.bool,
+		tabIndex: React.PropTypes.number
 	},
 
 	getInitialState: function getInitialState() {
@@ -30728,14 +30732,22 @@ var TextItemTextArea = React.createClass({
 	render: function render() {
 		var _props = this.props;
 		var text = _props.text;
+		var shorter = _props.shorter;
 		var tabIndex = _props.tabIndex;
+
+		var classNames = ["textItemEditor_textarea"];
+
+		if (shorter) {
+			classNames.push("textItemEditor_textarea-shorter");
+		}
 
 		return React.createElement("textarea", {
 			ref: "textarea",
 			value: text,
-			className: "editedTextItemTextArea",
+			className: classNames.join(" "),
 			width: 10,
 			height: 20,
+			placeholder: "Type text…",
 			spellCheck: "true",
 			//key: 'textarea',
 			onChange: this.onChange,
@@ -31139,6 +31151,10 @@ var TextItemEditor = React.createClass({
 		this.setState(stateChange);
 	},
 
+	getShowCreationOptions: function getShowCreationOptions() {
+		return this.props.text == "";
+	},
+
 	render: function render() {
 		var _props = this.props;
 		var block = _props.block;
@@ -31153,6 +31169,8 @@ var TextItemEditor = React.createClass({
 		var shiftKeyIsPressed = _state.shiftKeyIsPressed;
 		var optionKeyIsPressed = _state.optionKeyIsPressed;
 		var commandKeyIsPressed = _state.commandKeyIsPressed;
+
+		var showCreationOptions = this.getShowCreationOptions();
 
 		//var textEditorInstructions = 'Press enter to create a new paragraph. Press space twice to create a new sentence.';
 		var textEditorInstructions;
@@ -31172,28 +31190,52 @@ var TextItemEditor = React.createClass({
 			className: "textItemEditor_instructions_keyShortcuts"
 		}, textEditorInstructions)]);
 
-		var children = [React.createElement(TextItemTextArea, {
+		var children = [];
+
+		children.push(instructionsElement, React.createElement(TextItemTextArea, {
 			key: "textAreaHolder",
 			text: text,
+			shorter: showCreationOptions,
 			actions: actions,
 			onModifierKeyChange: this.onModifierKeyChange,
 			traitSpecs: traitSpecs
-		}),
-		/*
-  React.createElement('h5', {
-  	key: 'itemTraitsToolbar_heading',
-  	className: 'textItemEditor_itemTraitsToolbar_heading'
-  }, 'Above text'),
-  */
-		React.createElement(ItemTraitsToolbar, {
-			key: "traitsToolbar",
-			traitSpecs: traitSpecs,
-			traits: traits,
-			blockTypeGroup: blockTypeGroup,
-			blockType: blockType,
-			actions: actions,
-			className: "textItemEditor_traitsToolbar"
-		}), instructionsElement];
+		}));
+
+		var buttonClass = "textItemEditor_mainButton";
+
+		if (showCreationOptions) {
+			children.push(React.createElement(ToolbarButton, {
+				key: "beginLinkButton",
+				title: "Begin Link",
+				className: buttonClass
+			}), React.createElement(ToolbarButton, {
+				key: "beginRunButton",
+				title: "Begin Run",
+				className: buttonClass
+			}), React.createElement(ToolbarButton, {
+				key: "lineBreakButton",
+				title: "Add Line Break",
+				className: buttonClass
+			}), React.createElement(ToolbarButton, {
+				key: "catalogButton",
+				title: "Add Item from Catalog",
+				className: buttonClass
+			}), React.createElement(ToolbarButton, {
+				key: "placeholderButton",
+				title: "Add Item Placeholder",
+				className: buttonClass
+			}));
+		} else {
+			children.push(React.createElement(ItemTraitsToolbar, {
+				key: "traitsToolbar",
+				traitSpecs: traitSpecs,
+				traits: traits,
+				blockTypeGroup: blockTypeGroup,
+				blockType: blockType,
+				actions: actions,
+				className: "textItemEditor_traitsToolbar"
+			}));
+		}
 
 		if (false) {
 			children.push(React.createElement("h5", {
@@ -31822,9 +31864,18 @@ var CreateSectionElement = React.createClass({
 		var onCreateNewSection = _props.onCreateNewSection;
 		var onAddExternalSection = _props.onAddExternalSection;
 
-		var isWriting = type === "writing";
-		var buttonTitle = isWriting ? "New Writing" : "New Catalog";
-		var externalButtonTitle = isWriting ? "Add External Writing" : "Add External Catalog";
+		var buttonTitle;
+		var externalButtonTitle;
+		if (type === "writing") {
+			buttonTitle = "New Writing";
+			externalButtonTitle = "Use External Writing";
+		} else if (type === "catalogLinks") {
+			buttonTitle = "New Links Catalog";
+			externalButtonTitle = "Use External Links Catalog";
+		} else if (type === "catalogElements") {
+			buttonTitle = "New Elements Catalog";
+			externalButtonTitle = "Use External Elements Catalog";
+		}
 
 		return React.createElement("div", {
 			className: this.getClassNameStringWithExtensions()
@@ -32265,14 +32316,23 @@ PreviewElementsCreator.reactElementsWithBlocks = function (blocksImmutable, spec
 					}
 				} else if (typeGroup === "text") {
 					elements = block.get("textItems").map(function (textItem) {
-						var element = textItem.get("text");
-						var traits = textItem.get("traits");
+						var itemType = textItem.get("type");
+						if (itemType === "text") {
+							var element = textItem.get("text");
+							var _traits = textItem.get("traits");
 
-						if (traits) {
-							element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits, traitsSpecs);
+							if (_traits) {
+								element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, _traits, traitsSpecs);
+							}
+
+							return element;
+						} else if (itemType === "lineBreak") {
+							return React.createElement("br");
+						} else if (itemType === "catalogItem") {
+							return null; // TODO
+						} else if (itemType === "placeholder") {
+							return null; // TODO
 						}
-
-						return element;
 					}).toJS();
 				}
 
@@ -32520,7 +32580,11 @@ ConfigurationStore.getWantsViewHTMLFunctionality = function () {
 };
 
 ConfigurationStore.getWantsMultipleSectionsFunctionality = function () {
-	return getKeyFromSettingsJSON("wantsMultipleSectionsFunctionality", true);
+	return getKeyFromSettingsJSON("wantsMultipleSectionsFunctionality", false);
+};
+
+ConfigurationStore.getWantsCreateCatalogsFunctionality = function () {
+	return getKeyFromSettingsJSON("wantsCreateCatalogsFunctionality", true);
 };
 
 ConfigurationStore.getWantsContentSettingsFunctionality = function () {
@@ -32533,14 +32597,17 @@ ConfigurationStore.getShowsDocumentTitle = function () {
 
 ConfigurationStore.getAvailableSectionTypes = function () {
 	return Immutable.fromJS([{
-		id: "writing", // Can be used for articles, notes, prose, sources to quote from
+		id: "writing", // Can be used for articles, notes, prose, sources to quote from, templates to be filled
 		title: "Writing"
 	}, {
-		id: "catalog", // Can be used for information, reusable bits, footnotes/sidenotes
+		id: "catalog", // Can be used for links (referenced like Markdown), reusable elements, footnotes/sidenotes, and also for a linked list, list of inspiration, C.V.
 		title: "Catalog"
 	}, {
-		id: "form", // Can be used for specific information
+		id: "form", // Can be used for specific information being requested
 		title: "Form"
+	}, {
+		id: "adjuster", // Can be used to add traits to writings, designations to catalogs, adjust placeholders.
+		title: "Adjuster"
 	}
 	/*
  // Uses isExternal boolean instead, with above type still specified.
@@ -33061,7 +33128,7 @@ function getSpecsForDocument(documentID) {
 		if (defaultSpecsOptions.get("wantsDefaultBasicSpecs", true)) {
 			var defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
 			if (!defaultSpecs) {
-				var defaultSpecsJSON = require("../dummy/dummy-content-specs.json");
+				var defaultSpecsJSON = require("../dummy/default-1.0.json");
 				defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
 				SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
 			}
@@ -33172,6 +33239,24 @@ objectAssign(ContentStore, {
 	newLineBreakTextItem: function newLineBreakTextItem() {
 		var textItem = Immutable.Map({
 			type: "lineBreak",
+			identifier: newIdentifier()
+		});
+
+		return textItem;
+	},
+
+	newCatalogItemTextItem: function newCatalogItemTextItem() {
+		var textItem = Immutable.Map({
+			type: "catalogItem",
+			identifier: newIdentifier()
+		});
+
+		return textItem;
+	},
+
+	newPlaceholderTextItem: function newPlaceholderTextItem() {
+		var textItem = Immutable.Map({
+			type: "placeholder",
 			identifier: newIdentifier()
 		});
 
@@ -34157,13 +34242,13 @@ module.exports = ContentStore;
 /*
 let defaultSpecs = SpecsStore.getSpecWithURL(defaultSpecsURL);
 if (!defaultSpecs) {
-	var defaultSpecsJSON = require('../dummy/dummy-content-specs.json');
+	var defaultSpecsJSON = require('../dummy/default-1.0.json');
 	defaultSpecs = Immutable.fromJS(defaultSpecsJSON);
 	SpecsStore.setContentForSpecWithURL(defaultSpecsURL, defaultSpecs);
 }
 */
 
-},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"../dummy/dummy-content-specs.json":180,"./ConfigurationStore":187,"./ReorderingStore":192,"./SpecsStore":193,"immutable":11,"microevent":12,"object-assign":18}],191:[function(require,module,exports){
+},{"../actions/ContentActionsEventIDs":176,"../app-dispatcher":177,"../dummy/default-1.0.json":180,"./ConfigurationStore":187,"./ReorderingStore":192,"./SpecsStore":193,"immutable":11,"microevent":12,"object-assign":18}],191:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */

@@ -237,19 +237,25 @@ body
 		position: absolute;
 		left: 100%;
 		margin-left: 3vw;
+	}
+	.textItemEditor_textarea
+	{
+		box-sizing: border-box;
+		max-width: $editorInputMaxWidth;
+		width: $editorInputWidth;
+		height: 140px;
+		padding: 10px;
+		font-size: 17px;
+		line-height: 1.3;
+		background-color: $inputBackgroundColor;
+		border: none;
 		
-		textarea
-		{
-			box-sizing: border-box;
-			max-width: $editorInputMaxWidth;
-			width: $editorInputWidth;
-			height: 140px;
-			padding: 10px;
-			font-size: 17px;
-			line-height: 1.3;
-			background-color: $inputBackgroundColor;
-			border: none;
-		}
+		transition: height 0.38s ease-out;
+	}
+	.textItemEditor_textarea-shorter
+	{
+		height: 40px;
+		padding-bottom: 8px;
 	}
 	
 	.textItemEditor_instructions {
@@ -262,6 +268,14 @@ body
 	}
 	.textItemEditor_instructions_keyShortcuts {
 		
+	}
+	
+	.textItemEditor_mainButton {
+		@include toolbarButton_light();
+		
+		display: block;
+		margin-top: 10px;
+		margin-bottom: 10px;
 	}
 	
 	.textItemEditor_traitsToolbar
@@ -482,7 +496,7 @@ body
 			left: 100%;
 			margin-left: 40px;
 		}
-		.textItemEditor textarea,
+		.textItemEditor_textarea,
 		.particularEditor
 		{
 			max-width: none;
