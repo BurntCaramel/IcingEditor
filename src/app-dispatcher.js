@@ -1,5 +1,26 @@
-var Dispatcher = require('flux').Dispatcher;
+import { Dispatcher } from 'flux');
 
-var AppDispatcher = new Dispatcher();
+const dispatcher = new Dispatcher();
 
-module.exports = AppDispatcher;
+export function registerStoreForDispatchedActionsWithFunctions(store, StoreFunctions) {
+  return dispatcher.register( (payload) => {
+  	if (!payload.eventID) {
+  		return;
+  	}
+
+    const action = StoreFunctions[payload.eventID];
+    if (action) {
+      action.call(null, store, payload);
+    }
+  };
+}
+
+export function bindActions(actions) {
+  return actions.map((actionFunction) => {
+    return () => {
+      dispatcher.dispatch(actionFunction.apply(null, arguments));
+    };
+  });
+}
+
+export default dispatcher;
