@@ -2,18 +2,23 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-var React = require('react');
+import React, { PropTypes } from 'react';
 var Toolbars = require('./EditorToolbars');
 var Immutable = require('immutable');
 var ContentStore = require('../stores/ContentStore');
 var ContentActions = require('../actions/ContentActions');
 var ConfigurationStore = require('../stores/ConfigurationStore');
 var ReorderingStore = require('../stores/ReorderingStore');
-let objectAssign = require('object-assign');
 
 
 const CatalogItem = React.createClass({
 	mixins: [BaseClassNamesMixin],
+
+	propTypes: {
+		actions: PropTypes.shape({
+			onEditIdentifier: PropTypes.func,
+		})
+	},
 
 	getDefaultProps() {
 		return {

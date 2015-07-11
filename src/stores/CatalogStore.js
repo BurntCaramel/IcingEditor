@@ -1,5 +1,6 @@
 
 import Immutable from 'immutable';
+import generateUUID from 'generateUUID';
 
 
 export function newStore() {
@@ -10,11 +11,11 @@ export function newStore() {
 	});
 };
 
-export function newIdentifier(element) {
-
+export function newIdentifier() {
+	return generateUUID();
 };
 
-export function addElementAtIndexUsingIdentifier(store, element, index, identifier) {
+export function addElementAtIndexUsingIdentifier(store, {element, index, elementIdentifier}) {
 	store = store.update('orderedIdentifiers', orderedIdentifiers => {
 		return orderedIdentifiers.splice(index, 0, identifier);
 	});
@@ -25,15 +26,15 @@ export function addElementAtIndexUsingIdentifier(store, element, index, identifi
 	return store;
 };
 
-export function updateDesignationsForElementWithIdentifier(store, elementIdentifier, tagsUpdater) {
+export function updateDesignationsForElementWithIdentifier(store, {elementIdentifier, tagsUpdater}) {
 	store = store.update('identifiersToDesignations', identifiersToDesignations => {
 		return identifiersToDesignations.update(elementIdentifier, Immutable.List(), tagsUpdater);
 	});
 };
 
-export function removeElementWithIdentifier(store, elementIdentifier) {
+export function removeElementWithIdentifier(store, {elementIdentifier}) {
 	const index = store.get('orderedIdentifiers').indexOf(elementIdentifier);
-	
+
 	store = store.update('orderedIdentifiers', orderedIdentifiers => {
 		return orderedIdentifiers.remove(index);
 	});
