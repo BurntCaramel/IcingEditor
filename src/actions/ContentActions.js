@@ -33,7 +33,7 @@ function loadContentForDocumentWithID(documentID) {
 
 function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 	specsURLs = Immutable.fromJS(specsURLs);
-	
+
 	dispatchPayload({
 		eventID: documentEventIDs.setSpecsURLs,
 		documentID,
@@ -45,10 +45,10 @@ function setSpecsURLsForDocumentWithID(documentID, specsURLs) {
 function getActionsForDocument(documentID) {
 	function dispatchForThisDocumentSection(payload) {
 		payload.documentID = documentID;
-		
+
 		dispatchPayload(payload);
 	};
-	
+
 	return {
 		changeWantsDefaultBasicSpecs(booleanValue) {
 			dispatchForThisDocumentSection({
@@ -56,35 +56,35 @@ function getActionsForDocument(documentID) {
 				newValue: booleanValue
 			})
 		},
-		
+
 		changeWantsDefaultAdvancedSpecs(booleanValue) {
 			dispatchForThisDocumentSection({
 				eventID: documentEventIDs.changeWantsDefaultAdvancedSpecs,
 				newValue: booleanValue
 			})
 		},
-		
+
 		createNewWritingSection() {
 			dispatchForThisDocumentSection({
 				eventID: documentEventIDs.appendNewSection,
 				sectionType: 'writing'
 			})
 		},
-		
+
 		addExternalWritingSection() {
 			dispatchForThisDocumentSection({
 				eventID: documentEventIDs.appendExternalSection,
 				sectionType: 'writing'
 			})
 		},
-		
+
 		createNewCatalogSection() {
 			dispatchForThisDocumentSection({
 				eventID: documentEventIDs.appendNewSection,
 				sectionType: 'catalog'
 			})
 		},
-		
+
 		addExternalCatalogSection() {
 			dispatchForThisDocumentSection({
 				eventID: documentEventIDs.appendExternalSection,
@@ -99,10 +99,10 @@ function getActionsForDocumentSection(documentID, sectionID) {
 	function dispatchForThisDocumentSection(payload) {
 		payload.documentID = documentID;
 		payload.sectionID = sectionID;
-		
+
 		dispatchPayload(payload);
 	};
-	
+
 	return {
 		setContentJSON(contentJSON) {
 			dispatchForThisDocumentSection({
@@ -110,37 +110,37 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				contentJSON
 			});
 		},
-		
+
 		saveChanges() {
 			dispatchForThisDocumentSection({
 				eventID: documentSectionEventIDs.saveChanges
 			});
 		},
-		
+
 		showSettings() {
 			dispatchPayload({
 				eventID: documentSectionEventIDs.showSettings
 			});
 		},
-		
+
 		hideSettings() {
 			dispatchPayload({
 				eventID: documentSectionEventIDs.hideSettings
 			});
 		},
-		
+
 		enterHTMLPreview() {
 			dispatchForThisDocumentSection({
 				eventID: documentSectionEventIDs.enterHTMLPreview
 			});
 		},
-		
+
 		exitHTMLPreview() {
 			dispatchForThisDocumentSection({
 				eventID: documentSectionEventIDs.exitHTMLPreview
 			});
 		},
-		
+
 		editBlockWithKeyPath(blockKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.edit.blockWithKeyPath,
@@ -149,7 +149,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		editTextItemWithKeyPath(textItemKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.edit.textItemWithKeyPath,
@@ -158,7 +158,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				textItemKeyPath
 			});
 		},
-		
+
 		editTextItemBasedBlockWithKeyPathAddingIfNeeded(blockKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.edit.textItemBasedBlockWithKeyPathAddingIfNeeded,
@@ -167,7 +167,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				blockKeyPath
 			});
 		},
-		
+
 		finishEditing() {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.finishEditing,
@@ -175,23 +175,23 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		// REORDERING
-		
+
 		beginReordering() {
 			this.finishEditing();
-			
+
 			dispatchForThisDocumentSection({
 				eventID: documentSectionEventIDs.beginReordering
 			});
 		},
-		
+
 		finishReordering() {
 			dispatchForThisDocumentSection({
 				eventID: documentSectionEventIDs.finishReordering
 			});
 		},
-		
+
 		focusOnBlockAtKeyPathForReordering(blockKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blockAtKeyPath.focusOnForReordering,
@@ -200,7 +200,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				blockKeyPath
 			});
 		},
-		
+
 		keepFocusedBlockForReorderingInCurrentSpot() {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.focusedBlockForReordering.keepAtCurrentSpot,
@@ -208,7 +208,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		moveFocusedBlockForReorderingToBeforeBlockAtIndex(blockIndex) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.focusedBlockForReordering.moveToBeforeBlockAtIndex,
@@ -217,9 +217,9 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				beforeBlockAtIndex: blockIndex
 			});
 		},
-		
+
 		// INSERTING
-		
+
 		insertSubsectionOfTypeAtBlockIndex(subsectionType, blockIndex) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blocks.insertSubsectionOfTypeAtIndex,
@@ -229,7 +229,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				blockIndex
 			})
 		},
-		
+
 		changeTypeOfSubsectionAtKeyPath(subsectionKeyPath, subsectionType) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.subsectionAtKeyPath.changeType,
@@ -239,7 +239,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				subsectionType
 			});
 		},
-		
+
 		removeSubsectionAtKeyPath(subsectionKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.subsectionAtKeyPath.remove,
@@ -248,7 +248,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				subsectionKeyPath
 			});
 		},
-		
+
 		changeTypeOfBlockAtKeyPath(blockTypeGroup, blockType, blockKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blockAtKeyPath.changeType,
@@ -259,7 +259,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				blockType
 			});
 		},
-		
+
 		removeBlockAtKeyPath(blockKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blockAtKeyPath.remove,
@@ -268,7 +268,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				blockKeyPath
 			});
 		},
-		
+
 		insertBlockOfTypeAtIndex(typeGroup, type, blockIndex) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blocks.insertBlockOfTypeAtIndex,
@@ -279,7 +279,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		insertRelatedBlockAfterBlockAtKeyPath(blockKeyPath) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
@@ -288,7 +288,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		removeEditedBlock() {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.editedBlock.remove,
@@ -296,7 +296,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		insertRelatedBlockAfterEditedBlock() {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.blockAtKeyPath.insertRelatedBlockAfter,
@@ -305,7 +305,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		insertRelatedTextItemBlocksAfterEditedBlockWithPastedText(pastedText)
 		{
 			AppDispatcher.dispatch({
@@ -316,9 +316,9 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		// Updating Blocks
-		
+
 		updateValueForBlockAtKeyPath(blockKeyPath, defaultValue, newValueFunction)
 		{
 			AppDispatcher.dispatch({
@@ -330,7 +330,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				newValueFunction
 			});
 		},
-		
+
 		changeTraitUsingFunctionForEditedBlock(traitID, defaultValue, newValueFunction)
 		{
 			AppDispatcher.dispatch({
@@ -342,19 +342,19 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				newValueFunction
 			});
 		},
-		
+
 		toggleBooleanTraitForEditedBlock(traitID)
 		{
 			this.changeTraitUsingFunctionForEditedBlock(traitID, false, function(valueBefore) {
 				return !valueBefore;
 			});
 		},
-		
+
 		changeMapTraitUsingFunctionForEditedBlock(traitID, changeFunction)
 		{
 			this.changeTraitUsingFunctionForEditedBlock(traitID, Immutable.Map(), changeFunction);
 		},
-		
+
 		removeTraitWithIDForEditedBlock(traitID)
 		{
 			AppDispatcher.dispatch({
@@ -364,7 +364,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				traitID
 			});
 		},
-		
+
 		removeEditedTextItem() {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.editedItem.remove,
@@ -372,7 +372,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		setTextForEditedTextItem(text) {
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.editedItem.setText,
@@ -381,7 +381,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				textItemText: text
 			});
 		},
-		
+
 		changeTraitUsingFunctionForEditedTextItem(traitID, defaultValue, newValueFunction)
 		{
 			AppDispatcher.dispatch({
@@ -393,19 +393,19 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				newValueFunction
 			});
 		},
-		
+
 		toggleBooleanTraitForEditedTextItem(traitID)
 		{
 			this.changeTraitUsingFunctionForEditedTextItem(traitID, false, function(valueBefore) {
 				return !valueBefore;
 			});
 		},
-		
+
 		changeMapTraitUsingFunctionForEditedTextItem(traitID, changeFunction)
 		{
 			this.changeTraitUsingFunctionForEditedTextItem(traitID, Immutable.Map(), changeFunction);
 		},
-		
+
 		removeTraitWithIDForEditedTextItem(traitID)
 		{
 			AppDispatcher.dispatch({
@@ -415,7 +415,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		editPreviousItemBeforeEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -424,7 +424,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		editNextItemAfterEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -433,7 +433,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		addNewTextItemAfterEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -442,7 +442,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		finishTextAsSentenceWithTrailingSpaceForEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -451,7 +451,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		addLineBreakAfterEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -460,7 +460,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		splitBlockBeforeEditedTextItem()
 		{
 			AppDispatcher.dispatch({
@@ -469,7 +469,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		joinEditedTextItemWithPreviousItem()
 		{
 			AppDispatcher.dispatch({
@@ -478,9 +478,9 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		splitTextInRangeOfEditedTextItem(textRange)
-		{	
+		{
 			AppDispatcher.dispatch({
 				eventID: documentSectionEventIDs.editedItem.splitTextInRange,
 				textRange,
@@ -488,7 +488,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		registerSelectedTextRangeFunctionForEditedItem(selectedTextRangeFunction)
 		{
 			AppDispatcher.dispatch({
@@ -498,7 +498,7 @@ function getActionsForDocumentSection(documentID, sectionID) {
 				sectionID
 			});
 		},
-		
+
 		unregisterSelectedTextRangeFunctionForEditedItem()
 		{
 			AppDispatcher.dispatch({

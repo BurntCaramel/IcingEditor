@@ -23,15 +23,15 @@ function isLoadingSpecWithURL(specURL) {
 	var isLoading = specActivityByURL.getIn([specURL, 'isLoading'], false);
 	return isLoading;
 };
-	
+
 function setLoadingSpecWithURL(specURL, isLoading) {
 	var isLoadingCurrently = isLoadingSpecWithURL(specURL);
 	if (isLoadingCurrently === isLoading) {
 		return;
 	}
-	
+
 	specActivityByURL = specActivityByURL.setIn([specURL, 'isLoading'], isLoading);
-	
+
 	SpecsStore.trigger('isLoadingDidChangeForSpecWithURL', specURL, isLoading);
 };
 
@@ -41,7 +41,7 @@ function getSpecWithURL(specURL) {
 
 function setContentForSpecWithURL(specURL, specContent) {
 	specContentByURL = specContentByURL.set(specURL, specContent);
-	
+
 	SpecsStore.trigger('didChangeContentForSpecWithURL', specURL);
 }
 
@@ -50,16 +50,16 @@ function receiveLoadedContentForSpecWithURL(specURL, specContentJSON) {
 	setContentForSpecWithURL(specURL, specContent);
 	SpecsStore.trigger('didLoadContentForSpecWithURL', specURL);
 }
-	
+
 function loadSpecWithURL(specURL) {
 	console.log('loadSpecWithURL', specURL);
 	var isLoading = isLoadingSpecWithURL(specURL);
 	if (isLoading) {
 		return;
 	}
-	
+
 	let loadURL;
-	
+
 	var actionURL = ConfigurationStore.getActionURL('specs/');
 	if (actionURL) {
 		loadURL = actionURL + specURL + '/';
@@ -67,9 +67,9 @@ function loadSpecWithURL(specURL) {
 	else {
 		loadURL = specURL;
 	}
-	
+
 	setLoadingSpecWithURL(specURL, true);
-	
+
 	qwest.get(loadURL, null, {
 		cache: true,
 		dataType: 'json',
@@ -103,13 +103,13 @@ function getCombinedSpecsWithURLs(specURLs, {prefixWithSpecsIdentifier = false} 
 	let loadedSpecsContents = specURLsImmutable.map(function(specURL) {
 		return getSpecWithURL(specURL);
 	});
-	
+
 	if (!loadedSpecsContents.every(function(value) {
 		return value != null;
 	})) {
 		return null;
 	}
-	
+
 	let combinedSpecsContent = Immutable.fromJS({
 		"icingStandard": {"id": "burnticing", "version": "0.1.0"},
 		"isCombined": true,
@@ -117,14 +117,14 @@ function getCombinedSpecsWithURLs(specURLs, {prefixWithSpecsIdentifier = false} 
 		"blockTypesByGroup": {},
 		"traitTypes": []
 	}).asMutable();
-	
+
 	loadedSpecsContents.forEach(function(specContent) {
 		specContent.forEach(function(value, key) {
 			// White-list keys
 			if (!combinedSpecsContent.has(key)) {
 				return;
 			}
-			
+
 			combinedSpecsContent.update(key, function(currentValue) {
 				if (Immutable.Iterable.isIndexed(currentValue)) {
 					return currentValue.concat(value);
@@ -141,7 +141,7 @@ function getCombinedSpecsWithURLs(specURLs, {prefixWithSpecsIdentifier = false} 
 			});
 		});
 	});
-	
+
 	return combinedSpecsContent.asImmutable();
 }
 

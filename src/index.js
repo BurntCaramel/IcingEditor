@@ -24,33 +24,33 @@ else {
 			window.burntIcing.setInitialContentJSON(documentJSON);
 			return;
 		}
-		
+
 		let initialDocumentState = window.burntIcing.settingsJSON.initialDocumentState;
-		
+
 		if (!initialDocumentState.contentJSONByDocumentID) {
 			initialDocumentState.contentJSONByDocumentID = {};
 		}
-		
+
 		initialDocumentState.contentJSONByDocumentID[initialDocumentState.documentID] = documentJSON;
-		
+
 		editor.goOnDocumentLoad();
 	};
-	
-	
-	
+
+
+
 	// DEPRECATED
 	window.burntIcing.setInitialContentJSON = function(contentJSON) {
 		let initialDocumentState = window.burntIcing.settingsJSON.initialDocumentState;
-		
+
 		if (!initialDocumentState.contentJSONByDocumentID) {
 			initialDocumentState.contentJSONByDocumentID = {};
 		}
 		if (!initialDocumentState.contentJSONByDocumentID[initialDocumentState.documentID]) {
 			initialDocumentState.contentJSONByDocumentID[initialDocumentState.documentID] = {}
 		}
-		
+
 		initialDocumentState.contentJSONByDocumentID[initialDocumentState.documentID][initialDocumentState.documentSectionID] = contentJSON;
-		
+
 		editor.goOnDocumentLoad();
 	};
 }

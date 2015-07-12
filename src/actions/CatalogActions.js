@@ -1,7 +1,6 @@
 
 export function addElementAtIndexUsingIdentifier({catalogIdentifier, element, index, elementIdentifier}) {
   return {
-    eventID: 'CatalogActions.addElementAtIndexUsingIdentifier',
     catalogIdentifier,
     element,
     index,
@@ -11,7 +10,6 @@ export function addElementAtIndexUsingIdentifier({catalogIdentifier, element, in
 
 export function updateDesignationsForElementWithIdentifier({catalogIdentifier, elementIdentifier, tagsUpdater}) {
   return {
-    eventID: 'CatalogActions.updateDesignationsForElementWithIdentifier',
     catalogIdentifier,
     elementIdentifier,
     tagsUpdater,
@@ -20,7 +18,6 @@ export function updateDesignationsForElementWithIdentifier({catalogIdentifier, e
 
 export function removeElementWithIdentifier({catalogIdentifier, elementIdentifier}) {
   return {
-    eventID: 'CatalogActions.removeElementWithIdentifier',
     catalogIdentifier,
     elementIdentifier,
   };

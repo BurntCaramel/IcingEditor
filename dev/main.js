@@ -2210,7 +2210,7 @@ function isNullOrUndefined(arg) {
       var array = this._array;
       var maxIndex = array.length - 1;
       var ii = 0;
-      return new src_Iterator__Iterator(function() 
+      return new src_Iterator__Iterator(function()
         {return ii > maxIndex ?
           iteratorDone() :
           iteratorValue(type, ii, array[reverse ? maxIndex - ii++ : ii++])}
@@ -3039,7 +3039,7 @@ function isNullOrUndefined(arg) {
         return flipSequence;
       };
     }
-    reversedSequence.get = function(key, notSetValue) 
+    reversedSequence.get = function(key, notSetValue)
       {return iterable.get(useKeys ? key : -1 - key, notSetValue)};
     reversedSequence.has = function(key )
       {return iterable.has(useKeys ? key : -1 - key)};
@@ -3218,7 +3218,7 @@ function isNullOrUndefined(arg) {
         return this.cacheResult().__iterate(fn, reverse);
       }
       var iterations = 0;
-      iterable.__iterate(function(v, k, c) 
+      iterable.__iterate(function(v, k, c)
         {return predicate.call(context, v, k, c) && ++iterations && fn(v, k, this$0)}
       );
       return iterations;
@@ -3409,7 +3409,7 @@ function isNullOrUndefined(arg) {
     interposedSequence.size = iterable.size && iterable.size * 2 -1;
     interposedSequence.__iterateUncached = function(fn, reverse) {var this$0 = this;
       var iterations = 0;
-      iterable.__iterate(function(v, k) 
+      iterable.__iterate(function(v, k)
         {return (!iterations || fn(separator, iterations++, this$0) !== false) &&
         fn(v, iterations++, this$0) !== false},
         reverse
@@ -4285,7 +4285,7 @@ function isNullOrUndefined(arg) {
   }
 
   function deepMerger(merger) {
-    return function(existing, value, key) 
+    return function(existing, value, key)
       {return existing && existing.mergeDeepWith && isIterable(value) ?
         existing.mergeDeepWith(merger, value) :
         merger ? merger(existing, value, key) : value};
@@ -5971,7 +5971,7 @@ function isNullOrUndefined(arg) {
 
     Repeat.prototype.__iterator = function(type, reverse) {var this$0 = this;
       var ii = 0;
-      return new src_Iterator__Iterator(function() 
+      return new src_Iterator__Iterator(function()
         {return ii < this$0.size ? iteratorValue(type, ii++, this$0._value) : iteratorDone()}
       );
     };
@@ -6746,7 +6746,7 @@ function isNullOrUndefined(arg) {
 },{}],12:[function(require,module,exports){
 /**
  * MicroEvent - to make any js object an event emitter (server or browser)
- * 
+ *
  * - pure javascript - server compatible, browser compatible
  * - dont rely on the browser doms
  * - super simple - you get it immediatly, no mistery, no magic involved
@@ -27838,10 +27838,10 @@ var getAttributeValueForInfoAndSourceValue = (function (_getAttributeValueForInf
 			});
 		}
 		/*else if (attributeOptions.has('every')) {
-  	
+
   }
   else if (attributeOptions.has('any')) {
-  	
+
   }
   */
 	}
@@ -29593,7 +29593,7 @@ EditorElementCreator.BlocksElement = React.createClass({
 		}
 
 		/*
-  if (!isReordering) {	
+  if (!isReordering) {
   	elements.push(
   		React.createElement(Toolbars.AddBlockElement, {
   			key: `addBlock-end`,
@@ -32597,7 +32597,7 @@ ConfigurationStore.getShowsDocumentTitle = function () {
 
 ConfigurationStore.getAvailableSectionTypes = function () {
 	return Immutable.fromJS([{
-		id: "writing", // Can be used for articles, notes, prose, sources to quote from, templates to be filled
+		id: "writing", // Or 'piece'. Can be used for articles, notes, prose, sources to quote from, templates to be filled
 		title: "Writing"
 	}, {
 		id: "catalog", // Can be used for links (referenced like Markdown), reusable elements, footnotes/sidenotes, and also for a linked list, list of inspiration, C.V.
