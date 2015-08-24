@@ -2,7 +2,7 @@
 import Immutable from 'immutable';
 
 
-export function new({typeGroup, type}) {
+export function new({ typeGroup, type }) {
   return Immutable.Map({
     typeGroup,
     type,
@@ -10,7 +10,7 @@ export function new({typeGroup, type}) {
 }
 
 export const WritingBlockActions = {
-  changeType(store, {typeGroup, type}) {
+  changeType(store, { typeGroup, type }) {
     store = store.set('typeGroup', typeGroup);
     store = store.set('type', type);
 
@@ -24,7 +24,7 @@ export const WritingBlockActions = {
     return store;
   },
 
-  moveItemAtIndexToIndex(store, {fromIndex, toIndex}) {
+  moveItemAtIndexToIndex(store, { fromIndex, toIndex }) {
     //return store.update('items', updater);
   },
 };

@@ -2,12 +2,26 @@
 import Immutable from 'immutable';
 
 
-export function getInitialState() {
+export function new() {
   return Immutable.Map({
     mainSection: Immutable.Map(),
     supportingSections: Immutable.Map(),
 
   });
+}
+
+export function getID(document) {
+  return document.UUID;
+}
+/*
+export function forwardAction(items, actionSetID, actionID, actionPayload, context, forwardTo) {
+  const { UUID } = actionPayload;
+  return documents.set(UUID, forwardTo(DocumentReducer, documents.get(UUID));
+}
+*/
+export function DocumentActions(documents, { type, actionID, payload, context, forwardTo }) {
+  const { UUID } = payload;
+  return documents.set(UUID, forwardTo(DocumentReducer, documents.get(UUID));
 }
 
 export const DocumentActions = {

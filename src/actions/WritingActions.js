@@ -1,30 +1,17 @@
 
-export function insertNewBlockOfTypeAtIndex(store, {index, typeGroup, type}) {
-  return store.update('blocks', (blocks) => {
-    let newBlock = WritingBlock.new({typeGroup, type});
-    blocks.splice(index, 0, newBlock);
-  });
-},
+export function insertNewBlockOfTypeAtIndex({ index, typeGroup, type }) {
+  return { index, typeGroup, type };
+}
 
-export function addRelatedBlockAfterBlockAtIndex(store, {index}) {
-  return store.update('blocks', (blocks) => {
-    // TODO
-  });
-},
+export function addRelatedBlockAfterBlockAtIndex({ index }) {
+  return { index };
+}
 
-export function addRelatedTextItemBlocksAfterBlockAtIndexWithPastedText(store, {index, pastedText}) {
-  // TODO
-},
+export function addRelatedTextItemBlocksAfterBlockAtIndexWithPastedText({ index, pastedText }) {
+  //return { index, pastedText };
+  return arguments[0];
+}
 
-export function moveBlockAtIndexToIndex(store, {fromIndex, toIndex}) {
-  return store.update('blocks', (blocks) => {
-    let blockToMove = blocks.get(fromIndex);
-    blocks = blocks.remove(fromIndex);
-    if (blockOriginalIndex < newIndex) {
-      toIndex -= 1;
-    }
-    blocks = blocks.splice(toIndex, 0, blockToMove);
-
-    return blocks;
-  });
-},
+export function moveBlockAtIndexToIndex({ fromIndex, toIndex }) {
+  return { fromIndex, toIndex };
+}

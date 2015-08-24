@@ -2,8 +2,10 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-var React = require('react');
-var Immutable = require('immutable');
+import React from 'react';
+import Immutable from 'immutable';
+import flambeau, { connectedActions } from '../stores/GeneralStore';
+
 //let PureRenderMixin = require('react/addons').addons.PureRenderMixin;
 var ContentStore = require('../stores/ContentStore');
 var SpecsStore = require('../stores/SpecsStore');
@@ -17,6 +19,13 @@ let ContentSettingsElement = require('./ContentSettings');
 var Toolbars = require('./EditorToolbars');
 var PreviewStore = require('../stores/PreviewStore');
 var ReorderingStore = require('../stores/ReorderingStore');
+
+
+
+console.log(connectedActions.SpecsActions);
+console.log(connectedActions.SpecsActions.beginLoadingSpec({ specURL: '' }));
+console.log(connectedActions.SpecsActions.didLoadSpec({ specURL: '', specJSON: {blah: true} }));
+console.log(flambeau.get('specs').toJS());
 
 
 /*
@@ -38,25 +47,25 @@ let latestStateWithPreviousState = function(
 			actions: null
 		};
 	}
-	
+
 	//let documentID = ConfigurationStore.getCurrentDocumentID();
 	//let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 	let {
 		documentID,
 		sectionID
 	} = props;
-	
+
 	let {
 		documentState,
 		viewingState,
 		actions
 	} = previousState;
-	
+
 	if (updateDocumentState) {
 		//let focusedSectionID = ConfigurationStore.getCurrentDocumentSectionID();
 		let focusedSectionID = ContentStore.getEditedSectionForDocument(documentID);
 		let editedBlockIdentifier = ContentStore.getEditedBlockIdentifierForDocumentSection(documentID, focusedSectionID);
-		
+
 		let previousDocumentState = documentState;
 		documentState = documentState.merge({
 			documentID,
@@ -75,7 +84,7 @@ let latestStateWithPreviousState = function(
 			focusedBlockKeyPathForReordering: ReorderingStore.getFocusedBlockKeyPathForDocumentSection(documentID, focusedSectionID)
 		});
 	}
-	
+
 	if (updateViewingState) {
 		viewingState = viewingState.merge({
 			isShowingSettings: ContentStore.getIsShowingSettings(),
@@ -83,12 +92,12 @@ let latestStateWithPreviousState = function(
 			isReordering: ReorderingStore.getIsReordering()
 		});
 	}
-	
+
 	if (updateActions) {
 		// FIXME:
 		//actions = ContentActions.getActionsForDocumentSection(documentID, focusedSectionID);
 	}
-	
+
 	return {
 		documentState,
 		viewingState,
@@ -103,10 +112,10 @@ var EditorMain = React.createClass({
 			updateAll: true
 		});
 	},
-	
+
 	listenToStores(on) {
 		let method = on ? 'on' : 'off';
-		
+
 		ContentStore[method]('specsChangedForDocument', this.updateDocumentState);
 		ContentStore[method]('sectionChangedForDocument', this.updateDocumentState);
 		ContentStore[method]('contentChangedForDocumentSection', this.updateDocumentState);
@@ -114,46 +123,46 @@ var EditorMain = React.createClass({
 		ContentStore[method]('editedBlockChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('editedItemChangedForDocumentSection', this.updateDocumentState);
 		ContentStore[method]('isShowingSettingsDidChange', this.updateViewingState);
-		
+
 		SpecsStore[method]('didLoadContentForSpecWithURL', this.updateDocumentState);
-		
+
 		ReorderingStore[method]('focusedBlockDidChange', this.updateDocumentState);
-		
+
 		ConfigurationStore[method]('currentDocumentDidChange', this.currentDocumentDidChange);
-		
+
 		PreviewStore[method]('didEnterPreview', this.updateViewingState);
 		PreviewStore[method]('didExitPreview', this.updateViewingState);
-		
+
 		ReorderingStore[method]('didBeginReordering', this.updateViewingState);
 		ReorderingStore[method]('didFinishReordering', this.updateViewingState);
 	},
-	
+
 	componentDidMount() {
 		this.listenToStores(true);
-		
+
 		document.body.addEventListener('click', this.bodyBackgroundWasClicked);
 		document.body.addEventListener('touchend', this.bodyBackgroundWasClicked);
 	},
-	
+
 	componentWillUnmount() {
 		this.listenToStores(false);
-		
+
 		document.body.removeEventListener('click', this.bodyBackgroundWasClicked);
 		document.body.removeEventListener('touchend', this.bodyBackgroundWasClicked);
 	},
-	
+
 	bodyBackgroundWasClicked(event) {
 		if (event.target === document.body) {
 			//console.log('backgroundWasClicked');
 			this.finishEditing();
 		}
 	},
-	
+
 	editorBackgroundWasClicked(event) {
 		//console.log('editorBackgroundWasClicked');
 		this.finishEditing();
 	},
-	
+
 	finishEditing() {
 		let {
 			actions
@@ -162,7 +171,7 @@ var EditorMain = React.createClass({
 			actions.finishEditing();
 		}
 	},
-	
+
 	updateState(options = {}) {
 		this.setState(function(previousState, props) {
 			return latestStateWithPreviousState(
@@ -170,29 +179,29 @@ var EditorMain = React.createClass({
 			);
 		});
 	},
-	
+
 	updateDocumentState() {
 		this.updateState({
 			updateDocumentState: true
 		});
 	},
-	
+
 	updateViewingState() {
 		this.updateState({
 			updateViewingState: true
 		});
 	},
-	
+
 	currentDocumentDidChange() {
 		this.updateState({
 			updateDocumentState: true,
 			updateActions: true
 		});
 	},
-	
+
 	shouldComponentUpdate(nextProps, nextState) {
 		let currentState = this.state;
-		
+
 		if (currentState.documentState != nextState.documentState) {
 			return true;
 		}
@@ -202,10 +211,10 @@ var EditorMain = React.createClass({
 		if (currentState.actions != nextState.actions) {
 			return true;
 		}
-		
+
 		return false;
 	},
-	
+
 	render() {
 		let {
 			documentID,
@@ -230,7 +239,7 @@ var EditorMain = React.createClass({
 			focusedBlockIdentifierForReordering,
 			focusedBlockKeyPathForReordering
 		} = documentState.toObject();
-		
+
 		if (editedBlockKeyPath) {
 			editedBlockKeyPath = editedBlockKeyPath.toArray();
 		}
@@ -240,13 +249,13 @@ var EditorMain = React.createClass({
 		if (focusedBlockKeyPathForReordering) {
 			focusedBlockKeyPathForReordering = focusedBlockKeyPathForReordering.toArray();
 		}
-		
+
 		let {
 			isShowingSettings,
 			isPreviewing,
 			isReordering
 		} = viewingState.toObject();
-		
+
 		var innerElement;
 		if (isShowingSettings) {
 			innerElement = React.createElement(ContentSettingsElement, {
@@ -296,9 +305,9 @@ var EditorMain = React.createClass({
 				focusedBlockKeyPathForReordering
 			});
 		}
-		
+
 		let children = [];
-		
+
 		if (ConfigurationStore.wantsMainToolbar()) {
 			children.push(
 				React.createElement(Toolbars.MainToolbar, {
@@ -310,9 +319,9 @@ var EditorMain = React.createClass({
 				})
 			);
 		}
-		
+
 		children.push(innerElement);
-		
+
 		return React.createElement('div', {
 			key: 'editor',
 			onClick: this.editorBackgroundWasClicked,
@@ -330,7 +339,7 @@ let EditorController = {
 	go(DOMElement = defaultDOMElement()) {
 		let documentID = ConfigurationStore.getCurrentDocumentID();
 		ContentActions.loadContentForDocumentWithID(documentID);
-		
+
 		React.render(
 			React.createElement(EditorMain, {
 				key: 'editor',
@@ -338,17 +347,17 @@ let EditorController = {
 			}),
 			DOMElement
 		);
-		
+
 		window.burntIcing.controller = this;
-		
+
 		window.burntIcing.copyJSONForCurrentDocument = function() {
 			let documentID = ConfigurationStore.getCurrentDocumentID();
-			
+
 			return ContentStore.getJSONForDocument(documentID);
 		};
-		
-		
-		
+
+
+
 		window.burntIcing.copyPreviewHTMLForCurrentDocumentSection = function() {
 			let documentID = ConfigurationStore.getCurrentDocumentID();
 			let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
@@ -357,18 +366,18 @@ let EditorController = {
 			let specs = ContentStore.getSpecsForDocument(documentID, sectionID);
 			// Create preview HTML.
 			let previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
-			
+
 			return previewHTML;
 		};
 	},
-	
+
 	onDocumentLoad(DOMElement, event) {
 		document.removeEventListener('DOMContentLoaded', this.onDocumentLoadBound);
 		this.onDocumentLoadBound = null;
-		
+
 		this.go(DOMElement);
 	},
-	
+
 	goOnDocumentLoad(DOMElement = defaultDOMElement()) {
 		if (document.readyState === 'loading') {
 			this.onDocumentLoadBound = this.onDocumentLoad.bind(this, DOMElement);

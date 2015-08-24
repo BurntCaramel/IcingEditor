@@ -326,6 +326,8 @@ body {
   z-index: 2000;
   top: 0;
   left: 100%;
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
   text-align: center;
   background-color: #0086f2;
@@ -513,9 +515,15 @@ body {
 #burntIcingEditor .fieldsHolder,
 #burntIcingEditor .choice,
 #burntIcingEditor .fieldMultiple {
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
 }
 /* line 10, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder {
@@ -535,7 +543,9 @@ body {
 #burntIcingEditor .fieldsHolder .choice_fieldsHolder,
 #burntIcingEditor .fieldsHolder .group,
 #burntIcingEditor .fieldsHolder .fieldMultiple {
-  flex: 3 0 100%;
+  -webkit-flex: 3 0 100%;
+      -ms-flex: 3 0 100%;
+          flex: 3 0 100%;
 }
 /* line 30, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .group {
@@ -554,10 +564,18 @@ body {
 }
 /* line 45, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldLabel {
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  flex: 1 0 50%;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-flex: 1 0 50%;
+      -ms-flex: 1 0 50%;
+          flex: 1 0 50%;
 }
 /* line 52, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldLabel_title {
@@ -569,21 +587,29 @@ body {
 }
 /* line 61, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldMultiple {
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
 }
 /* line 64, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldMultiple_mainFieldLabel {
-  flex: 3 0 100%;
+  -webkit-flex: 3 0 100%;
+      -ms-flex: 3 0 100%;
+          flex: 3 0 100%;
   padding: 0;
 }
 /* line 69, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldMultiple .fieldLabel-fieldType-textual {
-  flex: 3 0 100%;
+  -webkit-flex: 3 0 100%;
+      -ms-flex: 3 0 100%;
+          flex: 3 0 100%;
 }
 /* line 73, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .input-textual,
 #burntIcingEditor .fieldsHolder .choice_select {
-  flex: 2 0 66%;
+  -webkit-flex: 2 0 66%;
+      -ms-flex: 2 0 66%;
+          flex: 2 0 66%;
   box-sizing: border-box;
   margin: 0;
   margin-top: 2px;
@@ -598,11 +624,15 @@ body {
 }
 /* line 91, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldLabel-fieldType-url {
-  flex: 1 0 100%;
+  -webkit-flex: 1 0 100%;
+      -ms-flex: 1 0 100%;
+          flex: 1 0 100%;
 }
 /* line 94, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldLabel-fieldType-number-integer {
-  flex: 1 0 33%;
+  -webkit-flex: 1 0 33%;
+      -ms-flex: 1 0 33%;
+          flex: 1 0 33%;
 }
 /* line 100, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .fieldLabel-fieldType-boolean .fieldLabel_title,
@@ -617,7 +647,9 @@ body {
 /* line 111, ../../src/styles/_fields.scss */
 #burntIcingEditor .fieldsHolder .group_fieldsHolder .fieldLabel-fieldType-textual,
 #burntIcingEditor .fieldsHolder .group_fieldsHolder .choice {
-  flex: 2 0 50%;
+  -webkit-flex: 2 0 50%;
+      -ms-flex: 2 0 50%;
+          flex: 2 0 50%;
 }
 /* line 355, ../../src/styles/main.scss */
 #burntIcingEditor .traitOptions {
@@ -632,9 +664,15 @@ body {
 }
 /* line 375, ../../src/styles/main.scss */
 #burntIcingEditor .traitOptions .traitOptions_buttons {
+  display: -webkit-flex;
+  display: -ms-flexbox;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
   margin-top: 2px;
   margin-left: -6px;
   margin-right: -6px;
@@ -642,7 +680,9 @@ body {
 }
 /* line 385, ../../src/styles/main.scss */
 #burntIcingEditor .traitOptions .traitOptions_buttons .secondaryButton {
-  flex: 2 0 45%;
+  -webkit-flex: 2 0 45%;
+      -ms-flex: 2 0 45%;
+          flex: 2 0 45%;
   margin-left: 6px;
   margin-right: 6px;
 }

@@ -1,24 +1,36 @@
+import Flambeau from 'flambeau';
+import * as SpecsActions from '../actions/SpecsActions';
+import * as SpecsReducer from './SpecsReducer';
 
-import AppDispatcher, { registerStoreForActionsWithFunctions } from '../app-dispatcher';
-import * as ContextStore from './ContextStore';
-import * as CatalogStore from './CatalogStore';
-import * as CatalogActions from './CatalogActions';
+const flambeau = new Flambeau();
+
+// ACTIONS
+flambeau.registerActionSets({
+  SpecsActions
+});
+
+// REDUCERS
+flambeau.attachReducer('specs', SpecsReducer);
+
+export const connectedActions = flambeau.getConnectedActionSets([
+  'SpecsActions'
+]);
+
+export default flambeau;
 
 
-let context = ContextStore.newStore();
 
+/*flambeau.attachReducers({
+  specs: SpecsReducer
+});*/
 
-let currentDocumentID = null;
-let currentDocumentData = null;
-
-let currentCatalogStore = CatalogStore.newStore();
-
-const catalogStoreToken = registerActionsWithFunctions(CatalogStore,
-  (action, payload) => {
-    currentCatalogStore = action.call(null, currentCatalogStore, payload);
+/*
+flambeau.createCollection('documents', DocumentReducer);
+flambeau.createInstance('currentDocumentUUID', CurrentDocumentStore);
+flambeau.createConvenience('currentDocument', (graphController) => {
+  const UUID = graphController.get('currentDocumentUUID');
+  if (UUID) {
+    return graphController.get('documents').get(UUID);
   }
-);
-
-export function getCurrentDocumentData() {
-  return currentDocumentData;
-}
+});
+*/

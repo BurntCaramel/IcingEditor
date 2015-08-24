@@ -1,4 +1,3 @@
-
 import Immutable from 'immutable';
 import generateUUID from 'generateUUID';
 
@@ -16,7 +15,7 @@ export function newIdentifier() {
 };
 
 export const CatalogActions = {
-	addElementAtIndexUsingIdentifier(store, {element, index, elementIdentifier}) {
+	addElementAtIndexUsingIdentifier(store, { element, index, elementIdentifier }) {
 		store = store.update('orderedIdentifiers', orderedIdentifiers => {
 			return orderedIdentifiers.splice(index, 0, identifier);
 		});
@@ -27,13 +26,13 @@ export const CatalogActions = {
 		return store;
 	},
 
-	updateDesignationsForElementWithIdentifier(store, {elementIdentifier, tagsUpdater}) {
+	updateDesignationsForElementWithIdentifier(store, { elementIdentifier, tagsUpdater }) {
 		store = store.update('identifiersToDesignations', identifiersToDesignations => {
 			return identifiersToDesignations.update(elementIdentifier, Immutable.List(), tagsUpdater);
 		});
 	},
 
-	removeElementWithIdentifier(store, {elementIdentifier}) {
+	removeElementWithIdentifier(store, { elementIdentifier }) {
 		store = store.update('orderedIdentifiers', orderedIdentifiers => {
 			return orderedIdentifiers.remove(orderedIdentifiers.indexOf(elementIdentifier));
 		});

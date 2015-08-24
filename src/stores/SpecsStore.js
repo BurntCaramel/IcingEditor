@@ -12,6 +12,13 @@ var specsEventIDs = ContentActionsEventIDs.specs;
 var specActivityByURL = Immutable.Map({});
 var specContentByURL = Immutable.Map({});
 
+
+// New
+export function getID(spec) {
+	return spec.URL;
+}
+
+
 var SpecsStore = {
 	on: MicroEvent.prototype.bind,
 	trigger: MicroEvent.prototype.trigger,
