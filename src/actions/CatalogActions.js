@@ -1,12 +1,12 @@
 
-export function addElementAtIndexUsingIdentifier({ catalogIdentifier, element, index, elementIdentifier }) {
-  return arguments[0];
-};
+export function addElement({ identifier, element }) {}
 
-export function updateDesignationsForElementWithIdentifier({ catalogIdentifier, elementIdentifier, tagsUpdater }) {
-  return arguments[0];
-}
+//export function updateDesignationsForElement({ identifier, tagsUpdater }) {}
+export function addDesignationToElement({ identifier, designationIdentifier }) {}
+export function removeDesignationFromElement({ identifier, designationIdentifier }) {}
 
-export function removeElementWithIdentifier({ catalogIdentifier, elementIdentifier }) {
-  return arguments[0];
+export function removeElement({ identifier }) {}
+
+export const introspection = {
+  getElementsSortedByDesignations({ ascending }) {}
 }

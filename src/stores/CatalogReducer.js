@@ -4,9 +4,8 @@ import generateUUID from 'generateUUID';
 
 export function getInitialState() {
 	return Immutable.Map({
-		orderedIdentifiers: Immutable.List(),
 		identifiersToElements: Immutable.Map(),
-		identifiersToDesignations: Immutable.Map()
+		identifiersToDesignations: Immutable.Set()
 	});
 };
 
@@ -15,34 +14,40 @@ export function newIdentifier() {
 };
 
 export const CatalogActions = {
-	addElementAtIndexUsingIdentifier(store, { element, index, elementIdentifier }) {
-		store = store.update('orderedIdentifiers', orderedIdentifiers => {
-			return orderedIdentifiers.splice(index, 0, identifier);
-		});
-		store = store.update('identifiersToElements', identifiersToElements => {
+	addElement(state, { identifier, element }) {
+		return state.update('identifiersToElements', identifiersToElements => {
 			return identifiersToElements.set(identifier, element);
 		});
-
-		return store;
 	},
 
-	updateDesignationsForElementWithIdentifier(store, { elementIdentifier, tagsUpdater }) {
-		store = store.update('identifiersToDesignations', identifiersToDesignations => {
-			return identifiersToDesignations.update(elementIdentifier, Immutable.List(), tagsUpdater);
+	addDesignationToElement(state, { identifier, designationIdentifier }) {
+		return state.updateIn(['identifiersToDesignations', identifier], Immutable.Set(), designationsSet => {
+			return designationsSet.add(designationIdentifier);
 		});
 	},
 
-	removeElementWithIdentifier(store, { elementIdentifier }) {
-		store = store.update('orderedIdentifiers', orderedIdentifiers => {
-			return orderedIdentifiers.remove(orderedIdentifiers.indexOf(elementIdentifier));
+	removeDesignationFromElement(state, { identifier, designationIdentifier }) {
+		return state.updateIn(['identifiersToDesignations', identifier], Immutable.Set(), designationsSet => {
+			return designationsSet.delete(designationIdentifier);
 		});
-		store = store.update('identifiersToElements', identifiersToElements => {
-			return identifiersToElements.remove(elementIdentifier);
+	},
+
+	removeElement(state, { identifier }) {
+		state = state.update('identifiersToElements', identifiersToElements => {
+			return identifiersToElements.remove(identifier);
 		});
-		store = store.update('identifiersToDesignations', identifiersToDesignations => {
-			return identifiersToDesignations.remove(elementIdentifier);
+		state = state.update('identifiersToDesignations', identifiersToDesignations => {
+			return identifiersToDesignations.remove(identifier);
 		});
 
-		return store;
+		return state;
 	},
+
+	introspection: {
+	  getElementsSortedByDesignations(state, { ascending }) {
+			return state.get('identifiersToDesignations').sort((designationIdentifierA, designationIdentifierB) => {
+				return designationIdentifierA.localeCompare(designationIdentifierB) * (ascending ? 1 : -1);
+			});
+		}
+	}
 };

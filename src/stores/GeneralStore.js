@@ -5,24 +5,17 @@ import * as SpecsReducer from './SpecsReducer';
 const flambeau = new Flambeau();
 
 // ACTIONS
-flambeau.registerActionSets({
+export const connectedActions = flambeau.registerAndConnectActionSets({
   SpecsActions
 });
 
 // REDUCERS
-flambeau.attachReducer('specs', SpecsReducer);
-
-export const connectedActions = flambeau.getConnectedActionSets([
-  'SpecsActions'
-]);
+flambeau.attachReducers({
+  specs: SpecsReducer
+});
 
 export default flambeau;
 
-
-
-/*flambeau.attachReducers({
-  specs: SpecsReducer
-});*/
 
 /*
 flambeau.createCollection('documents', DocumentReducer);

@@ -2,28 +2,24 @@
 import { getActionURL } from '../stores/ConfigurationStore';
 
 
-export function setSpecsURLsForDocument({ documentID, specsURLs }) {
-  return arguments[0];
-}
+export function setSpecsURLsForDocument({ documentID, specsURLs }) {}
 
-export function invalidateSpec({ specURL }) {
-  return arguments[0];
-}
+export function invalidateSpec({ specURL }) {}
 
-export function beginLoadingSpec({ specURL }) {
-  return arguments[0];
-}
+export function beginLoadingSpec({ specURL }) {}
 
-export function didLoadSpec({ specURL, specJSON }) {
-  return arguments[0];
-}
+export function didLoadSpec({ specURL, specJSON }) {}
 
-export function didFailLoadingSpec({ specURL, error }) {
-  return arguments[0];
-}
+export function didFailLoadingSpec({ specURL, error }) {}
 
-function loadSpec({ specURL }, { dispatch }) {
+function loadSpec({ specURL }, { currentActionSet }) {
   let loadURL;
+
+  /* const actionURL = getConsensus({
+    introspectionID: 'loadableURLForSpec',
+    payload: { specURL },
+    defaultValue: specURL
+  }) */
 
   const actionURL = getActionURL('specs/');
   if (actionURL) {
@@ -33,10 +29,7 @@ function loadSpec({ specURL }, { dispatch }) {
     loadURL = specURL;
   }
 
-  dispatch({
-    actionID: 'beginLoadingSpec',
-    payload: { specURL }
-  });
+  currentActionSet.beginLoadingSpec({ specURL });
 
   qwest.get(loadURL, null, {
     cache: true,
@@ -44,32 +37,20 @@ function loadSpec({ specURL }, { dispatch }) {
     responseType: 'json'
   })
   .then((specJSON) => {
-    dispatch({
-      actionID: 'didLoadSpec',
-      payload: didLoadSpec({ specURL, specJSON })
-    });
+    currentActionSet.didLoadSpec({ specURL, specJSON });
   })
   .catch((message) => {
     console.error(`Failed to load specs with URL ${specURL} ${message}`);
-    dispatch({
-      actionID: 'didFailLoadingSpec',
-      payload: didFailLoadingSpec({ specURL, error: message })
-    });
+    currentActionSet.didFailLoadingSpec({ specURL, error: message });
   });
 }
 
-export function loadSpecIfNeeded({ specURL }, { dispatch, getConsensus }) {
-  if (getConsensus({
-    introspectionID: 'needsToLoadSpec',
-    payload: { specURL },
-    booleanOr: true
-  })) {
-    loadSpec({ specURL }, { dispatch });
+export function loadSpecIfNeeded({ specURL }, { currentActionSet }) {
+  if (currentActionSet.getConsensus.needsToLoadSpec({ specURL }).some()) {
+    loadSpec({ specURL }, { currentActionSet });
   }
 }
 
 export const introspection = {
-  needsToLoadSpec({ specURL }) {
-    return arguments[0];
-  }
+  needsToLoadSpec({ specURL }) {}
 }

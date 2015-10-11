@@ -20,8 +20,10 @@ export function forwardAction(items, actionSetID, actionID, actionPayload, conte
 }
 */
 export function DocumentActions(documents, { type, actionID, payload, context, forwardTo }) {
-  const { UUID } = payload;
-  return documents.set(UUID, forwardTo(DocumentReducer, documents.get(UUID));
+  return documents.update(payload.UUID, (document) => {
+    return forwardTo(DocumentReducer, document);
+  });
+  //return documents.set(UUID, forwardTo(DocumentReducer, documents.get(UUID));
 }
 
 export const DocumentActions = {
