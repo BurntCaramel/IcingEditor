@@ -1,4 +1,4 @@
-import Immutable, { fromJS } from 'immutable';
+import { fromJS } from 'immutable';
 
 
 export function getInitialState() {
@@ -34,7 +34,7 @@ export const SpecsActions = {
 
     needsToLoadSpec(state, { specURL }) {
       const status = state.get(['URLToStatuses', specURL]);
-      return status === undefined || status.has('error');
+      return (typeof status === 'undefined') || status.has('error');
     }
   }
 }

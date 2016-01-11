@@ -1,54 +1,56 @@
 {
-	"name": "burnt-icing",
-	"version": "0.2.0",
-	"main": "index.js",
-	"description": "Extensible content editor",
-	"homepage": "http://www.burntcaramel.com/icing/",
-	"keywords": [
-		"content",
-		"edit",
-		"editor",
-		"text",
-		"image",
-		"embed",
-	"icing"
-	],
-	"author": {
-		"name": "Patrick Smith",
-		"email": "patrick@burntcaramel.com",
-		"url": "http://www.burntcaramel.com/"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git://github.com/BurntIcing/IcingEditor.git"
-	},
-	"licenses": [
-		{
-			"type": "Apache-2.0",
-			"url": "http://www.apache.org/licenses/LICENSE-2.0.html"
-		}
-	],
-	"engines": {
-		"node": "0.10.x",
-		"npm": "1.4.x"
-	},
-	"dependencies": {
-		"csv-parse": "^0.1.0",
-		"flux": "^2.0.1",
-		"immutable": "^3.6.4",
-		"microevent": "^1.0.0",
-		"normalize-url": "^1.2.0",
-		"object-assign": "^2.0.0",
-		"qwest": "^1.5.10",
-		"react": "^0.13.1"
-	},
-	"scripts": {
-		"start": "gulp watch",
-		"prod": "gulp --production"
-	},
-	"devDependencies": {
-		"envify": "^3.2.0",
-		"guilty-gulp": "^1.2.1",
-		"gulp": "^3.8.10"
-	}
+  "name": "burnt-icing",
+  "version": "0.2.0",
+  "main": "index.js",
+  "description": "Extensible content editor",
+  "homepage": "http://www.burntcaramel.com/icing/",
+  "keywords": [
+    "content",
+    "edit",
+    "editor",
+    "text",
+    "image",
+    "embed",
+    "icing"
+  ],
+  "author": {
+    "name": "Patrick Smith",
+    "email": "patrick@burntcaramel.com",
+    "url": "http://www.burntcaramel.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/BurntIcing/IcingEditor.git"
+  },
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  ],
+  "engines": {
+    "node": "0.10.x",
+    "npm": "1.4.x"
+  },
+  "dependencies": {
+    "csv-parse": "^0.1.0",
+    "flambeau": "^0.7.0",
+    "flux": "^2.0.1",
+    "immutable": "^3.6.4",
+    "microevent": "^1.0.0",
+    "normalize-url": "^1.2.0",
+    "object-assign": "^2.0.0",
+    "qwest": "^1.5.10",
+    "react": "^0.14.0",
+    "react-dom": "^0.14.0"
+  },
+  "scripts": {
+    "start": "gulp watch",
+    "prod": "gulp --production"
+  },
+  "devDependencies": {
+    "envify": "^3.2.0",
+    "guilty-gulp": "^1.2.1",
+    "gulp": "^3.8.10"
+  }
 }

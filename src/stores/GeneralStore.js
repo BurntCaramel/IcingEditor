@@ -1,20 +1,41 @@
-import Flambeau from 'flambeau';
+import { createResourcesFromReducers, connectActionSets, dispatch, getConsensus } from 'flambeau';
 import * as SpecsActions from '../actions/SpecsActions';
 import * as SpecsReducer from './SpecsReducer';
 
-const flambeau = new Flambeau();
+// REDUCERS
+let { resources, states } = createResourcesFromReducers({
+  reducers: {
+    specs: SpecsReducer
+  },
+  idToProps: {}
+});
 
 // ACTIONS
-export const connectedActions = flambeau.registerAndConnectActionSets({
-  SpecsActions
+export const connectedActions = connectActionSets({
+  actionSets: {
+    SpecsActions
+  },
+
+  dispatch(action) {
+    const changesStates = dispatch({
+      resources,
+      states
+    })(action);
+
+    states = Object.assign({}, states, changesStates);
+  },
+
+  getConsensusForActionSet(actionSetID) {
+    return getConsensus({
+      resources,
+      states
+    })(actionSetID);
+  }
 });
 
-// REDUCERS
-flambeau.attachReducers({
-  specs: SpecsReducer
-});
-
-export default flambeau;
+export function get(id) {
+  return states[id];
+}
 
 
 /*

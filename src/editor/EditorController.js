@@ -3,8 +3,9 @@
 */
 
 import React from 'react';
+import { render } from 'react-dom';
 import Immutable from 'immutable';
-import flambeau, { connectedActions } from '../stores/GeneralStore';
+import { get, subscribe, connectedActions } from '../stores/GeneralStore';
 
 //let PureRenderMixin = require('react/addons').addons.PureRenderMixin;
 var ContentStore = require('../stores/ContentStore');
@@ -25,7 +26,7 @@ var ReorderingStore = require('../stores/ReorderingStore');
 console.log(connectedActions.SpecsActions);
 console.log(connectedActions.SpecsActions.beginLoadingSpec({ specURL: '' }));
 console.log(connectedActions.SpecsActions.didLoadSpec({ specURL: '', specJSON: {blah: true} }));
-console.log(flambeau.get('specs').toJS());
+console.log(get('specs').toJS());
 
 
 /*
@@ -331,7 +332,7 @@ var EditorMain = React.createClass({
 });
 
 
-let defaultDOMElement = function() {
+function defaultDOMElement() {
 	return document.getElementById('burntIcingEditor');
 };
 
@@ -340,7 +341,7 @@ let EditorController = {
 		let documentID = ConfigurationStore.getCurrentDocumentID();
 		ContentActions.loadContentForDocumentWithID(documentID);
 
-		React.render(
+		render(
 			React.createElement(EditorMain, {
 				key: 'editor',
 				documentID

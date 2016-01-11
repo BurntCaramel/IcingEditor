@@ -2,9 +2,9 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-let React = require('react');
-let objectAssign = require('object-assign');
-let Immutable = require('immutable');
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import Immutable from 'immutable';
 
 let {
 	findParticularSubsectionOptionsInList,
@@ -16,7 +16,7 @@ let HTMLRepresentationAssistant = require('../assistants/HTMLRepresentationAssis
 
 
 var PreviewElementsCreator = {
-	
+
 };
 
 function isStringWithContent(object) {
@@ -25,15 +25,15 @@ function isStringWithContent(object) {
 
 function createElementFactoryMergingProps(type, originalProps, children) {
 	return function (additionalAttributes) {
-		let mergedProps = objectAssign({}, originalProps, additionalAttributes);
-		
+		let mergedProps = Object.assign({}, originalProps, additionalAttributes);
+
 		// Merge the class name
 		delete mergedProps.className;
 		let mergedClassNames = [originalProps.className, additionalAttributes.className].filter(isStringWithContent).join(' ').trim();
 		if (mergedClassNames != '') {
 			mergedProps.className = mergedClassNames;
 		}
-		
+
 		return React.createElement(type, mergedProps, children);
 	}
 }
@@ -44,9 +44,9 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 			if (traitValue == null || traitValue === false) {
 				return;
 			}
-			
+
 			let traitOptions = findParticularTraitOptionsInList(traitID, traitsSpecs);
-			
+
 			let valueForRepresentation;
 			// Fields
 			if (traitOptions.has('fields')) {
@@ -61,38 +61,38 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 					'originalElement': child
 				});
 			}
-			
+
 			if (traitOptions.has('innerHTMLRepresentation')) {
 				let HTMLRepresentation = traitOptions.get('innerHTMLRepresentation');
 				if (HTMLRepresentation === false) {
 					// For example, hide trait
 					child = null;
 				}
-				else if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {					
+				else if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {
 					child = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 						HTMLRepresentation, valueForRepresentation
 					);
 				}
 			}
-			
+
 			if (child != null && traitOptions.has('afterHTMLRepresentation')) {
 				let HTMLRepresentation = traitOptions.get('afterHTMLRepresentation');
 				if (HTMLRepresentationAssistant.isValidHTMLRepresentationType(HTMLRepresentation)) {
 					let afterElements = HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 						HTMLRepresentation, valueForRepresentation
 					);
-					
+
 					if (afterElements) {
 						if (!Array.isArray(child)) {
 							child = [child];
 						}
-					
+
 						child = child.concat(afterElements);
 					}
 				}
 			}
 		});
-		
+
 		return child;
 	}
 	else {
@@ -105,21 +105,21 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 				return child;
 			}
 		};
-	
+
 		if (traits.has('italic')) {
 			elementFactory = createElementFactoryMergingProps('em', {key: 'italic'}, elementFactory());
 		}
-	
+
 		if (traits.has('bold')) {
 			elementFactory = createElementFactoryMergingProps('strong', {key: 'bold'}, elementFactory());
 		}
-	
+
 		if (traits.has('link')) {
 			var link = traits.get('link');
 			var linkTypeChoice = link.get('typeChoice');
 			var linkType = linkTypeChoice.get('selectedChoiceID');
 			var values = linkTypeChoice.get('selectedChoiceValues');
-		
+
 			if (linkType === 'URL') {
 				elementFactory = createElementFactoryMergingProps('a', {
 					key: 'link/URL',
@@ -133,21 +133,21 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 				}, elementFactory());
 			}
 		}
-	
+
 		let additionalAttributes = {};
 		let additionalClassNames = [];
-	
+
 		if (traits.has('class')) {
 			var classNames = traits.getIn(['class', 'classNames']);
 			if (classNames && classNames !== '') {
 				additionalClassNames.push(classNames);
 			}
 		}
-	
+
 		if (additionalClassNames.length) {
 			additionalAttributes.className = additionalClassNames.join(' ');
 		}
-	
+
 		return elementFactory(additionalAttributes);
 	}
 };
@@ -155,7 +155,7 @@ PreviewElementsCreator.reactElementForWrappingChildWithTraits = function(child, 
 
 PreviewElementsCreator.reactElementsForWrappingSubsectionChildren = function(subsectionType, subsectionElements, subsectionsSpecs, index) {
 	let subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
-	
+
 	let outerTagName = subsectionInfo.get('outerHTMLTagName');
 	if (outerTagName) {
 		// Wrap elements in holder element. Return type is array, so wrap in an array too.
@@ -174,17 +174,17 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 	subsectionType, blockTypeGroup, blockType, contentElements, traits, blockTypeOptions, blockIndex, subsectionsSpecs
 ) {
 	let subsectionInfo = findParticularSubsectionOptionsInList(subsectionType, subsectionsSpecs);
-	
+
 	let blockCreationOptions = subsectionInfo.get('blockHTMLOptions');
 	let subsectionChildHTMLRepresentation = subsectionInfo.get('childHTMLRepresentation');
-	
+
 	var tagNameForBlock = blockTypeOptions.get('outerHTMLTagName', 'div');
 	if (blockCreationOptions) {
 		if (blockCreationOptions.get('noParagraph', false) && tagNameForBlock === 'p') {
-			tagNameForBlock = null;	
+			tagNameForBlock = null;
 		}
 	}
-	
+
 	var innerElements;
 	if (tagNameForBlock) {
 		// Nest inside, e.g. <li><h2>
@@ -197,7 +197,7 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 	else {
 		innerElements = contentElements;
 	}
-	
+
 	/*
 	if (traits) {
 		innerElements = [
@@ -205,12 +205,12 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 		];
 	}
 	*/
-	
+
 	if (subsectionChildHTMLRepresentation) {
 		let valueForRepresentation = Immutable.Map({
 			'originalElement': innerElements
 		});
-		
+
 		return HTMLRepresentationAssistant.createReactElementsForHTMLRepresentationAndValue(
 			subsectionChildHTMLRepresentation, valueForRepresentation, `portionChild-${blockIndex}`
 		);
@@ -228,16 +228,16 @@ PreviewElementsCreator.reactElementsForSubsectionChild = function(
 		return innerElements;
 	}
 };
-	
+
 PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specsImmutable) {
 	let subsectionsSpecs = specsImmutable.get('subsectionTypes', Immutable.List());
 	let traitsSpecs = specsImmutable.get('traitTypes', Immutable.List());
 	let blockGroupIDsToTypesMap = specsImmutable.get('blockTypesByGroup', Immutable.Map());
-	
+
 	var mainElements = [];
 	var currentSubsectionType = specsImmutable.get('defaultSubsectionType', 'normal');
 	var currentSubsectionElements = [];
-	
+
 	let processCurrentSubsectionChildren = function() {
 		if (currentSubsectionElements.length > 0) {
 			mainElements = mainElements.concat(
@@ -248,24 +248,24 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 			currentSubsectionElements = [];
 		}
 	};
-	
+
 	blocksImmutable.forEach(function(block, blockIndex) {
 		var typeGroup = block.get('typeGroup');
 		var type = block.get('type');
-		
+
 		if (typeGroup === 'subsection') {
 			// Wrap last elements.
 			processCurrentSubsectionChildren();
-			
+
 			currentSubsectionType = type;
 		}
 		else {
 			var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
 				typeGroup, type, blockGroupIDsToTypesMap
 			);
-		
+
 			var elements;
-		
+
 			if (typeGroup === 'particular' || typeGroup === 'media') {
 				var value = block.get('value', Immutable.Map());
 				var valueForRepresentation = Immutable.Map({
@@ -284,11 +284,11 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 					if (itemType === 'text') {
 						let element = textItem.get('text');
 						let traits = textItem.get('traits');
-					
+
 						if (traits) {
 							element = PreviewElementsCreator.reactElementForWrappingChildWithTraits(element, traits, traitsSpecs);
 						}
-				
+
 						return element;
 					}
 					else if (itemType === 'lineBreak') {
@@ -302,8 +302,8 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 					}
 				}).toJS();
 			}
-			
-			
+
+
 			let traits = block.get('traits');
 			if (traits) {
 				let blockElementWithTraits = PreviewElementsCreator.reactElementForWrappingChildWithTraits(elements, traits, traitsSpecs);
@@ -317,7 +317,7 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 					elements = null;
 				}
 			}
-			
+
 			if (elements) {
 				currentSubsectionElements = currentSubsectionElements.concat(
 					PreviewElementsCreator.reactElementsForSubsectionChild(
@@ -327,9 +327,9 @@ PreviewElementsCreator.reactElementsWithBlocks = function(blocksImmutable, specs
 			}
 		}
 	});
-	
+
 	processCurrentSubsectionChildren();
-	
+
 	return mainElements;
 };
 
@@ -341,26 +341,26 @@ PreviewElementsCreator.MainElement = React.createClass({
 			actions: {}
 		};
 	},
-	
+
 	render: function() {
 		var props = this.props;
 		var contentImmutable = props.contentImmutable;
 		var specsImmutable = props.specsImmutable;
-		
+
 		var classNames = ['blocks'];
-		
+
 		if (!contentImmutable) {
 			return React.createElement('div', {
 				key: 'noContent'
 			}, '(Content Is Null)');
 		}
-		
+
 		var content = contentImmutable.toJS();
 		var blocks = content.blocks;
 		var blocksImmutable = contentImmutable.get('blocks');
 
 		let elements = PreviewElementsCreator.reactElementsWithBlocks(blocksImmutable, specsImmutable);
-	
+
 		return React.createElement('div', {
 			key: 'blocks',
 			className: classNames.join(' ')
@@ -374,14 +374,14 @@ PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specs
 		contentImmutable: contentImmutable,
 		specsImmutable: specsImmutable
 	});
-	
-	var previewHTML = React.renderToStaticMarkup(previewElement);
-	
+
+	let previewHTML = renderToStaticMarkup(previewElement);
+
 	// Strip wrapping div.
 	previewHTML = previewHTML.replace(/^<div class="blocks">|<\/div>$/gm, '');
-	
+
 	if (pretty) {
-		var inlineTagNames = {
+		const inlineTagNames = {
 			"span": true,
 			"strong": true,
 			"em": true,
@@ -389,13 +389,13 @@ PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specs
 			"img": true,
 			"small": true
 		};
-	
-		var holdingTagNames = {
+
+		const holdingTagNames = {
 			"ul": true,
 			"ol": true,
 			"blockquote": true
 		};
-		
+
 		// Add new lines for presentation
 		previewHTML = previewHTML.replace(/<(\/?)([^>]+)>/gm, function(match, optionalClosingSlash, tagName, offset, string) {
 			// Inline elements are kept as-is
@@ -419,10 +419,10 @@ PreviewElementsCreator.previewHTMLWithContent = function(contentImmutable, specs
 			}
 		});
 	}
-	
+
 	return previewHTML;
 }
-	
+
 PreviewElementsCreator.reactElementWithContentAndActions = function(contentImmutable, specsImmutable, actions) {
 	return React.createElement(PreviewElementsCreator.MainElement, {
 		key: 'main',
@@ -436,16 +436,16 @@ var PreviewHTMLCode = React.createClass({
 	componentDidMount() {
 		// Syntax highlighting
 		if (window.hljs) {
-			let codeElement = this.refs.code.getDOMNode();
+			let codeElement = this.refs.code;
 			window.hljs.highlightBlock(codeElement);
 		}
 	},
-	
+
 	render() {
 		let {
 			previewHTML
 		} = this.props;
-		
+
 		return React.createElement('code', {
 			className: 'language-html',
 			ref: 'code'
@@ -462,9 +462,9 @@ PreviewElementsCreator.ViewHTMLElement = React.createClass({
 			specs,
 			actions
 		} = this.props;
-		
+
 		var previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
-		
+
 		return React.createElement('pre', {
 			key: 'pre',
 			className: 'previewHTMLHolder'
@@ -473,5 +473,21 @@ PreviewElementsCreator.ViewHTMLElement = React.createClass({
 		}));
 	}
 });
+
+PreviewElementsCreator.ViewHTMLElement = function({
+	documentID,
+	sectionID,
+	content,
+	specs,
+	actions
+}) {
+	const previewHTML = PreviewElementsCreator.previewHTMLWithContent(content, specs);
+
+	return (
+		<pre className: 'previewHTMLHolder'>
+			<PreviewHTMLCode previewHTML={ previewHTML } />
+		</pre>
+	);
+};
 
 module.exports = PreviewElementsCreator;

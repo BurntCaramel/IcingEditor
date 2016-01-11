@@ -51,7 +51,7 @@ var TextItemTextArea = React.createClass({
 	},
 
 	getTextAreaDOMNode() {
-		return this.refs.textarea.getDOMNode();
+		return this.refs.textarea;
 	},
 
 	placeSelectionCursorAtEnd() {
