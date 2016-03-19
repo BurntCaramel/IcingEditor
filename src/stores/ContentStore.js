@@ -19,36 +19,36 @@ let documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 //TODO: renamed Subsection to Portion?
 
 
-//let defaultSpecsURL = 'http://www.burnticing.org/specs/default/1.0/default-1.0.json';
+//let defaultSpecsURL = 'http://specs.icing.space/default/1.0.json';
 let defaultSpecsURL = 'http://burnticing.github.io/specs/default/1.0/default-1.0.json';
 
 
-let getIndexForObjectKeyPath = function(keyPath) {
+function getIndexForObjectKeyPath(keyPath) {
 	return keyPath[keyPath.length - 1];
 };
 
-let getParentKeyPath = function(keyPath) {
+function getParentKeyPath(keyPath) {
 	return keyPath.slice(0, -1);
 };
 
-let getObjectKeyPathWithIndexChange = function(keyPath, changeCallback) {
+function getObjectKeyPathWithIndexChange(keyPath, changeCallback) {
 	let index = getIndexForObjectKeyPath(keyPath);
 	return getParentKeyPath(keyPath).concat(changeCallback(index));
 };
 
-let getBlocksKeyPath = function() {
+function getBlocksKeyPath() {
 	return ['blocks'];
 };
 
-let getBlockKeyPathForItemKeyPath = function(itemKeyPath) {
+function getBlockKeyPathForItemKeyPath(itemKeyPath) {
 	return itemKeyPath.slice(0, -2);
 };
 
-let blockGroupTypeHasTextItems = function(blockGroupType) {
+function blockGroupTypeHasTextItems(blockGroupType) {
 	return (blockGroupType === 'text');
 };
 
-let newBlockOfType = function(typeGroup, type) {
+function newBlockOfType(typeGroup, type) {
 	var blockJSON = {
 		"typeGroup": typeGroup,
 		"type": type,
@@ -62,7 +62,7 @@ let newBlockOfType = function(typeGroup, type) {
 	return Immutable.Map(blockJSON);
 };
 
-let newTextBlockWithDefaultType = function() {
+function newTextBlockWithDefaultType() {
 	return newBlockOfType('text', 'body');
 };
 

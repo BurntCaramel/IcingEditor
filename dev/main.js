@@ -27260,14 +27260,112 @@ function exitHTMLPreview() {
 },{}],182:[function(require,module,exports){
 "use strict";
 
-exports.setSpecsURLsForDocumentWithID = setSpecsURLsForDocumentWithID;
+exports.setSpecsURLsForDocument = setSpecsURLsForDocument;
+exports.invalidateSpec = invalidateSpec;
+exports.beginLoadingSpec = beginLoadingSpec;
+exports.didLoadSpec = didLoadSpec;
+exports.didFailLoadingSpec = didFailLoadingSpec;
+exports.loadSpecIfNeeded = loadSpecIfNeeded;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+// TODO: change to ../config ?
 
-function setSpecsURLsForDocumentWithID(documentID, specsURLs) {}
+var getActionURL = require("../stores/ConfigurationStore").getActionURL;
 
-},{}],183:[function(require,module,exports){
+function setSpecsURLsForDocument(_ref) {
+  var documentID = _ref.documentID;
+  var specsURLs = _ref.specsURLs;
+
+  return arguments[0];
+}
+
+function invalidateSpec(_ref) {
+  var specURL = _ref.specURL;
+
+  return arguments[0];
+}
+
+function beginLoadingSpec(_ref) {
+  var specURL = _ref.specURL;
+
+  return arguments[0];
+}
+
+function didLoadSpec(_ref) {
+  var specURL = _ref.specURL;
+  var specJSON = _ref.specJSON;
+
+  return arguments[0];
+}
+
+function didFailLoadingSpec(_ref) {
+  var specURL = _ref.specURL;
+  var error = _ref.error;
+
+  return arguments[0];
+}
+
+function loadSpec(_ref, _ref2) {
+  var specURL = _ref.specURL;
+  var dispatch = _ref2.dispatch;
+
+  var loadURL = undefined;
+
+  var actionURL = getActionURL("specs/");
+  if (actionURL) {
+    loadURL = actionURL + specURL + "/";
+  } else {
+    loadURL = specURL;
+  }
+
+  dispatch({
+    actionID: "beginLoadingSpec",
+    payload: { specURL: specURL }
+  });
+
+  qwest.get(loadURL, null, {
+    cache: true,
+    dataType: "json",
+    responseType: "json"
+  }).then(function (specJSON) {
+    dispatch({
+      actionID: "didLoadSpec",
+      payload: didLoadSpec({ specURL: specURL, specJSON: specJSON })
+    });
+  })["catch"](function (message) {
+    console.error("Failed to load specs with URL " + specURL + " " + message);
+    dispatch({
+      actionID: "didFailLoadingSpec",
+      payload: didFailLoadingSpec({ specURL: specURL, error: message })
+    });
+  });
+}
+
+function loadSpecIfNeeded(_ref, _ref2) {
+  var specURL = _ref.specURL;
+  var dispatch = _ref2.dispatch;
+  var getConsensus = _ref2.getConsensus;
+
+  if (getConsensus({
+    introspectionID: "needsToLoadSpec",
+    payload: { specURL: specURL },
+    booleanOr: true
+  })) {
+    loadSpec({ specURL: specURL }, { dispatch: dispatch });
+  }
+}
+
+var introspection = {
+  needsToLoadSpec: function needsToLoadSpec(_ref) {
+    var specURL = _ref.specURL;
+
+    return arguments[0];
+  }
+};
+exports.introspection = introspection;
+
+},{"../stores/ConfigurationStore":194}],183:[function(require,module,exports){
 "use strict";
 
 var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
@@ -28594,12 +28692,12 @@ Object.defineProperty(exports, "__esModule", {
 */
 
 var React = require("react");
-var Toolbars = require("./EditorToolbars");
 var Immutable = require("immutable");
+
+var Toolbars = require("./EditorToolbars");
 var ContentStore = require("../stores/ContentStore");
 var ContentActions = require("../actions/ContentActions");
 var ConfigurationStore = require("../stores/ConfigurationStore");
-var ReorderingStore = require("../stores/ReorderingStore");
 var objectAssign = require("object-assign");
 
 var _require = require("../assistants/TypesAssistant");
@@ -29355,6 +29453,7 @@ var SectionElement = React.createClass({
 	}
 });
 
+exports.SectionElement = SectionElement;
 var DocumentSectionsElement = React.createClass({
 	displayName: "DocumentSectionsElement",
 
@@ -29482,7 +29581,7 @@ exports["default"] = DocumentSectionsElement;
 
 //`-${typeGroup}-${blockType}`, // HAS REALLY WEIRD BUG IN WEBKIT? second - disappears sometimes.
 
-},{"../actions/ContentActions":179,"../assistants/HTMLRepresentationAssistant":185,"../assistants/TypesAssistant":186,"../stores/ConfigurationStore":194,"../stores/ContentStore":197,"../stores/ReorderingStore":199,"../ui/KeyCodes":202,"../ui/ui-mixins":203,"./EditorToolbars":192,"immutable":38,"object-assign":43,"react":175}],191:[function(require,module,exports){
+},{"../actions/ContentActions":179,"../assistants/HTMLRepresentationAssistant":185,"../assistants/TypesAssistant":186,"../stores/ConfigurationStore":194,"../stores/ContentStore":197,"../ui/KeyCodes":202,"../ui/ui-mixins":203,"./EditorToolbars":192,"immutable":38,"object-assign":43,"react":175}],191:[function(require,module,exports){
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
@@ -32559,35 +32658,35 @@ var documentSectionEventIDs = ContentActionsEventIDs.documentSection;
 
 //TODO: renamed Subsection to Portion?
 
-//let defaultSpecsURL = 'http://www.burnticing.org/specs/default/1.0/default-1.0.json';
+//let defaultSpecsURL = 'http://specs.icing.space/default/1.0.json';
 var defaultSpecsURL = "http://burnticing.github.io/specs/default/1.0/default-1.0.json";
 
-var getIndexForObjectKeyPath = function getIndexForObjectKeyPath(keyPath) {
+function getIndexForObjectKeyPath(keyPath) {
 	return keyPath[keyPath.length - 1];
 };
 
-var getParentKeyPath = function getParentKeyPath(keyPath) {
+function getParentKeyPath(keyPath) {
 	return keyPath.slice(0, -1);
 };
 
-var getObjectKeyPathWithIndexChange = function getObjectKeyPathWithIndexChange(keyPath, changeCallback) {
+function getObjectKeyPathWithIndexChange(keyPath, changeCallback) {
 	var index = getIndexForObjectKeyPath(keyPath);
 	return getParentKeyPath(keyPath).concat(changeCallback(index));
 };
 
-var getBlocksKeyPath = function getBlocksKeyPath() {
+function getBlocksKeyPath() {
 	return ["blocks"];
 };
 
-var getBlockKeyPathForItemKeyPath = function getBlockKeyPathForItemKeyPath(itemKeyPath) {
+function getBlockKeyPathForItemKeyPath(itemKeyPath) {
 	return itemKeyPath.slice(0, -2);
 };
 
-var blockGroupTypeHasTextItems = function blockGroupTypeHasTextItems(blockGroupType) {
+function blockGroupTypeHasTextItems(blockGroupType) {
 	return blockGroupType === "text";
 };
 
-var newBlockOfType = function newBlockOfType(typeGroup, type) {
+function newBlockOfType(typeGroup, type) {
 	var blockJSON = {
 		typeGroup: typeGroup,
 		type: type,
@@ -32601,7 +32700,7 @@ var newBlockOfType = function newBlockOfType(typeGroup, type) {
 	return Immutable.Map(blockJSON);
 };
 
-var newTextBlockWithDefaultType = function newTextBlockWithDefaultType() {
+function newTextBlockWithDefaultType() {
 	return newBlockOfType("text", "body");
 };
 
