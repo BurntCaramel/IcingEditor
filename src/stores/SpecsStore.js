@@ -1,4 +1,4 @@
-var AppDispatcher = require('../app-dispatcher');
+import AppDispatcher from '../app-dispatcher';
 var Immutable = require('immutable');
 let objectAssign = require('object-assign');
 var MicroEvent = require('microevent');

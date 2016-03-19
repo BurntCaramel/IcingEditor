@@ -1,5 +1,5 @@
 
-import { Dispatcher } from 'flux');
+import { Dispatcher } from 'flux';
 import * as Actions from './actions';
 
 const dispatcher = new Dispatcher();
@@ -17,7 +17,7 @@ export function registerActionsWithFunctions(StoreFunctions, callbackWithActionA
         callbackWithActionAndPayload(actionFunction, payload);
       }
     }
-  };
+  });
 }
 
 export function bindActions(actions) {
@@ -43,5 +43,8 @@ export function getBoundsActionsFromGroup(actionsGroup) {
     };
   });
 }
+
+export const register = dispatcher.register.bind(dispatcher);
+export const dispatch = dispatcher.dispatch.bind(dispatcher);
 
 export default dispatcher;
