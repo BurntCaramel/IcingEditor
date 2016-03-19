@@ -3,7 +3,7 @@
 */
 
 var React = require('react');
-var AppDispatcher = require('../app-dispatcher');
+import AppDispatcher from '../app-dispatcher';
 var ConfigurationStore = require('../stores/ConfigurationStore');
 var PreviewStore = require('../stores/PreviewStore');
 var ReorderingStore = require('../stores/ReorderingStore');

@@ -2,7 +2,7 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-var AppDispatcher = require('../app-dispatcher');
+import AppDispatcher from '../app-dispatcher';
 var Immutable = require('immutable');
 var MicroEvent = require('microevent');
 var ContentActionsEventIDs = require('../actions/ContentActionsEventIDs');

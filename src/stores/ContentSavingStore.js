@@ -1,4 +1,4 @@
-var AppDispatcher = require('../app-dispatcher');
+import AppDispatcher from '../app-dispatcher';
 var Immutable = require('immutable');
 var MicroEvent = require('microevent');
 var ContentStore = require('./ContentStore');

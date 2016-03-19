@@ -2,7 +2,7 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-let AppDispatcher = require('../app-dispatcher');
+import AppDispatcher from '../app-dispatcher';
 let Immutable = require('immutable');
 let MicroEvent = require('microevent');
 let objectAssign = require('object-assign');
