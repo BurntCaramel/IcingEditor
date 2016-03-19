@@ -3,12 +3,12 @@
 */
 
 var React = require('react');
-var Toolbars = require('./EditorToolbars');
 var Immutable = require('immutable');
+
+var Toolbars = require('./EditorToolbars');
 var ContentStore = require('../stores/ContentStore');
 var ContentActions = require('../actions/ContentActions');
 var ConfigurationStore = require('../stores/ConfigurationStore');
-var ReorderingStore = require('../stores/ReorderingStore');
 let objectAssign = require('object-assign');
 
 let {
@@ -677,7 +677,7 @@ const BlocksElement = React.createClass({
 	}
 })
 
-const SectionElement = React.createClass({
+export const SectionElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
