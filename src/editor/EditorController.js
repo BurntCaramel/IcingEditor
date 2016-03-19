@@ -11,7 +11,7 @@ var ConfigurationStore = require('../stores/ConfigurationStore');
 var ContentSavingStore = require('../stores/ContentSavingStore');
 var ContentLoadingStore = require('../stores/ContentLoadingStore');
 var ContentActions = require('../actions/ContentActions');
-var EditorElementsCreator = require('./EditorElements');
+import DocumentSectionsElement from './EditorElements';
 var PreviewElementsCreator = require('../preview/PreviewElements');
 let ContentSettingsElement = require('./ContentSettings');
 var Toolbars = require('./EditorToolbars');
@@ -22,7 +22,7 @@ var ReorderingStore = require('../stores/ReorderingStore');
 /*
 * State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
 */
-let latestStateWithPreviousState = function(
+function latestStateWithPreviousState(
 	props,
 	previousState = null, {
 		updateAll = false,
@@ -97,7 +97,7 @@ let latestStateWithPreviousState = function(
 }
 
 
-var EditorMain = React.createClass({
+const EditorMain = React.createClass({
 	getInitialState() {
 		return latestStateWithPreviousState(this.props, null, {
 			updateAll: true
@@ -279,7 +279,7 @@ var EditorMain = React.createClass({
 			});
 		}
 		else {
-			innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement,{
+			innerElement = React.createElement(DocumentSectionsElement, {
 				key: 'documentSections',
 				documentID,
 				documentSections,

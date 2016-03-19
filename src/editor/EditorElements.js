@@ -25,7 +25,7 @@ let KeyCodes = require('../ui/KeyCodes');
 var HTMLRepresentationAssistant = require('../assistants/HTMLRepresentationAssistant');
 
 
-var SubsectionElement = React.createClass({
+const SubsectionElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
@@ -86,7 +86,7 @@ var SubsectionElement = React.createClass({
 	}
 });
 
-var BlockElement = React.createClass({
+const BlockElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
@@ -252,7 +252,7 @@ var BlockElement = React.createClass({
 		}
 		else if (typeGroup === 'text') {
 			var textItemsKeyPath = keyPath.concat('textItems');
-			let textItemElements = EditorElementCreator.reactElementsWithTextItems(
+			let textItemElements = reactElementsWithTextItems(
 				props.textItems, {
 					keyPath: textItemsKeyPath, actions, block, blockTypeGroup: typeGroup, blockType, blockTypeOptions, traitSpecs, editedTextItemIdentifier,
 					outputInfo: childrenInfo, allowsEditing
@@ -335,7 +335,7 @@ var BlockElement = React.createClass({
 	}
 });
 
-var TextItem = React.createClass({
+const TextItem = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps: function() {
@@ -446,10 +446,7 @@ var TextItem = React.createClass({
 
 var EditorElementCreator = {};
 
-EditorElementCreator.BlockElement = BlockElement;
-EditorElementCreator.TextItem = TextItem;
-
-EditorElementCreator.reactElementsWithTextItems = function(
+export function reactElementsWithTextItems(
 	textItems, {keyPath, actions, block, blockTypeGroup, blockType, blockTypeOptions, traitSpecs, editedTextItemIdentifier, outputInfo, allowsEditing}
 ) {
 	if (textItems) {
@@ -509,7 +506,7 @@ EditorElementCreator.reactElementsWithTextItems = function(
 	}
 };
 
-EditorElementCreator.BlocksElement = React.createClass({
+const BlocksElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps: function() {
@@ -680,7 +677,7 @@ EditorElementCreator.BlocksElement = React.createClass({
 	}
 })
 
-EditorElementCreator.SectionElement = React.createClass({
+const SectionElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
@@ -795,7 +792,7 @@ EditorElementCreator.SectionElement = React.createClass({
 		}
 		
 		elements.push(
-			React.createElement(EditorElementCreator.BlocksElement, {
+			React.createElement(BlocksElement, {
 				key: 'blocks',
 				baseClassNames: this.getChildClassNamesWithSuffix('_blocks'),
 				blocksImmutable,
@@ -820,7 +817,7 @@ EditorElementCreator.SectionElement = React.createClass({
 	}
 });
 
-EditorElementCreator.DocumentSectionsElement = React.createClass({
+const DocumentSectionsElement = React.createClass({
 	getDefaultProps() {
 		return {
 			documentID: null,
@@ -859,7 +856,7 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 		let writingElements = [];
 		let catalogElements = [];
 		
-		documentSections.forEach(function(sectionContent, sectionID) {
+		documentSections.forEach((sectionContent, sectionID) => {
 			var sectionProps = {
 				key: sectionID,
 				documentID,
@@ -882,7 +879,7 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 				});
 			}
 			
-			let sectionElement = React.createElement(EditorElementCreator.SectionElement, sectionProps);
+			let sectionElement = React.createElement(SectionElement, sectionProps);
 			
 			let isExternal = sectionContent.get('isExternal', false);
 			if (isExternal) {
@@ -956,4 +953,4 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 	}
 });
 
-module.exports = EditorElementCreator;
+export default DocumentSectionsElement;

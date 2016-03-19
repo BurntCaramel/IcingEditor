@@ -26637,13 +26637,16 @@ function removeElementWithIdentifier(_ref) {
 }
 
 },{}],179:[function(require,module,exports){
+"use strict";
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-"use strict";
+var AppDispatcher = _interopRequire(require("../app-dispatcher"));
 
-var AppDispatcher = require("../app-dispatcher");
 var Immutable = require("immutable");
 
 var ContentActionsEventIDs = require("./ContentActionsEventIDs");
@@ -28200,11 +28203,13 @@ var ContentSettingsElement = React.createClass({
 module.exports = ContentSettingsElement;
 
 },{"../actions/ContentActions":179,"../stores/ContentStore.js":197,"../ui/ui-mixins":203,"./EditorFields":191,"immutable":38,"react":175}],189:[function(require,module,exports){
+"use strict";
+
+var _interopRequire = function (obj) { return obj && obj.__esModule ? obj["default"] : obj; };
+
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
-
-"use strict";
 
 var React = require("react");
 var Immutable = require("immutable");
@@ -28215,7 +28220,9 @@ var ConfigurationStore = require("../stores/ConfigurationStore");
 var ContentSavingStore = require("../stores/ContentSavingStore");
 var ContentLoadingStore = require("../stores/ContentLoadingStore");
 var ContentActions = require("../actions/ContentActions");
-var EditorElementsCreator = require("./EditorElements");
+
+var DocumentSectionsElement = _interopRequire(require("./EditorElements"));
+
 var PreviewElementsCreator = require("../preview/PreviewElements");
 var ContentSettingsElement = require("./ContentSettings");
 var Toolbars = require("./EditorToolbars");
@@ -28225,7 +28232,7 @@ var ReorderingStore = require("../stores/ReorderingStore");
 /*
 * State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
 */
-var latestStateWithPreviousState = function latestStateWithPreviousState(props, _x, _ref) {
+function latestStateWithPreviousState(props, _x, _ref) {
 	var previousState = arguments[1] === undefined ? null : arguments[1];
 	var _ref$updateAll = _ref.updateAll;
 	var updateAll = _ref$updateAll === undefined ? false : _ref$updateAll;
@@ -28292,7 +28299,7 @@ var latestStateWithPreviousState = function latestStateWithPreviousState(props, 
 			actions: actions
 		};
 	})();
-};
+}
 
 var EditorMain = React.createClass({
 	displayName: "EditorMain",
@@ -28472,7 +28479,7 @@ var EditorMain = React.createClass({
 				actions: actions
 			});
 		} else {
-			innerElement = React.createElement(EditorElementsCreator.DocumentSectionsElement, {
+			innerElement = React.createElement(DocumentSectionsElement, {
 				key: "documentSections",
 				documentID: documentID,
 				documentSections: documentSections,
@@ -28576,11 +28583,15 @@ module.exports = EditorController;
 //actions = ContentActions.getActionsForDocumentSection(documentID, focusedSectionID);
 
 },{"../actions/ContentActions":179,"../preview/PreviewElements":193,"../stores/ConfigurationStore":194,"../stores/ContentLoadingStore":195,"../stores/ContentSavingStore":196,"../stores/ContentStore":197,"../stores/PreviewStore":198,"../stores/ReorderingStore":199,"../stores/SpecsStore":200,"./ContentSettings":188,"./EditorElements":190,"./EditorToolbars":192,"immutable":38,"react":175}],190:[function(require,module,exports){
+"use strict";
+
+exports.reactElementsWithTextItems = reactElementsWithTextItems;
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
 /**
 	Copyright 2015 Patrick George Wyndham Smith
 */
-
-"use strict";
 
 var React = require("react");
 var Toolbars = require("./EditorToolbars");
@@ -28807,7 +28818,7 @@ var BlockElement = React.createClass({
 			}
 		} else if (typeGroup === "text") {
 			var textItemsKeyPath = keyPath.concat("textItems");
-			var textItemElements = EditorElementCreator.reactElementsWithTextItems(props.textItems, {
+			var textItemElements = reactElementsWithTextItems(props.textItems, {
 				keyPath: textItemsKeyPath, actions: actions, block: block, blockTypeGroup: typeGroup, blockType: blockType, blockTypeOptions: blockTypeOptions, traitSpecs: traitSpecs, editedTextItemIdentifier: editedTextItemIdentifier,
 				outputInfo: childrenInfo, allowsEditing: allowsEditing
 			});
@@ -28979,10 +28990,7 @@ var TextItem = React.createClass({
 
 var EditorElementCreator = {};
 
-EditorElementCreator.BlockElement = BlockElement;
-EditorElementCreator.TextItem = TextItem;
-
-EditorElementCreator.reactElementsWithTextItems = function (textItems, _ref) {
+function reactElementsWithTextItems(textItems, _ref) {
 	var keyPath = _ref.keyPath;
 	var actions = _ref.actions;
 	var block = _ref.block;
@@ -29048,9 +29056,11 @@ EditorElementCreator.reactElementsWithTextItems = function (textItems, _ref) {
 	} else {
 		return [];
 	}
-};
+}
 
-EditorElementCreator.BlocksElement = React.createClass({
+;
+
+var BlocksElement = React.createClass({
 	displayName: "BlocksElement",
 
 	mixins: [BaseClassNamesMixin],
@@ -29211,7 +29221,7 @@ EditorElementCreator.BlocksElement = React.createClass({
 	}
 });
 
-EditorElementCreator.SectionElement = React.createClass({
+var SectionElement = React.createClass({
 	displayName: "SectionElement",
 
 	mixins: [BaseClassNamesMixin],
@@ -29321,7 +29331,7 @@ EditorElementCreator.SectionElement = React.createClass({
 			}
 		}
 
-		elements.push(React.createElement(EditorElementCreator.BlocksElement, {
+		elements.push(React.createElement(BlocksElement, {
 			key: "blocks",
 			baseClassNames: this.getChildClassNamesWithSuffix("_blocks"),
 			blocksImmutable: blocksImmutable,
@@ -29345,7 +29355,7 @@ EditorElementCreator.SectionElement = React.createClass({
 	}
 });
 
-EditorElementCreator.DocumentSectionsElement = React.createClass({
+var DocumentSectionsElement = React.createClass({
 	displayName: "DocumentSectionsElement",
 
 	getDefaultProps: function getDefaultProps() {
@@ -29407,7 +29417,7 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 					focusedBlockKeyPathForReordering: focusedBlockKeyPathForReordering });
 			}
 
-			var sectionElement = React.createElement(EditorElementCreator.SectionElement, sectionProps);
+			var sectionElement = React.createElement(SectionElement, sectionProps);
 
 			var isExternal = sectionContent.get("isExternal", false);
 			if (isExternal) {
@@ -29468,7 +29478,7 @@ EditorElementCreator.DocumentSectionsElement = React.createClass({
 	}
 });
 
-module.exports = EditorElementCreator;
+exports["default"] = DocumentSectionsElement;
 
 //`-${typeGroup}-${blockType}`, // HAS REALLY WEIRD BUG IN WEBKIT? second - disappears sometimes.
 
