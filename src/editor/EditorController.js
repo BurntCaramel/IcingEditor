@@ -2,8 +2,9 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-var React = require('react');
-var Immutable = require('immutable');
+import React from 'react';
+import Immutable from 'immutable';
+
 //let PureRenderMixin = require('react/addons').addons.PureRenderMixin;
 var ContentStore = require('../stores/ContentStore');
 var SpecsStore = require('../stores/SpecsStore');
@@ -17,28 +18,26 @@ let ContentSettingsElement = require('./ContentSettings');
 var Toolbars = require('./EditorToolbars');
 var PreviewStore = require('../stores/PreviewStore');
 var ReorderingStore = require('../stores/ReorderingStore');
+import { sectionsStyler } from './styles';
 
+const initialState = {
+    documentState: Immutable.Map(),
+    viewingState: Immutable.Map(),
+    actions: null
+};
 
 /*
 * State is updated with previous state, to make checking equality between properties work in shouldComponentUpdate.
 */
 function latestStateWithPreviousState(
 	props,
-	previousState = null, {
+	previousState = initialState, {
 		updateAll = false,
 		updateDocumentState = updateAll,
 		updateViewingState = updateAll,
 		updateActions = updateAll
 	}
 ) {
-	if (!previousState) {
-		previousState = {
-			documentState: Immutable.Map(),
-			viewingState: Immutable.Map(),
-			actions: null
-		};
-	}
-	
 	//let documentID = ConfigurationStore.getCurrentDocumentID();
 	//let sectionID = ConfigurationStore.getCurrentDocumentSectionID();
 	let {
@@ -99,7 +98,7 @@ function latestStateWithPreviousState(
 
 const EditorMain = React.createClass({
 	getInitialState() {
-		return latestStateWithPreviousState(this.props, null, {
+		return latestStateWithPreviousState(this.props, undefined, {
 			updateAll: true
 		});
 	},
@@ -293,7 +292,8 @@ const EditorMain = React.createClass({
 				editedTextItemKeyPath,
 				isReordering,
 				focusedBlockIdentifierForReordering,
-				focusedBlockKeyPathForReordering
+				focusedBlockKeyPathForReordering,
+				styler: sectionsStyler,
 			});
 		}
 		
@@ -313,11 +313,11 @@ const EditorMain = React.createClass({
 		
 		children.push(innerElement);
 		
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			key: 'editor',
 			onClick: this.editorBackgroundWasClicked,
 			onTouchEnd: this.editorBackgroundWasClicked
-		}, children);
+		}, {}), children);
 	}
 });
 
