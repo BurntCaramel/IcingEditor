@@ -2,13 +2,14 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-var React = require('react');
+import React from 'react';
+import Immutable from 'immutable';
+import defaultStyler from 'react-sow/default';
+
 var Toolbars = require('./EditorToolbars');
-var Immutable = require('immutable');
 var ContentStore = require('../stores/ContentStore');
 var ContentActions = require('../actions/ContentActions');
 var ConfigurationStore = require('../stores/ConfigurationStore');
-var ReorderingStore = require('../stores/ReorderingStore');
 let objectAssign = require('object-assign');
 
 let {
@@ -30,7 +31,8 @@ const SubsectionElement = React.createClass({
 	
 	getDefaultProps() {
 		return {
-			baseClassNames: ['subsection']
+			baseClassNames: ['subsection'],
+            styler: defaultStyler,
 		}
 	},
 	
@@ -52,7 +54,8 @@ const SubsectionElement = React.createClass({
 			keyPath,
 			subsectionsSpecs,
 			actions,
-			edited
+			edited,
+            styler,
 		} = this.props;
 		let {
 			active
@@ -80,9 +83,9 @@ const SubsectionElement = React.createClass({
 			})
 		)
 		
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			className: this.getClassNameStringWithExtensions(classNameExtensions)
-		}, children);
+		}, styler()), children);
 	}
 });
 
@@ -93,7 +96,8 @@ const BlockElement = React.createClass({
 		return {
 			baseClassNames: ['block'],
 			allowsEditing: true,
-			isReordering: false
+			isReordering: false,
+            styler: defaultStyler,
 		}
 	},
 	
@@ -163,26 +167,18 @@ const BlockElement = React.createClass({
 	},
 	
 	onMouseEnter(event) {
-		this.setState({
-			hovered: true
-		});
+		this.setState({ hovered: true });
 	},
 	
 	onMouseLeave(event) {
-		this.setState({
-			hovered: false
-		});
+		this.setState({ hovered: false });
 	},
 	
 	render() {
 		let {
-			props,
-			state
-		} = this;
-		
-		let {
 			block,
 			typeGroup,
+            type,
 			subsectionType,
 			subsectionChildIndex,
 			keyPath,
@@ -196,19 +192,23 @@ const BlockElement = React.createClass({
 			allowsEditing,
 			isReordering,
 			isFocusedForReordering,
-			anotherBlockIsFocusedForReordering
-		} = props;
-		var blockType = props.type;
+			anotherBlockIsFocusedForReordering,
+            styler,
+		} = this.props;
+        
+        const {
+            hovered,
+        } = this.state;
 		
 		var classNameExtensions = [
 			`-${typeGroup}`,
-			//`-${typeGroup}-${blockType}`, // HAS REALLY WEIRD BUG IN WEBKIT? second - disappears sometimes.
-			("-" + [typeGroup, blockType].join("-")), // So, this instead.
+			//`-${typeGroup}-${type}`, // HAS REALLY WEIRD BUG IN WEBKIT? second - disappears sometimes.
+			("-" + [typeGroup, type].join("-")), // So, this instead.
 			`-inSubsection-${subsectionType}`
 		];
 		
 		var blockTypeOptions = findParticularBlockTypeOptionsWithGroupAndTypeInMap(
-			typeGroup, blockType, blockGroupIDsToTypesMap
+			typeGroup, type, blockGroupIDsToTypesMap
 		);
 		
 		var childrenInfo = {};
@@ -253,9 +253,9 @@ const BlockElement = React.createClass({
 		else if (typeGroup === 'text') {
 			var textItemsKeyPath = keyPath.concat('textItems');
 			let textItemElements = reactElementsWithTextItems(
-				props.textItems, {
-					keyPath: textItemsKeyPath, actions, block, blockTypeGroup: typeGroup, blockType, blockTypeOptions, traitSpecs, editedTextItemIdentifier,
-					outputInfo: childrenInfo, allowsEditing
+				this.props.textItems, {
+					keyPath: textItemsKeyPath, actions, block, blockTypeGroup: typeGroup, blockType: type, blockTypeOptions, traitSpecs, editedTextItemIdentifier,
+					outputInfo: childrenInfo, allowsEditing,
 				}
 			);
 			
@@ -290,7 +290,7 @@ const BlockElement = React.createClass({
 			React.createElement(Toolbars.BlockToolbar, {
 				key: 'blockToolbar',
 				chosenBlockTypeGroup: typeGroup,
-				chosenBlockType: blockType,
+				chosenBlockType: type,
 				blockTypeGroups,
 				blockGroupIDsToTypesMap,
 				actions: toolbarActions,
@@ -307,7 +307,7 @@ const BlockElement = React.createClass({
 						key: 'particularEditor',
 						block,
 						typeGroup,
-						type: blockType,
+						type,
 						blockTypeGroups,
 						blockGroupIDsToTypesMap: blockGroupIDsToTypesMap,
 						traitSpecs,
@@ -321,17 +321,17 @@ const BlockElement = React.createClass({
 			classNameExtensions.push('-edited');
 		}
 		
-		if (!edited && state.hovered) {
+		if (!edited && hovered) {
 			classNameExtensions.push('-hover');
 		}
 		
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			"data-subsection-child-index": (subsectionChildIndex + 1), // Change from zero to one based.
 			onClick: allowsEditing ? this.beginEditing : null,
 			onMouseEnter: this.onMouseEnter,
 			onMouseLeave: this.onMouseLeave
-		}, children);
+		}, styler({ typeGroup, type, subsectionType, subsectionChildIndex, hovered })), children);
 	}
 });
 
@@ -357,6 +357,7 @@ const TextItem = React.createClass({
 			actions,
 			keyPath
 		} = this.props;
+        
 		actions.editTextItemWithKeyPath(keyPath);
 		
 		event.stopPropagation(); // Don't bubble to block
@@ -511,7 +512,8 @@ const BlocksElement = React.createClass({
 	
 	getDefaultProps: function() {
 		return {
-			baseClassNames: ['documentSection_blocks', 'blocks']
+			baseClassNames: ['documentSection_blocks', 'blocks'],
+            styler: defaultStyler,
 		};
 	},
 	
@@ -527,7 +529,8 @@ const BlocksElement = React.createClass({
 			isReordering,
 			focusedBlockIdentifierForReordering,
 			focusedBlockKeyPathForReordering,
-			actions
+			actions,
+			styler,
 		} = this.props;
 		
 		var classNameExtensions = [];
@@ -543,6 +546,8 @@ const BlocksElement = React.createClass({
 			var blockIdentifier = blockImmutable.get('identifier');
 			var typeGroup = blockImmutable.get('typeGroup');
 			var type = blockImmutable.get('type');
+            var isSubsection = (typeGroup === 'subsection');
+            
 			var props = {
 				key: blockIdentifier,
 				block: blockImmutable,
@@ -566,7 +571,8 @@ const BlocksElement = React.createClass({
 				anotherBlockIsFocusedForReordering: (
 					focusedBlockIdentifierForReordering != null && blockIdentifier != focusedBlockIdentifierForReordering
 				),
-				keyPath: ['blocks', blockIndex]
+				keyPath: ['blocks', blockIndex],
+                styler: isSubsection ? styler.subsection : styler.block,
 			};
 		
 			if (typeGroup === 'text') {
@@ -575,7 +581,7 @@ const BlocksElement = React.createClass({
 		
 			var elementToReturn;
 		
-			if (typeGroup === 'subsection') {
+			if (isSubsection) {
 				elementToReturn = React.createElement(SubsectionElement, props);
 				currentSubsectionType = type;
 				currentSubsectionChildIndex = 0;
@@ -671,13 +677,13 @@ const BlocksElement = React.createClass({
 			classNameExtensions.push('-hasEditedBlock');
 		}
 		
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			className: this.getClassNameStringWithExtensions(classNameExtensions)
-		}, elements);
+		}, styler(this.props)), elements);
 	}
 })
 
-const SectionElement = React.createClass({
+export const SectionElement = React.createClass({
 	mixins: [BaseClassNamesMixin],
 	
 	getDefaultProps() {
@@ -695,7 +701,6 @@ const SectionElement = React.createClass({
 			isReordering: false,
 			focusedBlockIdentifierForReordering: null,
 			focusedBlockKeyPathForReordering: null,
-			showSectionTitle: false
 		};
 	},
 	
@@ -763,7 +768,7 @@ const SectionElement = React.createClass({
 			focusedBlockIdentifierForReordering,
 			focusedBlockKeyPathForReordering,
 			actions,
-			showSectionTitle
+			styler = defaultStyler,
 		} = this.props;
 		let {
 			editingTitle
@@ -773,28 +778,11 @@ const SectionElement = React.createClass({
 		var classNames = ['blocks'];
 		var elements = [];
 		
-		if (showSectionTitle) {
-			if (editingTitle && false) {
-				elements.push(React.createElement('input', {
-					key: 'editedTitle',
-					value: sectionID,
-					onChange: this.onTitleChanged,
-					className: this.getChildClassNameStringWithSuffix('_editedTitle')
-				}));
-			}
-			else {
-				elements.push(React.createElement('h3', {
-					key: 'title',
-					className: this.getChildClassNameStringWithSuffix('_title'),
-					onClick: this.editTitle
-				}, sectionID));
-			}
-		}
-		
 		elements.push(
 			React.createElement(BlocksElement, {
 				key: 'blocks',
 				baseClassNames: this.getChildClassNamesWithSuffix('_blocks'),
+				styler: styler.blocks,
 				blocksImmutable,
 				specsImmutable,
 				blockTypeGroups,
@@ -809,11 +797,11 @@ const SectionElement = React.createClass({
 			})
 		);
 	
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			className: this.getClassNameStringWithExtensions(),
 			onClick: this.onClick,
 			onKeyPress: this.onKeyPress
-		}, elements);
+		}, styler(this.props)), elements);
 	}
 });
 
@@ -849,6 +837,7 @@ const DocumentSectionsElement = React.createClass({
 			isReordering,
 			focusedBlockIdentifierForReordering,
 			focusedBlockKeyPathForReordering,
+			styler = defaultStyler,
 		} = this.props;
 		
 		let documentActions = ContentActions.getActionsForDocument(documentID);
@@ -866,7 +855,7 @@ const DocumentSectionsElement = React.createClass({
 				blockTypeGroups,
 				isReordering,
 				actions: ContentActions.getActionsForDocumentSection(documentID, sectionID),
-				showSectionTitle: true
+				styler: styler.section,
 			};
 			if (sectionID == focusedSectionID) {
 				objectAssign(sectionProps, {
@@ -896,51 +885,9 @@ const DocumentSectionsElement = React.createClass({
 		});
 		
 		
-		if (ConfigurationStore.getWantsMultipleSectionsFunctionality()) {
-			writingElements.push(
-				React.createElement(Toolbars.CreateSectionElement, {
-					key: 'createWritingSection',
-					type: 'writing',
-					onCreateNewSection() {
-						documentActions.createNewWritingSection()
-					},
-					onAddExternalSection() {
-						documentActions.addExternalWritingSection()
-					}
-				})
-			);
-		}
-		
-		if (ConfigurationStore.getWantsCreateCatalogsFunctionality()) {
-			catalogElements.push(
-				React.createElement(Toolbars.CreateSectionElement, {
-					key: 'createLinkCatalog',
-					type: 'catalogLinks',
-					onCreateNewSection() {
-						documentActions.createNewCatalogSection('link')
-					},
-					onAddExternalSection() {
-						documentActions.addExternalCatalogSection('link')
-					}
-				}),
-				
-				React.createElement(Toolbars.CreateSectionElement, {
-					key: 'createElementCatalog',
-					type: 'catalogElements',
-					onCreateNewSection() {
-						documentActions.createNewCatalogSection('element')
-					},
-					onAddExternalSection() {
-						documentActions.addExternalCatalogSection('element')
-					}
-				})
-			);
-		}
-		
-		
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			className: 'documentSections',
-		}, [
+		}, styler()), [
 			React.createElement('section', {
 				key: 'writingSections',
 				className: 'writingSections'

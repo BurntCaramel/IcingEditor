@@ -2,7 +2,9 @@
 	Copyright 2015 Patrick George Wyndham Smith
 */
 
-var React = require('react');
+import React from 'react';
+import defaultStyler from 'react-sow/default';
+
 import AppDispatcher from '../app-dispatcher';
 var ConfigurationStore = require('../stores/ConfigurationStore');
 var PreviewStore = require('../stores/PreviewStore');
@@ -10,6 +12,7 @@ var ReorderingStore = require('../stores/ReorderingStore');
 var Immutable = require('immutable');
 var eventIDs = require('../actions/ContentActionsEventIDs');
 var documentSectionEventIDs = eventIDs.documentSection;
+import { textEditorStyler, toolbarButtonStyler, traitHolderStyler } from './styles';
 
 let EditorFields = require('./EditorFields');
 
@@ -27,6 +30,13 @@ let KeyCodes = require('../ui/KeyCodes');
 
 let MicroEvent = require('microevent');
 
+function ToolbarButton({ title, small, selected, onClick, styler = toolbarButtonStyler }) {
+	//return React.createElement('span');
+	
+	return React.createElement('button', Object.assign({
+		onClick
+	}, styler({ small, selected })), title);
+}
 
 
 var TextItemTextArea = React.createClass({
@@ -34,7 +44,8 @@ var TextItemTextArea = React.createClass({
 		return {
 			text: '',
 			shorter: false,
-			tabIndex: 0
+			tabIndex: 0,
+			styler: defaultStyler,
 		};
 	},
 
@@ -228,7 +239,8 @@ var TextItemTextArea = React.createClass({
 		let {
 			text,
 			shorter,
-			tabIndex
+			tabIndex,
+			styler,
 		} = this.props;
 
 		var classNames = [
@@ -241,14 +253,14 @@ var TextItemTextArea = React.createClass({
 			);
 		}
 
-		return React.createElement('textarea', {
+		return React.createElement('textarea', Object.assign({
 			ref: 'textarea',
 			value: text,
 			className: classNames.join(' '),
 			width: 10,
 			height: 20,
 			placeholder: 'Type text…',
-			spellCheck: "true",
+			spellCheck: 'true',
 			//key: 'textarea',
 			onChange: this.onChange,
 			onKeyDown: this.onKeyDown,
@@ -256,28 +268,7 @@ var TextItemTextArea = React.createClass({
 			onKeyPress: this.onKeyPress,
 			onPaste: this.onPaste,
 			tabIndex
-		});
-	}
-});
-
-var ToolbarButton = React.createClass({
-	mixins: [ButtonMixin],
-
-	getDefaultProps() {
-		return {
-			//baseClassNames: ['toolbarButton']
-			className: 'toolbarButton'
-		};
-	}
-});
-
-var SecondaryButton = React.createClass({
-	mixins: [ButtonMixin],
-
-	getDefaultProps() {
-		return {
-			baseClassNames: ['secondaryButton']
-		};
+		}, styler(this.props)));
 	}
 });
 
@@ -319,7 +310,8 @@ var TraitButton = React.createClass({
 	getDefaultProps() {
 		return {
 			traitSpec: {},
-			traitValue: null
+			traitValue: null,
+			styler: traitHolderStyler,
 		};
 	},
 
@@ -395,7 +387,8 @@ var TraitButton = React.createClass({
 	render() {
 		let {
 			traitSpec,
-			traitValue
+			traitValue,
+			styler,
 		} = this.props;
 
 		var traitID = traitSpec.get('id');
@@ -445,13 +438,13 @@ var TraitButton = React.createClass({
 						key: 'buttons',
 						className: 'traitOptions_buttons'
 					}, [
-						React.createElement(SecondaryButton, {
+						React.createElement(ToolbarButton, {
 							key: 'removeButton',
 							title: 'Remove',
 							className: 'removeButton',
 							onClick: this.removeTrait
 						}),
-						React.createElement(SecondaryButton, {
+						React.createElement(ToolbarButton, {
 							key: 'doneButton',
 							title: 'Done',
 							className: 'doneButton',
@@ -462,10 +455,10 @@ var TraitButton = React.createClass({
 			);
 		}
 
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			key: `button-${traitID}`,
 			className: 'buttonHolder'
-		}, children);
+		}, styler()), children);
 	}
 });
 
@@ -618,7 +611,8 @@ var TextItemEditor = React.createClass({
 			text: '',
 			traits: {},
 			traitSpecs: null,
-			baseClassNames: ['textItemEditor']
+			baseClassNames: ['textItemEditor'],
+			styler: textEditorStyler,
 		};
 	},
 
@@ -664,7 +658,8 @@ var TextItemEditor = React.createClass({
 			blockTypeGroup,
 			blockType,
 			blockTypeOptions,
-			traitSpecs
+			traitSpecs,
+			styler,
 		} = this.props;
 		let {
 			shiftKeyIsPressed,
@@ -686,10 +681,10 @@ var TextItemEditor = React.createClass({
 			textEditorInstructions = 'return/enter: new paragraph · spacebar twice: finish sentence';
 		}
 
-		let instructionsElement = React.createElement('div', {
+		let instructionsElement = React.createElement('div', Object.assign({
 			key: 'instructions',
 			className: 'textItemEditor_instructions'
-		}, [
+		}, styler.instructions()), [
 			React.createElement('div', {
 				key: 'keyShortcuts',
 				className: 'textItemEditor_instructions_keyShortcuts'
@@ -706,7 +701,8 @@ var TextItemEditor = React.createClass({
 				shorter: showCreationOptions,
 				actions,
 				onModifierKeyChange: this.onModifierKeyChange,
-				traitSpecs
+				traitSpecs,
+				styler: styler.textarea,
 			})
 		);
 
@@ -773,12 +769,12 @@ var TextItemEditor = React.createClass({
 			);
 		}
 
-		return React.createElement('div', {
+		return React.createElement('div', Object.assign({
 			key: 'textItemEditor',
 			className: 'textItemEditor',
 			id: 'icing-textItemEditor',
 			onClick: this.onClick
-		}, children);
+		}, styler(this.props)), children);
 	}
 });
 
@@ -1067,7 +1063,7 @@ var BlockToolbar = React.createClass({
 		if (isReordering) {
 			if (isFocusedForReordering) {
 				children.push(
-					React.createElement(SecondaryButton, {
+					React.createElement(ToolbarButton, {
 						key: 'keepHereButton',
 						className: 'block_reorder_keepHereButton',
 						title: 'Keep Here',
@@ -1275,7 +1271,7 @@ var ChangeSubsectionElement = React.createClass({
 
 		if (isCreate) {
 			children.push(
-				React.createElement(SecondaryButton, {
+				React.createElement(ToolbarButton, {
 					key: 'mainButton',
 					baseClassNames: this.getChildClassNamesWithSuffix('_mainButton'),
 					title: 'Portion Below',
@@ -1366,7 +1362,7 @@ var RearrangeBlockMoveHere = React.createClass({
 		var children = [];
 
 		children.push(
-			React.createElement(SecondaryButton, {
+			React.createElement(ToolbarButton, {
 				key: 'moveHereButton',
 				//className: 'block_reorder_moveHereButton',
 				className: this.getChildClassNameStringWithSuffix('_button'),
@@ -1408,7 +1404,7 @@ var RearrangeBlockFocusOnThis = React.createClass({
 			classNameExtensions.push('-hidden'); // Used for CSS animations
 		}
 
-		return React.createElement(SecondaryButton, {
+		return React.createElement(ToolbarButton, {
 			className: this.getClassNameStringWithExtensions(classNameExtensions),
 			title: 'Move This',
 			onClick,
@@ -1452,14 +1448,14 @@ var CreateSectionElement = React.createClass({
 		return React.createElement('div', {
 			className: this.getClassNameStringWithExtensions()
 		}, [
-			React.createElement(SecondaryButton, {
+			React.createElement(ToolbarButton, {
 				key: 'addNewButton',
 				className: this.getChildClassNameStringWithSuffix('_addNewButton'),
 				title: buttonTitle,
 				onClick: onCreateNewSection
 			})
 			/*,
-			React.createElement(SecondaryButton, {
+			React.createElement(ToolbarButton, {
 				key: 'addExternalButton',
 				className: this.getChildClassNameStringWithSuffix('_addExternalButton'),
 				title: externalButtonTitle,
@@ -1637,6 +1633,6 @@ var ElementToolbars = {
 	ChangeSubsectionElement,
 	RearrangeBlockMoveHere,
 	ToolbarButton,
-	SecondaryButton
+	ToolbarButton
 };
 module.exports = ElementToolbars;
