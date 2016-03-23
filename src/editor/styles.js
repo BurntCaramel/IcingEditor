@@ -23,26 +23,26 @@ export const unorderedListItem = fallow({
 	},
 });
 
-export const sectionsStyler = sow(() => ({
+export const sectionsStyler = sow({
 	position: 'relative',
 	//left: '-5vw',
 	maxWidth: 400,
 	width: '40vw',
 	fontFamily: 'sans-serif',
-}), {
-	section: sow(() => ({
+}, {
+	section: sow({
 		fontSize,
 		lineHeight,
-	}), {
-		blocks: sow(() => ({
+	}, {
+		blocks: sow({
 			position: 'relative',
 			marginBottom: 40,
 			padding: '8px 0',
 			transition: 'left 0.7s ease-out, background-color 0.25s ease',
-		}), {
-			subsection: sow(() => ({
+		}, {
+			subsection: sow({
 				marginBottom: '1em',
-			})),
+			}),
 			block: sow(({ typeGroup, type, subsectionType, subsectionChildIndex }) => Object.assign({
 				marginBottom: '1em',
 			}, (subsectionType === 'unorderedList') && {
@@ -52,14 +52,14 @@ export const sectionsStyler = sow(() => ({
 	}),
 });
 
-export const textEditorStyler = sow(() => ({
+export const textEditorStyler = sow({
 	position: 'absolute',
 	left: '100%',
 	marginLeft: '3vw',
 	marginTop: -13,
 	borderTop: `1px solid ${keyColor}`,
-}), {
-	textarea: sow(() => ({
+}, {
+	textarea: sow({
 		boxSizing: 'border-box',
 		maxWidth: '40vw',
 		width: 500,
@@ -70,10 +70,9 @@ export const textEditorStyler = sow(() => ({
 		backgroundColor: 'white',
 		border: 'none',
 		outline: 'none',
-		
 		transition: 'height 0.38s ease-out',
-	})),
-	instructions: sow(() => ({
+	}),
+	instructions: sow({
 		display: 'none',
 		position: 'absolute',
 		top: -16,
@@ -81,10 +80,10 @@ export const textEditorStyler = sow(() => ({
 		opacity: 0.25,
 		fontSize: 10,
 		lineHeight: 1,
-	})),
+	}),
 });
 
-const toolbarItemStyler = sow(() => ({
+const toolbarItemStyler = sow({
 	display: 'inline-block',
 	margin: 0,
 	paddingTop: 3,
@@ -95,7 +94,7 @@ const toolbarItemStyler = sow(() => ({
 	whiteSpace: 'nowrap',
 	border: 'none',
 	background: 'none',
-}));
+});
 
 export const toolbarButtonStyler = sow.combine([
 	toolbarItemStyler,
@@ -119,8 +118,8 @@ export const toolbarButtonStyler = sow.combine([
 	))
 ]);
 
-export const traitHolderStyler = sow(() => ({
+export const traitHolderStyler = sow({
 	display: 'inline-block',
 	marginLeft: 4,
 	marginRight: 4,
-}));
+});
