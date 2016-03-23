@@ -1,0 +1,851 @@
+@charset "UTF-8";
+/* line 58, ../src/styles/_constants.scss */
+#burntIcingEditor .traitOptions, #burntIcingEditor .particularEditor_fieldsHolder {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  background-color: white;
+}
+
+/* line 1, ../src/styles/_mixins.scss */
+#burntIcingEditor .document_section_blocks {
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  background-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
+/* line 13, ../src/styles/_mixins.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_choices_group_title, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group_title, #burntIcingEditor .textItemEditor_itemTraitsToolbar_heading,
+#burntIcingEditor .textItemEditor_blockTraitsToolbar_heading {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", sans-serif;
+  font-size: 10px;
+  font-weight: normal;
+}
+
+/* line 23, ../src/styles/_mixins.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarDivider, #burntIcingEditor .mainToolbar .toolbarButton, #burntIcingEditor .mainToolbar .toolbarButton-selected, #burntIcingEditor .sections_createNewSection_addNewButton,
+#burntIcingEditor .sections_createNewSection_addExternalButton, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton, #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton, #burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton, #burntIcingEditor .block_reorder_moveThisButton,
+#burntIcingEditor .block_reorder_keepHereButton,
+#burntIcingEditor .block_reorder_moveHere_button, #burntIcingEditor .textItemEditor_mainButton, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-selected,
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields, #burntIcingEditor .traitOptions .traitOptions_buttons .secondaryButton, #burntIcingEditor .subsection {
+  display: inline-block;
+  margin: 0;
+  padding: 3px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  border: none;
+  background: none;
+}
+
+/* line 37, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton, #burntIcingEditor .mainToolbar .toolbarButton-selected, #burntIcingEditor .sections_createNewSection_addNewButton,
+#burntIcingEditor .sections_createNewSection_addExternalButton, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton, #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton, #burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton, #burntIcingEditor .block_reorder_moveThisButton,
+#burntIcingEditor .block_reorder_keepHereButton,
+#burntIcingEditor .block_reorder_moveHere_button, #burntIcingEditor .textItemEditor_mainButton, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-selected,
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields, #burntIcingEditor .traitOptions .traitOptions_buttons .secondaryButton {
+  border-radius: 2px;
+}
+
+/* line 43, ../src/styles/_mixins.scss */
+#burntIcingEditor .sections_createNewSection_addNewButton,
+#burntIcingEditor .sections_createNewSection_addExternalButton, #burntIcingEditor .subsection, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton, #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton, #burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton, #burntIcingEditor .block_reorder_moveThisButton,
+#burntIcingEditor .block_reorder_keepHereButton,
+#burntIcingEditor .block_reorder_moveHere_button {
+  padding: 3px 6px;
+  font-size: 10px;
+  border-radius: 2px;
+}
+
+/* line 51, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton, #burntIcingEditor .sections_createNewSection_addNewButton,
+#burntIcingEditor .sections_createNewSection_addExternalButton, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton, #burntIcingEditor .block_reorder_moveThisButton,
+#burntIcingEditor .block_reorder_keepHereButton,
+#burntIcingEditor .block_reorder_moveHere_button, #burntIcingEditor .textItemEditor_mainButton, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton, #burntIcingEditor .traitOptions .traitOptions_buttons .secondaryButton {
+  color: #111;
+  background-color: #f7f7f7;
+}
+
+/* line 56, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton:hover, #burntIcingEditor .sections_createNewSection_addNewButton:hover,
+#burntIcingEditor .sections_createNewSection_addExternalButton:hover, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton:hover, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton:hover, #burntIcingEditor .blocks_changeSubsection_mainButton:hover, #burntIcingEditor .block_reorder_moveThisButton:hover,
+#burntIcingEditor .block_reorder_keepHereButton:hover,
+#burntIcingEditor .block_reorder_moveHere_button:hover, #burntIcingEditor .textItemEditor_mainButton:hover, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton:hover {
+  background-color: white;
+}
+
+/* line 60, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton:active, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton:active, #burntIcingEditor .mainToolbar .toolbarButton-selected, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-selected,
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields {
+  color: white;
+  background-color: #1496ff;
+}
+
+/* line 65, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton:active, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton:active, #burntIcingEditor .mainToolbar .toolbarButton-selected:hover, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton:hover, #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton:hover, #burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton:hover, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton:hover, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton:hover, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-selected:hover,
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields:hover {
+  background-color: #269eff;
+}
+
+/* line 69, ../src/styles/_mixins.scss */
+#burntIcingEditor .sections_createNewSection_addNewButton:active,
+#burntIcingEditor .sections_createNewSection_addExternalButton:active, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton:active, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton:active, #burntIcingEditor .blocks_changeSubsection_mainButton:active, #burntIcingEditor .block_reorder_moveThisButton:active,
+#burntIcingEditor .block_reorder_keepHereButton:active,
+#burntIcingEditor .block_reorder_moveHere_button:active, #burntIcingEditor .textItemEditor_mainButton:active {
+  background-color: #f4f4f4;
+}
+
+/* line 78, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton-selected:active, #burntIcingEditor .blockItemToolbar_typeChooser_mainButton:active, #burntIcingEditor .blocks_changeSubsection-hasSelectedSubsectionType .blocks_changeSubsection_mainButton:active, #burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton:active, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton:active, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton:active, #burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton-selected, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton-selected, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton-selected, #burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-selected:active,
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields:active {
+  background-color: #0089f7;
+}
+
+/* line 6, ../src/styles/main.scss */
+html,
+body {
+  min-height: 100%;
+}
+
+/* line 11, ../src/styles/main.scss */
+body {
+  box-sizing: border-box;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  padding-bottom: 20px;
+  background-color: white;
+}
+
+/* line 21, ../src/styles/main.scss */
+#mainFooter {
+  position: fixed;
+  z-index: 1100;
+  bottom: 0;
+  left: 0;
+  height: 20px;
+  font-family: "Helvetica Neue", sans-serif;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+/* line 30, ../src/styles/main.scss */
+#mainFooter p {
+  opacity: 0.4;
+  margin: 0;
+  padding-top: 4px;
+  padding-left: 1em;
+  padding-right: 1em;
+  font-size: 10px;
+}
+
+/* line 40, ../src/styles/main.scss */
+#burntIcingEditor {
+  max-width: 600px;
+  width: 60vw;
+  margin: auto;
+  margin-bottom: 40px;
+  padding-top: 8px;
+  padding-bottom: 160px;
+  font-family: "Helvetica Neue", sans-serif;
+  /*
+  .block:hover .blockItemToolbar
+  {
+  	opacity: 1.0;
+  }
+  */
+}
+/* line 52, ../src/styles/main.scss */
+#burntIcingEditor .mainToolbar {
+  position: fixed;
+  z-index: 1000;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  height: 40px;
+  padding-left: 20px;
+  padding-top: 8px;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.9);
+  opacity: 0.95;
+  transition: opacity 0.25s ease-out;
+}
+/* line 70, ../src/styles/main.scss */
+#burntIcingEditor .mainToolbar:hover {
+  opacity: 1.0;
+}
+/* line 74, ../src/styles/main.scss */
+#burntIcingEditor .mainToolbar .toolbarButton {
+  margin-right: 10px;
+}
+/* line 89, ../src/styles/_mixins.scss */
+#burntIcingEditor .mainToolbar .toolbarButton {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 85, ../src/styles/main.scss */
+#burntIcingEditor .mainToolbar_availableDocumentsSelect,
+#burntIcingEditor .mainToolbar_availableDocumentsSingle {
+  display: inline-block;
+  margin-left: 1em;
+  font-style: italic;
+}
+/* line 100, ../src/styles/main.scss */
+#burntIcingEditor .documentSections {
+  position: relative;
+  left: -5vw;
+  max-width: 400px;
+  width: 40vw;
+}
+/* line 113, ../src/styles/main.scss */
+#burntIcingEditor .writingSections,
+#burntIcingEditor .catalogSection {
+  margin-bottom: 40px;
+}
+/* line 118, ../src/styles/main.scss */
+#burntIcingEditor .sections_createNewSection {
+  margin-top: 54px;
+}
+/* line 121, ../src/styles/main.scss */
+#burntIcingEditor .sections_createNewSection_addNewButton,
+#burntIcingEditor .sections_createNewSection_addExternalButton {
+  margin-right: 10px;
+}
+/* line 89, ../src/styles/_mixins.scss */
+#burntIcingEditor .sections_createNewSection_addNewButton,
+#burntIcingEditor .sections_createNewSection_addExternalButton {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 129, ../src/styles/main.scss */
+#burntIcingEditor .document_section_title {
+  margin: 0;
+  padding: 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: normal;
+  font-style: italic;
+  opacity: 0.6;
+}
+/* line 141, ../src/styles/main.scss */
+#burntIcingEditor .document_section_blocks {
+  position: relative;
+  margin-bottom: 40px;
+  padding: 8px 0;
+  transition: left 0.7s ease-out, background-color 0.25s ease;
+}
+/* line 151, ../src/styles/main.scss */
+#burntIcingEditor .block {
+  position: relative;
+  padding: 0 8px;
+  font-size: 15px;
+  line-height: 1.3;
+  min-height: 20px;
+  transition: background-color 0.25s ease;
+}
+/* line 161, ../src/styles/main.scss */
+#burntIcingEditor .block_textItems {
+  border: 1px solid rgba(255, 255, 255, 0);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+/* line 172, ../src/styles/main.scss */
+#burntIcingEditor .noItemsPlaceholder:after {
+  content: '\00A0';
+}
+/* line 176, ../src/styles/main.scss */
+#burntIcingEditor .block-particular,
+#burntIcingEditor .block-media {
+  padding: 5px;
+}
+/* line 182, ../src/styles/main.scss */
+#burntIcingEditor .block-particular:not(.block-edited):hover,
+#burntIcingEditor .block-media:not(.block-edited):hover {
+  background-color: rgba(0, 0, 0, 0.0625);
+}
+/* line 186, ../src/styles/main.scss */
+#burntIcingEditor .block-particular.block-edited, #burntIcingEditor .block-particular.block-edited:hover,
+#burntIcingEditor .block-media.block-edited,
+#burntIcingEditor .block-media.block-edited:hover {
+  background-color: white;
+}
+/* line 193, ../src/styles/main.scss */
+#burntIcingEditor .subsection {
+  display: block;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  text-align: center;
+  font-size: 10px;
+}
+/* line 204, ../src/styles/main.scss */
+#burntIcingEditor .textItem .text,
+#burntIcingEditor .noItemsPlaceholder {
+  border: 1px dotted transparent;
+  word-wrap: break-word;
+  transition: background-color 0.25s ease;
+}
+/* line 212, ../src/styles/main.scss */
+#burntIcingEditor .textItem-edited .text {
+  background-color: white;
+}
+/* line 216, ../src/styles/main.scss */
+#burntIcingEditor .textItem:not(.textItem-edited) .text:hover,
+#burntIcingEditor .noItemsPlaceholder:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+/* line 1, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar, #burntIcingEditor .blocks_addBlock, #burntIcingEditor .blocks_changeSubsection {
+  position: absolute;
+  right: 100%;
+  margin-right: 3vw;
+}
+/* line 7, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser, #burntIcingEditor .blocks_addBlock_typeChooser {
+  position: relative;
+}
+/* line 11, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton {
+  opacity: 0.02;
+  text-shadow: 0 0 4px black;
+  transition: opacity 0.2s ease-out, text-shadow 0.15s 0.15s ease;
+}
+/* line 89, ../src/styles/_mixins.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 26, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_mainButton:hover,
+#burntIcingEditor .blockItemToolbar_typeChooser-active .blockItemToolbar_typeChooser_mainButton,
+#burntIcingEditor .block-edited .blockItemToolbar_typeChooser_mainButton, #burntIcingEditor .blocks_addBlock_typeChooser_mainButton:hover,
+#burntIcingEditor .blocks_addBlock_typeChooser-active .blocks_addBlock_typeChooser_mainButton,
+#burntIcingEditor .block-edited .blocks_addBlock_typeChooser_mainButton, #burntIcingEditor .blocks_changeSubsection_mainButton:hover,
+#burntIcingEditor .blocks_changeSubsection-active .blocks_changeSubsection_mainButton {
+  opacity: 1.0;
+  text-shadow: none;
+  transition: opacity 0.2s ease-out, text-shadow 0.15s 0s ease;
+}
+/* line 35, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_choices, #burntIcingEditor .blocks_addBlock_typeChooser_choices, #burntIcingEditor .blocks_changeSubsection_choices {
+  position: absolute;
+  z-index: 2000;
+  top: 0;
+  left: 100%;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  text-align: center;
+  background-color: #0086f2;
+  border-radius: 2px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 49, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_choices_group, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group, #burntIcingEditor .blocks_changeSubsection_choices {
+  padding: 4px;
+}
+/* line 53, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+}
+/* line 114, ../src/styles/_mixins.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group .toolbarButton, #burntIcingEditor .blocks_changeSubsection_choices .toolbarButton {
+  color: white;
+}
+/* line 64, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar_typeChooser_choices_group_title, #burntIcingEditor .blocks_addBlock_typeChooser_choices_group_title {
+  margin: 0;
+  padding: 0;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-style: italic;
+  color: white;
+}
+/* line 77, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blockItemToolbar {
+  top: 0;
+  bottom: 0;
+}
+/* line 89, ../src/styles/_mixins.scss */
+#burntIcingEditor .block_reorder_moveThisButton,
+#burntIcingEditor .block_reorder_keepHereButton,
+#burntIcingEditor .block_reorder_moveHere_button {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 119, ../src/styles/_type-controls.scss */
+#burntIcingEditor .block_reorder_moveThisButton,
+#burntIcingEditor .block_reorder_moveHere {
+  transition: opacity 0.35s ease;
+}
+/* line 124, ../src/styles/_type-controls.scss */
+#burntIcingEditor .block_reorder_moveThisButton-hidden,
+#burntIcingEditor .block_reorder_moveHere-hidden {
+  opacity: 0.0;
+}
+/* line 130, ../src/styles/_type-controls.scss */
+#burntIcingEditor .block_reorder_moveHere {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+}
+/* line 135, ../src/styles/_type-controls.scss */
+#burntIcingEditor .block_reorder_moveHere:after {
+  content: '';
+  opacity: 0.2;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  border-bottom: 1px dotted black;
+  border-radius: 1px;
+}
+/* line 147, ../src/styles/_type-controls.scss */
+#burntIcingEditor .block_reorder_moveHere_button {
+  position: relative;
+  z-index: 1;
+}
+/* line 153, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blocks_addBlock {
+  z-index: 10;
+}
+/* line 187, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blocks_changeSubsection {
+  right: 106%;
+}
+/* line 201, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blocks_changeSubsection_choices {
+  display: block;
+}
+/* line 216, ../src/styles/_type-controls.scss */
+#burntIcingEditor .block {
+  margin-bottom: 22px;
+}
+/* line 221, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blocks_addBlock,
+#burntIcingEditor .blocks_changeSubsection,
+#burntIcingEditor .block_reorder_moveHere {
+  margin-top: -22px;
+}
+/* line 228, ../src/styles/_type-controls.scss */
+#burntIcingEditor .blocks_changeSubsection_divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+/* line 235, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor {
+  position: absolute;
+  left: 100%;
+  margin-left: 3vw;
+}
+/* line 241, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_textarea {
+  box-sizing: border-box;
+  max-width: 40vw;
+  width: 500px;
+  height: 140px;
+  padding: 10px;
+  font-size: 17px;
+  line-height: 1.3;
+  background-color: white;
+  border: none;
+  transition: height 0.38s ease-out;
+}
+/* line 255, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_textarea-shorter {
+  height: 40px;
+  padding-bottom: 8px;
+}
+/* line 261, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_instructions {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  opacity: 0.25;
+  font-size: 10px;
+  line-height: 1;
+}
+/* line 273, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_mainButton {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+/* line 89, ../src/styles/_mixins.scss */
+#burntIcingEditor .textItemEditor_mainButton {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 281, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar {
+  margin-top: 4px;
+}
+/* line 285, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .buttonHolder {
+  display: inline-block;
+}
+/* line 289, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton,
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarDivider {
+  margin-right: 4px;
+  margin-bottom: 4px;
+}
+/* line 89, ../src/styles/_mixins.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton {
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+/* line 323, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields {
+  position: relative;
+}
+/* line 329, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .toolbarButton-showingFields:after {
+  content: '▲';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-top: -6px;
+  margin-left: -3px;
+  color: white;
+}
+/* line 341, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_itemTraitsToolbar_heading,
+#burntIcingEditor .textItemEditor_blockTraitsToolbar_heading {
+  margin-bottom: 4px;
+}
+/* line 347, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_blockTraitsToolbar_heading {
+  margin-top: 12px;
+}
+/* line 1, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder,
+#burntIcingEditor .choice,
+#burntIcingEditor .fieldMultiple {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+}
+/* line 10, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder {
+  margin: 0 -10px;
+}
+/* line 14, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel,
+#burntIcingEditor .fieldsHolder .choice,
+#burntIcingEditor .fieldsHolder .choice_fieldsHolder,
+#burntIcingEditor .fieldsHolder .group,
+#burntIcingEditor .fieldsHolder .group_fieldsHolder,
+#burntIcingEditor .fieldsHolder .fieldMultiple {
+  box-sizing: border-box;
+}
+/* line 23, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .choice,
+#burntIcingEditor .fieldsHolder .choice_fieldsHolder,
+#burntIcingEditor .fieldsHolder .group,
+#burntIcingEditor .fieldsHolder .fieldMultiple {
+  -webkit-flex: 3 0 100%;
+      -ms-flex: 3 0 100%;
+          flex: 3 0 100%;
+}
+/* line 30, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .group {
+  margin-bottom: 10px;
+}
+/* line 34, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel,
+#burntIcingEditor .fieldsHolder .fieldMultiple,
+#burntIcingEditor .fieldsHolder .choice_fieldsHolder,
+#burntIcingEditor .fieldsHolder .group_fieldsHolder {
+  padding: 0 10px;
+}
+/* line 40, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .choice_fieldsHolder {
+  padding-left: 25px;
+}
+/* line 45, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-flex: 1 0 50%;
+      -ms-flex: 1 0 50%;
+          flex: 1 0 50%;
+}
+/* line 52, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel_title {
+  min-width: 7em;
+  font-size: 12px;
+  text-align: right;
+  padding-right: 1em;
+  line-height: 24px;
+}
+/* line 61, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldMultiple {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+}
+/* line 64, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldMultiple_mainFieldLabel {
+  -webkit-flex: 3 0 100%;
+      -ms-flex: 3 0 100%;
+          flex: 3 0 100%;
+  padding: 0;
+}
+/* line 69, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldMultiple .fieldLabel-fieldType-textual {
+  -webkit-flex: 3 0 100%;
+      -ms-flex: 3 0 100%;
+          flex: 3 0 100%;
+}
+/* line 73, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .input-textual,
+#burntIcingEditor .fieldsHolder .choice_select {
+  -webkit-flex: 2 0 66%;
+      -ms-flex: 2 0 66%;
+          flex: 2 0 66%;
+  box-sizing: border-box;
+  margin: 0;
+  margin-top: 2px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+/* line 86, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .input-textual {
+  border: 1px solid #eee;
+  padding: 2px 4px;
+}
+/* line 91, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel-fieldType-url {
+  -webkit-flex: 1 0 100%;
+      -ms-flex: 1 0 100%;
+          flex: 1 0 100%;
+}
+/* line 94, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel-fieldType-number-integer {
+  -webkit-flex: 1 0 33%;
+      -ms-flex: 1 0 33%;
+          flex: 1 0 33%;
+}
+/* line 100, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel-fieldType-boolean .fieldLabel_title,
+#burntIcingEditor .fieldsHolder .fieldLabel-fieldType-group .fieldLabel_title {
+  display: inline-block;
+}
+/* line 105, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .fieldLabel-fieldType-boolean input {
+  margin-top: 5px;
+  margin-right: 3px;
+}
+/* line 111, ../src/styles/_fields.scss */
+#burntIcingEditor .fieldsHolder .group_fieldsHolder .fieldLabel-fieldType-textual,
+#burntIcingEditor .fieldsHolder .group_fieldsHolder .choice {
+  -webkit-flex: 2 0 50%;
+      -ms-flex: 2 0 50%;
+          flex: 2 0 50%;
+}
+/* line 355, ../src/styles/main.scss */
+#burntIcingEditor .traitOptions {
+  position: absolute;
+  z-index: 1000;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  padding: 12px;
+  padding-top: 6px;
+}
+/* line 375, ../src/styles/main.scss */
+#burntIcingEditor .traitOptions .traitOptions_buttons {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+      -ms-flex-wrap: wrap;
+          flex-wrap: wrap;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  margin-top: 2px;
+  margin-left: -6px;
+  margin-right: -6px;
+  margin-bottom: -4px;
+}
+/* line 385, ../src/styles/main.scss */
+#burntIcingEditor .traitOptions .traitOptions_buttons .secondaryButton {
+  -webkit-flex: 2 0 45%;
+      -ms-flex: 2 0 45%;
+          flex: 2 0 45%;
+  margin-left: 6px;
+  margin-right: 6px;
+}
+/* line 402, ../src/styles/main.scss */
+#burntIcingEditor .traitOptions .traitOptions_buttons .removeButton {
+  color: #c80a00;
+  background-color: #f7f2f2;
+}
+/* line 414, ../src/styles/main.scss */
+#burntIcingEditor .textItemEditor_traitsToolbar .buttonHolder:first-child .traitOptions {
+  border-top-left-radius: 0;
+}
+/* line 420, ../src/styles/main.scss */
+#burntIcingEditor .particularEditor {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  max-width: 40vw;
+  width: 500px;
+  margin-left: 3vw;
+}
+/* line 429, ../src/styles/main.scss */
+#burntIcingEditor .particularEditor .textItemEditor_blockTraitsToolbar {
+  margin-top: 20px;
+}
+/* line 433, ../src/styles/main.scss */
+#burntIcingEditor .particularEditor_fieldsHolder {
+  padding-top: 6px;
+}
+/* line 442, ../src/styles/main.scss */
+#burntIcingEditor .particularEditor_fieldsHolder .fieldLabel_title,
+#burntIcingEditor .document_contentSettings_fields .fieldLabel_title {
+  font-size: 12px;
+}
+/* line 448, ../src/styles/main.scss */
+#burntIcingEditor .previewHTMLHolder {
+  padding: 1em;
+  font-family: inherit;
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.3;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+/* line 456, ../src/styles/main.scss */
+#burntIcingEditor .previewHTMLHolder code {
+  font-family: inherit;
+}
+/* line 462, ../src/styles/main.scss */
+#burntIcingEditor .document_loadingSpecs,
+#burntIcingEditor .document_loadingContent,
+#burntIcingEditor .document_section_blocks_loading,
+#burntIcingEditor .preview_loading,
+#burntIcingEditor .document_contentSettings_heading {
+  text-align: center;
+  font-size: 16px;
+  font-weight: normal;
+  margin-top: 8px;
+  margin-bottom: 16px;
+}
+@media (max-width: 850px) {
+  /* line 40, ../src/styles/main.scss */
+  #burntIcingEditor {
+    max-width: none;
+    width: 60vw;
+  }
+  /* line 481, ../src/styles/main.scss */
+  #burntIcingEditor .documentSections {
+    position: relative;
+    left: 7vw;
+    max-width: 60vw;
+    width: auto;
+  }
+  /* line 488, ../src/styles/main.scss */
+  #burntIcingEditor .document_section_blocks-hasEditedBlock {
+    left: -75vw;
+  }
+  /* line 493, ../src/styles/main.scss */
+  #burntIcingEditor .textItemEditor {
+    position: absolute;
+    left: 100%;
+    margin-left: 40px;
+  }
+  /* line 499, ../src/styles/main.scss */
+  #burntIcingEditor .textItemEditor_textarea,
+  #burntIcingEditor .particularEditor {
+    max-width: none;
+    width: 70vw;
+  }
+}
+/* line 4, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-inSubsection-unorderedList:before {
+  content: '•';
+  position: absolute;
+  left: -0.5em;
+}
+/* line 12, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-inSubsection-orderedList:before {
+  content: attr(data-subsection-child-index) ".";
+  position: absolute;
+  left: -2.2em;
+  min-width: 1.9em;
+  text-align: right;
+  opacity: 0.45;
+}
+/* line 23, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-inSubsection-quote .block_textItems {
+  margin-left: 1em;
+  margin-right: 1em;
+}
+/* line 35, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-text-heading .text {
+  font-size: 36px;
+}
+/* line 39, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-text-subhead1 .text {
+  font-size: 24px;
+}
+/* line 43, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-text-subhead2 .text {
+  font-size: 21px;
+}
+/* line 47, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-text-subhead3 .text {
+  font-size: 18px;
+}
+/* line 54, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-media-externalImage-HTMLRepresentation img {
+  max-width: 600px;
+}
+/* line 60, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-media-websiteFrame-HTMLRepresentation iframe {
+  display: block;
+  width: 100%;
+  height: 0.8vh;
+}
+/* line 69, ../src/styles/_custom-types.scss */
+#burntIcingEditor .block-media-code-HTMLRepresentation {
+  overflow: auto;
+  margin: 0;
+}
+/* line 73, ../src/styles/_custom-types.scss */
+#burntIcingEditor .textItem-hasTrait-code .text {
+  font-family: monospace;
+  white-space: pre;
+}
+/* line 81, ../src/styles/_custom-types.scss */
+#burntIcingEditor .textItem-hasTrait-bold .text {
+  font-weight: bold;
+}
+/* line 85, ../src/styles/_custom-types.scss */
+#burntIcingEditor .textItem-hasTrait-italic .text {
+  font-style: italic;
+}
+/* line 89, ../src/styles/_custom-types.scss */
+#burntIcingEditor .textItem-hasTrait-link .text {
+  border-bottom: 1px dotted #14c8ff;
+}
+/* line 93, ../src/styles/_custom-types.scss */
+#burntIcingEditor .textItem-hasTrait-lineBreakAfter .text:after {
+  content: "";
+  display: block;
+}
+/* line 99, ../src/styles/_custom-types.scss */
+#burntIcingEditor .textItem-hasTrait-hide .text {
+  opacity: 0.5;
+}
